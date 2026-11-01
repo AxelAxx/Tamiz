@@ -178,21 +178,21 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ### Tests first
 
-- [ ] T022 [P] [US2] `dash/test/live-merge.test.ts`: merge by id; order by `startedAt` then
+- [x] T022 [P] [US2] `dash/test/live-merge.test.ts`: merge by id; order by `startedAt` then
   `id`; cap 100; the overlap window (`since = newest − 5 min`); a late-finishing entry with
   an older `startedAt` is added in place; pause buffer and resume without duplicates
   (US2-4, US2-5, R-05).
-- [ ] T023 [US2] `dash/e2e/live-traffic.spec.ts` (entries appended through the control
+- [x] T023 [US2] `dash/e2e/live-traffic.spec.ts` (entries appended through the control
   port): `US2-1` … `US2-8` as written in the spec; `US9-3` with `reducedMotion: "reduce"`
   rows only fade; `US9-4` the live region text changes at most once per 10 s with a count.
   `US2-7` searches the DOM for every fixture string that is not an audit field.
 
 ### Implementation
 
-- [ ] T024 [US2] `dash/src/features/live-traffic/model.ts` (pure merge) and
+- [x] T024 [US2] `dash/src/features/live-traffic/model.ts` (pure merge) and
   `use-live-traffic.ts` (2 s polling, `refetchIntervalInBackground: false`, follow
   `nextCursor` while pages are full, backoff 2→30 s, last-success time).
-- [ ] T025 [US2] `dash/src/features/live-traffic/` components (stream header, table, phone
+- [x] T025 [US2] `dash/src/features/live-traffic/` components (stream header, table, phone
   cards, highlight with Motion and `useReducedMotion`, live region) and
   `dash/src/app/(console)/live/page.tsx`, per the design. Gates; record; backlog row.
 
