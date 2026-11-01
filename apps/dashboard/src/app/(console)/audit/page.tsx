@@ -1,6 +1,12 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { Suspense } from "react";
+import { AuditLog } from "@/features/audit-log/audit-log";
+import { RegionLoading } from "@/features/shared/region-states";
 
-/** Placeholder: the screen is built in `T-008-05` from the design. */
+/** The audit log (spec 008 US4). The filters live in the URL, read on the client. */
 export default function AuditLogPage() {
-  return <NotBuilt task="T-008-05" />;
+  return (
+    <Suspense fallback={<RegionLoading rows={8} />}>
+      <AuditLog />
+    </Suspense>
+  );
 }

@@ -1,31 +1,37 @@
 "use client";
 
 /**
- * The live traffic rows (design `live.html` `trafficTable` / `trafficCards`; spec 008
- * US2-1 … US2-3, US2-7). Desktop and tablet: a fixed five-column table with two lines per
- * cell, so it never scrolls sideways. Phone: one stacked card per entry. Each row opens the
- * entry detail. Nothing here can show content: an entry has none.
+ * Audit entries as rows (design `trafficTable` / `trafficCards`; spec 008 US2-1 … US2-3,
+ * US2-7, US4-6). Tablet and desktop: a fixed-width table with two lines per cell, so it
+ * never scrolls sideways. Phone: one stacked card per entry. Each row opens the entry
+ * detail. `live` shows relative times; `audit` adds the absolute start (UTC) and the
+ * request id. Nothing here can show content: an entry has none.
  */
 import type { AuditEntryDto } from "@tamiz/contracts";
 import { useEffect, useState } from "react";
-import { OutcomeBadge, PrivacyActionBadge, ResidencyBadge } from "@/features/shared/badges";
-import { BLOCK_REASONS } from "@/features/shared/entry-detail";
-import { formatAgo, formatLatency, formatUsd, formatUtc } from "@/features/shared/format";
-import {
-  EntityChips,
-  FallbackMarker,
-  SensitivityIndicator,
-  TargetLabel,
-} from "@/features/shared/privacy";
 import { cn } from "@/lib/utils";
+import { OutcomeBadge, PrivacyActionBadge, ResidencyBadge } from "./badges";
+import { BLOCK_REASONS } from "./entry-detail";
+import {
+  formatAgo,
+  formatLatency,
+  formatUsd,
+  formatUtc,
+  formatUtcDay,
+  formatUtcTime,
+} from "./format";
+import { EntityChips, FallbackMarker, SensitivityIndicator, TargetLabel } from "./privacy";
 
-/** Re-renders every second so "12 s ago" stays true. */
-function useNow(): number {
+export type TrafficVariant = "live" | "audit";
+
+/** Re-renders every second so "12 s ago" stays true (live only). */
+function useNow(enabled: boolean): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
+    if (!enabled) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [enabled]);
   return now;
 }
 
@@ -71,47 +77,86 @@ function RouteLine({
 
 const age = (entry: AuditEntryDto, now: number) => (now - Date.parse(entry.startedAt)) / 1000;
 
+function Head({ variant }: { readonly variant: TrafficVariant }) {
+  if (variant === "audit") {
+    return (
+      <tr className="border-b text-left text-xs text-muted-foreground">
+        <th scope="col" className="h-9 w-[15%] pr-3 pl-4 font-medium">
+          Started (UTC)
+        </th>
+        <th scope="col" className="h-9 w-[30%] px-3 font-medium xl:w-[25%]">
+          Request
+        </th>
+        <th scope="col" className="hidden h-9 w-[14%] px-3 font-medium xl:table-cell">
+          Rule
+        </th>
+        <th scope="col" className="h-9 w-[17%] px-3 font-medium xl:w-[14%]">
+          Privacy
+        </th>
+        <th scope="col" className="h-9 px-3 font-medium">
+          Entities
+        </th>
+        <th scope="col" className="h-9 w-[13%] pr-4 pl-2 text-right font-medium xl:w-[10%]">
+          Cost
+        </th>
+      </tr>
+    );
+  }
+  return (
+    <tr className="border-b text-left text-xs text-muted-foreground">
+      <th scope="col" className="h-9 w-[29%] pr-3 pl-4 font-medium">
+        Request
+      </th>
+      <th scope="col" className="h-9 w-[18%] px-3 font-medium">
+        Rule
+      </th>
+      <th scope="col" className="h-9 w-[17%] px-3 font-medium">
+        Privacy
+      </th>
+      <th scope="col" className="h-9 px-3 font-medium">
+        Entities
+      </th>
+      <th scope="col" className="h-9 w-[13%] pr-4 pl-2 text-right font-medium xl:w-[11%]">
+        Cost
+      </th>
+    </tr>
+  );
+}
+
 export function TrafficList({
   rows,
   highlighted,
   selectedId,
   onOpen,
+  variant = "live",
 }: {
   readonly rows: ReadonlyArray<AuditEntryDto>;
-  readonly highlighted: ReadonlySet<string>;
+  readonly highlighted?: ReadonlySet<string>;
   readonly selectedId: string | undefined;
   readonly onOpen: (entry: AuditEntryDto) => void;
+  readonly variant?: TrafficVariant;
 }) {
-  const now = useNow();
+  const audit = variant === "audit";
+  const now = useNow(!audit);
+  const isNew = (entry: AuditEntryDto) => highlighted?.has(entry.id) === true;
   return (
     <>
       <div className="hidden md:block">
         <table data-slot="table" className="w-full table-fixed border-collapse text-sm">
           <caption className="sr-only">
-            Requests, newest first. Activate a row to see its details.
+            {audit ? "Audit entries, newest first." : "Requests, newest first."} Activate a row to
+            see its details.
           </caption>
           <thead data-slot="table-header">
-            <tr className="border-b text-left text-xs text-muted-foreground">
-              <th scope="col" className="h-9 w-[29%] pr-3 pl-4 font-medium">
-                Request
-              </th>
-              <th scope="col" className="h-9 w-[18%] px-3 font-medium">
-                Rule
-              </th>
-              <th scope="col" className="h-9 w-[17%] px-3 font-medium">
-                Privacy
-              </th>
-              <th scope="col" className="h-9 px-3 font-medium">
-                Entities
-              </th>
-              <th scope="col" className="h-9 w-[13%] pr-4 pl-2 text-right font-medium xl:w-[11%]">
-                Cost
-              </th>
-            </tr>
+            <Head variant={variant} />
           </thead>
           <tbody data-slot="table-body">
             {rows.map((entry) => {
               const routed = routedTarget(entry) !== undefined;
+              const open = (event: { stopPropagation: () => void }) => {
+                event.stopPropagation();
+                onOpen(entry);
+              };
               return (
                 <tr
                   key={entry.id}
@@ -120,35 +165,62 @@ export function TrafficList({
                   onClick={() => onOpen(entry)}
                   className={cn(
                     "cursor-pointer border-b transition-colors last:border-b-0 hover:bg-accent/60",
-                    highlighted.has(entry.id) && "animate-row-in",
+                    isNew(entry) && "animate-row-in",
                     selectedId === entry.id && "bg-accent",
                   )}
                 >
-                  <td className="py-2.5 pr-3 pl-4 align-top">
-                    <RouteLine entry={entry} />
-                    <div className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                  {audit ? (
+                    <td className="py-2.5 pr-3 pl-4 align-top">
                       <button
                         type="button"
-                        className="tabular shrink-0 rounded-sm hover:text-foreground"
+                        className="tabular rounded-sm text-left leading-5"
                         title={formatUtc(entry.startedAt)}
-                        aria-label={`${formatAgo(age(entry, now))}, open details for request ${entry.requestId}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onOpen(entry);
-                        }}
+                        aria-label={`${formatUtcTime(entry.startedAt)}, open details for request ${entry.requestId}`}
+                        onClick={open}
                       >
-                        {formatAgo(age(entry, now))}
+                        {formatUtcTime(entry.startedAt)}
                       </button>
-                      {routed ? (
-                        <span className="hidden truncate xl:inline">
-                          · client <span className="font-mono">{entry.clientId}</span>
-                        </span>
+                      <div className="tabular mt-1 text-xs text-muted-foreground">
+                        {formatUtcDay(entry.startedAt)}
+                      </div>
+                    </td>
+                  ) : null}
+                  <td className={cn("py-2.5 align-top", audit ? "px-3" : "pr-3 pl-4")}>
+                    <RouteLine entry={entry} />
+                    <div className="mt-1 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                      {audit ? (
+                        <>
+                          <span className="shrink-0 font-mono">{entry.requestId}</span>
+                          <span className="truncate font-mono xl:hidden">· {entry.ruleId}</span>
+                          {routed ? null : (
+                            <span className="hidden truncate xl:inline">
+                              · {notRoutedReason(entry)}
+                            </span>
+                          )}
+                        </>
                       ) : (
-                        <span className="truncate">· {notRoutedReason(entry)}</span>
+                        <>
+                          <button
+                            type="button"
+                            className="tabular shrink-0 rounded-sm hover:text-foreground"
+                            title={formatUtc(entry.startedAt)}
+                            aria-label={`${formatAgo(age(entry, now))}, open details for request ${entry.requestId}`}
+                            onClick={open}
+                          >
+                            {formatAgo(age(entry, now))}
+                          </button>
+                          {routed ? (
+                            <span className="hidden truncate xl:inline">
+                              · client <span className="font-mono">{entry.clientId}</span>
+                            </span>
+                          ) : (
+                            <span className="truncate">· {notRoutedReason(entry)}</span>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 align-top">
+                  <td className={cn("px-3 py-2.5 align-top", audit && "hidden xl:table-cell")}>
                     <div className="truncate font-mono text-xs leading-5" title={entry.ruleId}>
                       {entry.ruleId}
                     </div>
@@ -179,7 +251,10 @@ export function TrafficList({
           </tbody>
         </table>
       </div>
-      <ul className="divide-y md:hidden" aria-label="Requests, newest first">
+      <ul
+        className="divide-y md:hidden"
+        aria-label={audit ? "Audit entries, newest first" : "Requests, newest first"}
+      >
         {rows.map((entry) => {
           const target = routedTarget(entry);
           return (
@@ -187,7 +262,7 @@ export function TrafficList({
               key={entry.id}
               className={cn(
                 "hover:bg-accent/60",
-                highlighted.has(entry.id) && "animate-row-in",
+                isNew(entry) && "animate-row-in",
                 selectedId === entry.id && "bg-accent",
               )}
             >
@@ -213,7 +288,7 @@ export function TrafficList({
                   )}
                   <FallbackMarker abandoned={entry.abandoned} interactive={false} />
                   <span className="tabular ml-auto shrink-0 text-xs text-muted-foreground">
-                    {formatAgo(age(entry, now))}
+                    {audit ? formatUtcTime(entry.startedAt) : formatAgo(age(entry, now))}
                   </span>
                 </span>
                 <span className="flex flex-wrap gap-1">

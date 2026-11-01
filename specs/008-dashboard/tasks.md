@@ -227,15 +227,15 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ### Tests first
 
-- [ ] T031 [P] [US4] `dash/test/audit-filters.test.ts`: URL search params ↔ filters through
+- [x] T031 [P] [US4] `dash/test/audit-filters.test.ts`: URL search params ↔ filters through
   `AuditQuerySchema` (without `cursor`, `limit`); invalid values dropped with a notice;
   `from` after `to` refused (US4-3, US4-5).
-- [ ] T032 [US4] `dash/e2e/audit-log.spec.ts` (a known set of entries, more than one page):
+- [x] T032 [US4] `dash/e2e/audit-log.spec.ts` (a known set of entries, more than one page):
   `US4-1` … `US4-6` as written in the spec.
 
 ### Implementation
 
-- [ ] T033 [US4] `dash/src/features/audit-log/`: filter bar (pickers filled from
+- [x] T033 [US4] `dash/src/features/audit-log/`: filter bar (pickers filled from
   `/api/providers` and `/api/policy` rules; phone Sheet), TanStack Table in manual mode,
   `useInfiniteQuery` on `nextCursor` with "Load older" / "No older entries", the shared
   entry detail; `dash/src/app/(console)/audit/page.tsx`. Gates; record; backlog row.

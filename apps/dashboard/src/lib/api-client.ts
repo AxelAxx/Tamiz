@@ -4,6 +4,8 @@
  * `BffErrorSchema`, before TanStack Query sees it.
  */
 import {
+  type ActivePolicyDto,
+  ActivePolicySchema,
   type AuditPageDto,
   AuditPageSchema,
   type AuditQueryDto,
@@ -76,6 +78,7 @@ export const api = {
   ): Promise<CostReportDto> => request(withQuery("/api/cost", query), CostReportSchema),
   providers: (query: { windowMinutes?: number } = {}): Promise<ProvidersReportDto> =>
     request(withQuery("/api/providers", query), ProvidersReportSchema),
+  policy: (): Promise<ActivePolicyDto> => request("/api/policy", ActivePolicySchema),
   simulate: (body: ChatCompletionRequest): Promise<SimulateResponse> =>
     request("/api/simulate", SimulateResponseSchema, { method: "POST", ...json(body) }),
 };

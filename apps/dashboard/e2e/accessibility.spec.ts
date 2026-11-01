@@ -85,4 +85,16 @@ for (const theme of ["dark", "light"] as const) {
     await expect(page.locator('[data-component="verdict"]')).toBeVisible();
     await expectNoSeriousViolations(page, `simulator ${theme}`);
   });
+
+  test(`US9-1 audit log with filters set, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await gateway.appendAudit([
+      auditEntry({ requestId: "req-au01", sensitivity: "critical", entities: { DNI: 1 } }),
+      auditEntry({ requestId: "req-au02", outcome: "blocked", blockReason: "no_target" }),
+    ]);
+    await signIn(page);
+    await page.goto("/audit?outcome=blocked");
+    await expect(page.locator('tr[data-request-id="req-au02"]')).toBeVisible();
+    await expectNoSeriousViolations(page, `audit ${theme}`);
+  });
 }

@@ -29,8 +29,8 @@ import { EntryDetailSheet } from "@/features/shared/entry-detail";
 import { formatUtcTime } from "@/features/shared/format";
 import { CRITICAL_KINDS, sortedEntities } from "@/features/shared/privacy";
 import { RegionEmpty, RegionError, RegionLoading } from "@/features/shared/region-states";
+import { TrafficList } from "@/features/shared/traffic-list";
 import { cn } from "@/lib/utils";
-import { TrafficList } from "./traffic-list";
 import { type LiveStatus, useLiveTraffic } from "./use-live-traffic";
 
 const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";

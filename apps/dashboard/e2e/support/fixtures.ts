@@ -40,6 +40,7 @@ export const DATA_ENDPOINTS = [
     path: "/api/cost?from=2026-10-01T00:00:00.000Z&to=2026-11-01T00:00:00.000Z",
   },
   { method: "GET", path: "/api/providers?windowMinutes=15" },
+  { method: "GET", path: "/api/policy" },
   {
     method: "POST",
     path: "/api/simulate",
