@@ -6,6 +6,8 @@
  * Playwright tests seed audit entries, open circuits, toggle a detector outage, read which
  * requests reached the gateway (with their `Authorization` header) and reset everything.
  * The control server exists only in this script; nothing here is used in production.
+ * The policy admin API (spec 008 US5) is served from an in-memory repository, so saves
+ * report `persistent: false` and a reset restores the default policy.
  *
  * With `TAMIZ_E2E_PROVIDERS=scripted` (spec 010 research R-06) every target answers
  * `echo: <last user message as received>` instead of throwing, the control server records
@@ -29,6 +31,7 @@ import { AuditEntrySchema } from "@tamiz/contracts";
 import { Hono } from "hono";
 import { z } from "zod";
 import { withAudit, withAuditStream } from "../src/application/audit/with-audit.js";
+import { fileVersion } from "../src/application/policy/policy-document.js";
 import type { DetectionCachePort } from "../src/application/ports/detection-cache.port.js";
 import type {
   LlmProviderPort,
@@ -38,9 +41,11 @@ import type {
 import type { LoggerPort } from "../src/application/ports/logger.port.js";
 import type { PiiDetectorPort } from "../src/application/ports/pii-detector.port.js";
 import { costReport } from "../src/application/use-cases/cost-report.js";
+import { getActivePolicy } from "../src/application/use-cases/get-active-policy.js";
 import { inspectSensitivity } from "../src/application/use-cases/inspect-sensitivity.js";
 import { providerHealth } from "../src/application/use-cases/provider-health.js";
 import { queryAuditLog } from "../src/application/use-cases/query-audit-log.js";
+import { replacePolicy } from "../src/application/use-cases/replace-policy.js";
 import {
   type RouteInferenceDeps,
   routeInference,
@@ -62,8 +67,9 @@ import { hashApiKey, verifyPrincipal } from "../src/infrastructure/auth/api-keys
 import { createInMemoryAuditLog } from "../src/infrastructure/cache/in-memory-audit-log.js";
 import { createInMemoryCircuitState } from "../src/infrastructure/cache/in-memory-circuit-state.js";
 import { systemClock } from "../src/infrastructure/clock/system-clock.js";
-import { loadPolicyFile } from "../src/infrastructure/policy/file-policy-loader.js";
+import { loadPolicyDocument } from "../src/infrastructure/policy/file-policy-loader.js";
 import { createInMemoryPolicyRepository } from "../src/infrastructure/policy/in-memory-policy-repository.js";
+import { toDomainPolicyInput } from "../src/infrastructure/policy/policy-mapper.js";
 import { loadAnonymizationNotices } from "../src/infrastructure/privacy/anonymization-notice.js";
 import { createApp } from "../src/presentation/app.js";
 
@@ -208,9 +214,12 @@ function scriptedProvider(
   };
 }
 
-const policyResult = await loadPolicyFile(resolve(import.meta.dirname, "../policies/default.yaml"));
+const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+const policyResult = await loadPolicyDocument(
+  resolve(import.meta.dirname, "../policies/default.yaml"),
+);
 if (!policyResult.ok) throw new Error("the default policy must load");
-const policy = policyResult.value;
+const bootPolicy = fileVersion(policyResult.value, sha256);
 const noticeResult = loadAnonymizationNotices();
 if (!noticeResult.ok) throw new Error("the anonymization notice must load");
 const anonymizationNotices = noticeResult.value;
@@ -235,8 +244,9 @@ function buildState() {
       : { complete: neverCalled, stream: neverCalled };
   const audit = createInMemoryAuditLog();
   const circuitState = createInMemoryCircuitState(systemClock);
+  const policies = createInMemoryPolicyRepository(bootPolicy);
   const deps: RouteInferenceDeps = {
-    policies: createInMemoryPolicyRepository(policy),
+    policies,
     providers: { resolve: () => provider },
     clock: systemClock,
     circuitState,
@@ -247,7 +257,7 @@ function buildState() {
       cache: noCache,
       clock: systemClock,
       events: { emit: () => {} },
-      hash: (text) => createHash("sha256").update(text).digest("hex"),
+      hash: sha256,
       timeoutMs: 2_000 as Milliseconds,
     }),
     anonymizationNotices,
@@ -260,6 +270,14 @@ function buildState() {
       createHmac("sha256", "e2e-audit-key").update(JSON.stringify(messages)).digest("hex"),
     newId: randomUUID,
   };
+  // Every provider counts as configured: none is ever called for real here.
+  const replace = replacePolicy({
+    policies,
+    checkProviders: () => [],
+    clock: systemClock,
+    hash: sha256,
+    logger: quietLogger,
+  });
   const app = createApp({
     clock: systemClock,
     version: "0.0.0-e2e",
@@ -276,6 +294,13 @@ function buildState() {
       circuitState,
       clock: systemClock,
     }),
+    getActivePolicy: getActivePolicy(policies),
+    replacePolicy: (command) =>
+      replace({
+        input: toDomainPolicyInput(command.policy),
+        baseVersion: command.baseVersion,
+        adminClientId: command.adminClientId,
+      }),
     authenticate: (key) => verifyPrincipal(key, keys),
   });
   const requests: Array<{ method: string; path: string; authorization: string | null }> = [];

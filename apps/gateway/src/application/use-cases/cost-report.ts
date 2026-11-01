@@ -8,7 +8,7 @@
 import { baselineTarget } from "../../domain/model/baseline.js";
 import { type CostAggregate, type CostGroup, money } from "../audit/aggregates.js";
 import type { AuditReaderPort } from "../ports/audit-reader.port.js";
-import type { PolicyRepositoryPort } from "../ports/policy-repository.port.js";
+import type { PolicyReader } from "../ports/policy-repository.port.js";
 
 export interface CostQuery {
   readonly from: string;
@@ -35,7 +35,7 @@ export type CostReportUseCase = (query: CostQuery) => Promise<CostReport>;
 
 export function costReport(deps: {
   readonly reader: AuditReaderPort;
-  readonly policies: PolicyRepositoryPort;
+  readonly policies: PolicyReader;
 }): CostReportUseCase {
   return async (query) => {
     const [aggregates, policy] = await Promise.all([

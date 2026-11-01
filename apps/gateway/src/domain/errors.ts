@@ -7,6 +7,8 @@
  * HTTP error envelope lives in `presentation/mappers`, never here.
  *
  * Feature 002 adds `provider` and `unauthorized` (spec 002 FR-013, data-model 3.7).
+ * Feature 008 adds `conflict`: a policy save based on a version that is no longer active
+ * (spec 008 FR-016, data-model 2.2).
  */
 import type { Milliseconds, RuleId, TargetId } from "./model/brands.js";
 import type { ProviderName, Residency } from "./model/model-target.js";
@@ -110,6 +112,13 @@ export interface ProviderUnavailableError {
   readonly message: string;
 }
 
+/** A replacement was based on a version that is no longer active (spec 008 US5-5). */
+export interface ConflictError {
+  readonly kind: "conflict";
+  readonly activeVersion: number;
+  readonly message: string;
+}
+
 export type DomainError =
   | ValidationError
   | ConfigurationError
@@ -118,7 +127,8 @@ export type DomainError =
   | UnauthorizedError
   | ResidencyViolationError
   | ProviderUnavailableError
-  | PrivacyBlockedError;
+  | PrivacyBlockedError
+  | ConflictError;
 
 export function validationError(
   message: string,
@@ -177,6 +187,14 @@ export function providerUnavailableError(retryAfterMs: Milliseconds): ProviderUn
     kind: "provider_unavailable",
     retryAfterMs,
     message: "no target available: every circuit of the chain is open",
+  };
+}
+
+export function conflictError(activeVersion: number): ConflictError {
+  return {
+    kind: "conflict",
+    activeVersion,
+    message: `the active policy is version ${activeVersion}: reload it and apply the change again`,
   };
 }
 

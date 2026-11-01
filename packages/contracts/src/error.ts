@@ -7,6 +7,9 @@
  * `provider_unavailable` (503, every circuit open, spec 003 FR-019).
  * `privacy_unavailable` (503, inspection failed and the policy blocks, spec 005 FR-014).
  * `forbidden` (403, a client key on an admin endpoint, spec 006 FR-008).
+ * `conflict` (409, a policy save based on a version that is no longer active, spec 008
+ * FR-016) and the optional `issues`, one per failed check with its dot path (`""` for the
+ * root), filled by the policy admin endpoint (spec 008 research R-11).
  */
 import { z } from "zod";
 import { RequestIdSchema } from "./branded.js";
@@ -23,18 +26,26 @@ export const ErrorTypeSchema = z.enum([
   "provider_unavailable",
   "privacy_unavailable",
   "forbidden",
+  "conflict",
 ]);
+
+export const ErrorIssueSchema = z.strictObject({
+  path: z.string(),
+  message: z.string(),
+});
 
 export const ErrorEnvelopeSchema = z.strictObject({
   error: z.strictObject({
     type: ErrorTypeSchema,
     message: z.string(),
     requestId: RequestIdSchema.optional(),
+    issues: z.array(ErrorIssueSchema).optional(),
   }),
 });
 
 export type ErrorType = z.infer<typeof ErrorTypeSchema>;
 export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
+export type ErrorIssueDto = z.infer<typeof ErrorIssueSchema>;
 
 /** HTTP status the gateway answers with for each error type. */
 export const errorTypeToHttpStatus: Readonly<Record<ErrorType, number>> = Object.freeze({
@@ -49,4 +60,5 @@ export const errorTypeToHttpStatus: Readonly<Record<ErrorType, number>> = Object
   provider_unavailable: 503,
   privacy_unavailable: 503,
   forbidden: 403,
+  conflict: 409,
 });

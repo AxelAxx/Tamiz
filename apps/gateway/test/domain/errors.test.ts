@@ -34,6 +34,8 @@ function describeKind(error: DomainError): string {
       return `provider_unavailable:${error.retryAfterMs}`;
     case "privacy_blocked":
       return `privacy_blocked:${error.reason}`;
+    case "conflict":
+      return `conflict:${error.activeVersion}`;
     default:
       return assertNever(error);
   }

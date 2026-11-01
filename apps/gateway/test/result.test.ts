@@ -99,6 +99,8 @@ describe("DomainError", () => {
         return "provider_unavailable";
       case "privacy_blocked":
         return `privacy_blocked:${error.reason}`;
+      case "conflict":
+        return `conflict:${error.activeVersion}`;
       default:
         return assertNever(error);
     }

@@ -3,7 +3,8 @@
  *
  * `audit_entries` has a column per filterable field and no column for content; entity
  * counts and abandoned targets are `jsonb`. `api_keys` stores SHA-256 hashes only, with a
- * role and a revocation time. Migrations are generated from this file by `drizzle-kit`
+ * role and a revocation time. `policy_versions` (spec 008 data-model 2.4) is the
+ * append-only history of the routing policy, unique per `(policy_id, version)`. Migrations are generated from this file by `drizzle-kit`
  * (`pnpm --filter @tamiz/gateway db:generate`) and committed under `drizzle/`.
  */
 import {
@@ -16,8 +17,10 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { RoutingPolicyInput } from "../../domain/model/routing-policy.js";
 
 export const auditEntries = pgTable(
   "audit_entries",
@@ -73,3 +76,18 @@ export const apiKeys = pgTable("api_keys", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
+
+export const policyVersions = pgTable(
+  "policy_versions",
+  {
+    id: uuid("id").primaryKey(),
+    policyId: text("policy_id").notNull(),
+    version: integer("version").notNull(),
+    document: jsonb("document").$type<RoutingPolicyInput>().notNull(),
+    contentHash: char("content_hash", { length: 64 }).notNull(),
+    source: text("source", { enum: ["file", "store"] }).notNull(),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "string" }).notNull(),
+  },
+  (table) => [unique("policy_versions_policy_id_version_key").on(table.policyId, table.version)],
+);
