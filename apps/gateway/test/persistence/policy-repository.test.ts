@@ -6,6 +6,7 @@ import type {
   PolicyRepositoryPort,
   PolicyVersionDraft,
 } from "../../src/application/ports/policy-repository.port.js";
+import { validatePolicy } from "../../src/domain/model/routing-policy.js";
 import { systemClock } from "../../src/infrastructure/clock/system-clock.js";
 import {
   connectDatabase,
@@ -39,8 +40,10 @@ function saved(base: PolicyVersionDraft, savedBy: string): PolicyVersionDraft {
   const version = base.policy.version + 1;
   const route = [...base.document.default.route].reverse();
   const document = { ...base.document, version, default: { ...base.document.default, route } };
+  const policy = validatePolicy(document);
+  if (!policy.ok) throw new Error("the reordered policy must validate");
   return {
-    policy: { ...base.policy, version },
+    policy: policy.value,
     document,
     source: "store",
     savedAt: "2026-11-01T10:00:00.000Z",
