@@ -34,12 +34,12 @@ test("US1-1 without a session every page redirects to sign-in and every data end
 
 test("US1-2 the right passphrase lands on live traffic; a wrong one says so", async ({ page }) => {
   await page.goto("/sign-in");
-  await page.getByLabel("Passphrase").fill("not the passphrase");
+  await page.getByLabel("Passphrase", { exact: true }).fill("not the passphrase");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByText("Wrong passphrase.")).toHaveAttribute("role", "alert");
   await expect(page).toHaveURL(/\/sign-in$/);
 
-  await page.getByLabel("Passphrase").fill(PASSPHRASE);
+  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/live$/);
   await expect(page.getByRole("heading", { name: "Live traffic" })).toBeVisible();
@@ -80,7 +80,8 @@ test("US1-4 sign-out ends the session and the old cookie stops working", async (
   const cookies = await page.context().cookies();
   expect((await page.request.get("/api/audit")).status()).toBe(200);
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Operator menu" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/sign-in$/);
   expect((await page.request.get("/api/audit")).status()).toBe(401);
 

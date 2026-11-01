@@ -26,6 +26,8 @@ export class BffRequestError extends Error {
     readonly status: number,
     /** The parsed BFF error; `undefined` when the answer was not one. */
     readonly body: BffError | undefined,
+    /** Seconds from `Retry-After` (a rate-limited sign-in), when the answer had one. */
+    readonly retryAfterSeconds?: number,
   ) {
     super(body?.error.message ?? `Request failed with status ${status}`);
     this.name = "BffRequestError";
@@ -37,7 +39,12 @@ async function request<T>(path: string, schema: z.ZodType<T>, init?: RequestInit
   const body: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
     const error = BffErrorSchema.safeParse(body);
-    throw new BffRequestError(response.status, error.success ? error.data : undefined);
+    const retryAfter = Number(response.headers.get("retry-after") ?? Number.NaN);
+    throw new BffRequestError(
+      response.status,
+      error.success ? error.data : undefined,
+      Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined,
+    );
   }
   return schema.parse(body);
 }

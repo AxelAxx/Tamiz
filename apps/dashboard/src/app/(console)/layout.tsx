@@ -1,34 +1,17 @@
-import Link from "next/link";
+"use client";
+
 import type { ReactNode } from "react";
-import { GatewayStatus } from "./gateway-status";
-import { SignOutButton } from "./sign-out-button";
+import { AppShell } from "@/features/shell/app-shell";
+import { SessionExpiredDialog } from "@/features/shell/session-expired-dialog";
+import { useSessionExpiry } from "../providers";
 
-/** The seven console screens; unstyled until the shell of `T-008-10` (gate G1). */
-const SCREENS = [
-  { href: "/live", label: "Live traffic" },
-  { href: "/simulator", label: "Simulator" },
-  { href: "/audit", label: "Audit log" },
-  { href: "/policy", label: "Policy" },
-  { href: "/evals", label: "Evals" },
-  { href: "/providers", label: "Providers" },
-  { href: "/cost", label: "Cost" },
-] as const;
-
+/** Every console screen sits in the shell; a session that ends is renewed in place. */
 export default function ConsoleLayout({ children }: { readonly children: ReactNode }) {
+  const { expired, signedInAgain } = useSessionExpiry();
   return (
     <>
-      <nav aria-label="Screens">
-        <ul>
-          {SCREENS.map((screen) => (
-            <li key={screen.href}>
-              <Link href={screen.href}>{screen.label}</Link>
-            </li>
-          ))}
-        </ul>
-        <GatewayStatus />
-        <SignOutButton />
-      </nav>
-      <main>{children}</main>
+      <AppShell>{children}</AppShell>
+      <SessionExpiredDialog open={expired} onSignedIn={signedInAgain} />
     </>
   );
 }

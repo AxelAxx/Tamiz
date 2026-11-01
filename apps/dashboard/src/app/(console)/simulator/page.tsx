@@ -1,9 +1,6 @@
-/** Placeholder: the screen is built in `T-008-04` from the design (gate G1). */
+import { NotBuilt } from "@/features/shell/not-built";
+
+/** Placeholder: the screen is built in `T-008-04` from the design. */
 export default function SimulatorPage() {
-  return (
-    <>
-      <h1>Simulator</h1>
-      <p>Not built yet.</p>
-    </>
-  );
+  return <NotBuilt task="T-008-04" />;
 }

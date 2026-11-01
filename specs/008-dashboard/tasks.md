@@ -147,26 +147,26 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ### Tests first
 
-- [ ] T016 [P] `dash/e2e/shell.spec.ts`:
+- [x] T016 [P] `dash/e2e/shell.spec.ts`:
   - `US9-2` the skip link is the first focusable element; navigation by keyboard; the phone
     navigation Sheet traps and returns focus;
   - `US9-5` light, dark and system apply at once and persist across reloads; no frame
     renders the other theme on load (screenshot of the first paint);
   - `US9-6` at 390×844 the navigation is a menu and there is no horizontal page scroll.
-- [ ] T017 [P] `dash/e2e/support/axe.ts` (`@axe-core/playwright`, fails on `serious` or
+- [x] T017 [P] `dash/e2e/support/axe.ts` (`@axe-core/playwright`, fails on `serious` or
   `critical`) and `US9-1` for the sign-in page and the empty shell in both themes.
 
 ### Implementation
 
-- [ ] T018 Tokens from `design/` into `dash/src/app/globals.css` (Tailwind v4 `@theme`,
+- [x] T018 Tokens from `design/` into `dash/src/app/globals.css` (Tailwind v4 `@theme`,
   light and dark), fonts, motion durations.
-- [ ] T019 shadcn/ui initialised for Tailwind v4; the components the design uses copied into
+- [x] T019 shadcn/ui initialised for Tailwind v4; the components the design uses copied into
   `dash/src/components/ui/`.
-- [ ] T020 `dash/src/app/(console)/layout.tsx`: sidebar, top bar, gateway status pill
+- [x] T020 `dash/src/app/(console)/layout.tsx`: sidebar, top bar, gateway status pill
   (`/api/gateway-health`), theme toggle (`next-themes`, `attribute="class"`,
   `defaultTheme="system"`, `suppressHydrationWarning`), operator menu, skip link, toasts;
   `dash/src/app/(auth)/sign-in/page.tsx` and the session-expired dialog as designed.
-- [ ] T021 `dash/src/features/shared/`: residency, outcome, action and circuit badges;
+- [x] T021 `dash/src/features/shared/`: residency, outcome, action and circuit badges;
   sensitivity indicator; entity chip; fallback marker; money, number and time formatters
   (`dash/test/format.test.ts`: 4 decimals below one cent, grouping, ms/s, UTC day labels);
   region states (loading, empty, error, stale); entry detail drawer. Gates; record (design

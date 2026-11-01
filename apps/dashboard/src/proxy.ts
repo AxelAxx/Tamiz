@@ -13,7 +13,11 @@ export function proxy(request: NextRequest): NextResponse {
   if (secret !== "" && cookie !== undefined && verifySessionCookie(cookie, secret) !== undefined) {
     return NextResponse.next();
   }
-  return NextResponse.redirect(new URL("/sign-in", request.url));
+  // A cookie that no longer verifies (expired, or signed with another secret) ended a
+  // session: the sign-in page says so. No cookie at all is a plain sign-in.
+  const target = new URL("/sign-in", request.url);
+  if (cookie !== undefined) target.searchParams.set("session", "expired");
+  return NextResponse.redirect(target);
 }
 
 export const config = {

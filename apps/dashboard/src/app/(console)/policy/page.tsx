@@ -1,9 +1,6 @@
-/** Placeholder: the screen is built in `T-008-08` from the design (gate G1). */
+import { NotBuilt } from "@/features/shell/not-built";
+
+/** Placeholder: the screen is built in `T-008-08` from the design. */
 export default function PolicyPage() {
-  return (
-    <>
-      <h1>Policy</h1>
-      <p>Not built yet.</p>
-    </>
-  );
+  return <NotBuilt task="T-008-08" />;
 }
