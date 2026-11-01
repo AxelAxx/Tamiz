@@ -1,6 +1,6 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { Simulator } from "@/features/policy-editor/simulator/simulator";
 
-/** Placeholder: the screen is built in `T-008-04` from the design. */
+/** The policy simulator (spec 008 US3), the README GIF. */
 export default function SimulatorPage() {
-  return <NotBuilt task="T-008-04" />;
+  return <Simulator />;
 }

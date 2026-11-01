@@ -21,6 +21,12 @@ import { ErrorEnvelopeSchema } from "./error.js";
 export const TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 export const MAX_TOOLS = 128;
 
+/**
+ * The largest request body the gateway reads (spec FR-032): 1 MiB. Exported so the
+ * dashboard's simulator form enforces the same limit (spec 008 R-06, US3-4).
+ */
+export const MAX_BODY_BYTES = 1_048_576;
+
 export const ToolNameSchema = z.string().regex(TOOL_NAME_PATTERN);
 
 export const ToolDefinitionSchema = z.strictObject({

@@ -68,6 +68,11 @@ export const SimulateResponseSchema = z
     notice: z.string().optional(),
     /** Set when anonymizing was not safe and the request was kept local (FR-011). */
     notAnonymizable: z.enum(["json_structure", "tool_definition"]).optional(),
+    /**
+     * The policy that decided (spec 008 US5-4: the simulator shows the version a save made
+     * active). Always sent by the gateway since feature 008; optional for older answers.
+     */
+    policy: z.strictObject({ id: z.string(), version: z.int().min(1) }).optional(),
   })
   .refine((body) => (body.decision === "block") === (body.blockReason !== undefined), {
     message: "blockReason is present exactly when the decision is block",

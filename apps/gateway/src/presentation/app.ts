@@ -9,6 +9,7 @@
  * OpenAPI 3.1 document derived from the contract schemas is served at `/openapi.json`.
  */
 import { OpenAPIHono } from "@hono/zod-openapi";
+import { MAX_BODY_BYTES } from "@tamiz/contracts";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import type { ClockPort } from "../application/ports/clock.port.js";
@@ -58,9 +59,6 @@ export interface AppDeps {
 export type AppEnv = ChatEnv;
 
 export type GatewayApp = OpenAPIHono<AppEnv>;
-
-/** FR-032: request bodies above 1 MiB are refused before parsing. */
-export const MAX_BODY_BYTES = 1_048_576;
 
 /**
  * Request headers worth a log line. `authorization` is listed on purpose: the logger

@@ -202,21 +202,21 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ### Tests first
 
-- [ ] T026 [P] [US3] `dash/test/highlight.test.ts`: spans from UTF-16 offsets per message,
+- [x] T026 [P] [US3] `dash/test/highlight.test.ts`: spans from UTF-16 offsets per message,
   accents and emoji (surrogate pairs), overlapping spans drawn as a union with both labels,
   the text unchanged (US3-5, R-06).
-- [ ] T027 [US3] `dash/e2e/simulator.spec.ts`: `US3-1` … `US3-7` as written in the spec.
+- [x] T027 [US3] `dash/e2e/simulator.spec.ts`: `US3-1` … `US3-7` as written in the spec.
   `US3-3` toggles the fake detector outage; `US3-6` checks the URL, both storages and the
   dashboard's log output for the typed text after reload.
 
 ### Implementation
 
-- [ ] T028 `contracts/src/chat-completion.ts`: export `MAX_BODY_BYTES = 1_048_576`;
+- [x] T028 `contracts/src/chat-completion.ts`: export `MAX_BODY_BYTES = 1_048_576`;
   `gateway/src/presentation/app.ts` imports it (no behaviour change).
-- [ ] T029 [US3] `dash/src/features/policy-editor/simulator/form.tsx` and `schema.ts`: React
+- [x] T029 [US3] `dash/src/features/policy-editor/simulator/form.tsx` and `schema.ts`: React
   Hook Form + Zod from `ChatMessageSchema`; optional system message, extra user messages,
   model (default `tamiz-auto`), size limit; Ctrl/Cmd+Enter submits.
-- [ ] T030 [US3] Highlighted text, decision flow (five steps, staggered with Motion, the
+- [x] T030 [US3] Highlighted text, decision flow (five steps, staggered with Motion, the
   deciding step for a block from `blockReason`), chain, provider-receives panel, result meta,
   sample texts; `dash/src/app/(console)/simulator/page.tsx`, per the design. Gates; record;
   backlog row.

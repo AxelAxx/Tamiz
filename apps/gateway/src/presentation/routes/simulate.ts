@@ -67,6 +67,7 @@ export function toSimulateResponse(result: SimulationResult): SimulateResponse {
     taskType: decision.taskType,
     size: decision.size,
     privacyAction: decision.privacyAction,
+    policy: { id: result.policy.id, version: result.policy.version },
   };
   if (decision.kind === "block") {
     return {

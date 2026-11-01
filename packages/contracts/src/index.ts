@@ -63,6 +63,7 @@ export {
   type ChatMessage,
   ChatMessageSchema,
   isJsonObjectText,
+  MAX_BODY_BYTES,
   MAX_TOOLS,
   type ResponseMessage,
   ResponseMessageSchema,
