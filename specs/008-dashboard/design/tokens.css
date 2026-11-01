@@ -286,13 +286,3 @@
 @utility tabular {
   font-variant-numeric: tabular-nums;
 }
-
-/* lucide icons rendered from the prototype's sprite; in code this is lucide-react's default. */
-@utility icon {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex-shrink: 0;
-}
