@@ -1,0 +1,25 @@
+{
+  "name": "@tamiz/example-citara-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Example client: an unmodified OpenAI client calling Tamiz, as Citara would (spec 010)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@tamiz/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "dependencies": {
+    "@tamiz/contracts": "workspace:*",
+    "openai": "7.47.0",
+    "zod": "^4.6.7"
+  }
+}

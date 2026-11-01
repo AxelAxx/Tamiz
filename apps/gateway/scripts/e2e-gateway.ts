@@ -7,6 +7,11 @@
  * requests reached the gateway (with their `Authorization` header) and reset everything.
  * The control server exists only in this script; nothing here is used in production.
  *
+ * With `TAMIZ_E2E_PROVIDERS=scripted` (spec 010 research R-06) every target answers
+ * `echo: <last user message as received>` instead of throwing, the control server records
+ * what each target received and can make one target fail, so a client example can assert
+ * both sides of anonymization and see a fallback. The default stays `none`.
+ *
  *   pnpm --filter @tamiz/gateway e2e-gateway
  *
  * Environment (all optional, test values only):
@@ -14,6 +19,8 @@
  *   TAMIZ_E2E_CONTROL_PORT   the control server (default 3211)
  *   TAMIZ_E2E_ADMIN_KEY      the admin key of client `dashboard`
  *   TAMIZ_E2E_CLIENT_KEY     a client key of client `demo`
+ *   TAMIZ_E2E_CITARA_KEY     a client key of client `citara` (spec 010)
+ *   TAMIZ_E2E_PROVIDERS      `none` (default: providers throw) | `scripted`
  */
 import { createHash, createHmac, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
@@ -23,6 +30,11 @@ import { Hono } from "hono";
 import { z } from "zod";
 import { withAudit, withAuditStream } from "../src/application/audit/with-audit.js";
 import type { DetectionCachePort } from "../src/application/ports/detection-cache.port.js";
+import type {
+  LlmProviderPort,
+  ProviderCompletionInput,
+  StreamPart,
+} from "../src/application/ports/llm-provider.port.js";
 import type { LoggerPort } from "../src/application/ports/logger.port.js";
 import type { PiiDetectorPort } from "../src/application/ports/pii-detector.port.js";
 import { costReport } from "../src/application/use-cases/cost-report.js";
@@ -35,6 +47,7 @@ import {
 } from "../src/application/use-cases/route-inference.js";
 import { simulatePolicy } from "../src/application/use-cases/simulate-policy.js";
 import { streamInference } from "../src/application/use-cases/stream-inference.js";
+import { providerError } from "../src/domain/errors.js";
 import type { AuditEntry } from "../src/domain/model/audit-entry.js";
 import {
   type DetectedEntity,
@@ -44,6 +57,7 @@ import {
   type SensitivityLevel,
 } from "../src/domain/model/sensitivity.js";
 import type { Milliseconds, TargetId } from "../src/domain/model/units.js";
+import { err, ok } from "../src/domain/result.js";
 import { hashApiKey, verifyPrincipal } from "../src/infrastructure/auth/api-keys.js";
 import { createInMemoryAuditLog } from "../src/infrastructure/cache/in-memory-audit-log.js";
 import { createInMemoryCircuitState } from "../src/infrastructure/cache/in-memory-circuit-state.js";
@@ -58,11 +72,18 @@ const {
   TAMIZ_E2E_CONTROL_PORT,
   TAMIZ_E2E_ADMIN_KEY,
   TAMIZ_E2E_CLIENT_KEY,
+  TAMIZ_E2E_CITARA_KEY,
+  TAMIZ_E2E_PROVIDERS,
 } = process.env;
 const GATEWAY_PORT = Number(TAMIZ_E2E_GATEWAY_PORT ?? 3210);
 const CONTROL_PORT = Number(TAMIZ_E2E_CONTROL_PORT ?? 3211);
 const ADMIN_KEY = TAMIZ_E2E_ADMIN_KEY ?? "tmz_e2e-dashboard-admin-key-not-a-secret-0000";
 const CLIENT_KEY = TAMIZ_E2E_CLIENT_KEY ?? "tmz_e2e-demo-client-key-not-a-secret-000000";
+const CITARA_KEY = TAMIZ_E2E_CITARA_KEY ?? "tmz_e2e-citara-client-key-not-a-secret-0000";
+const PROVIDERS = TAMIZ_E2E_PROVIDERS ?? "none";
+if (PROVIDERS !== "none" && PROVIDERS !== "scripted") {
+  throw new Error("TAMIZ_E2E_PROVIDERS must be `none` or `scripted`");
+}
 
 /**
  * Fixture markers the fake detector finds, wherever they appear in a message. Synthetic
@@ -125,6 +146,68 @@ function scriptedDetector(isDown: () => boolean): PiiDetectorPort {
 const neverCalled = () =>
   Promise.reject(new Error("the E2E gateway has no providers: no screen may call one"));
 
+/** What a scripted target received: roles and contents only (synthetic fixtures). */
+type ProviderCall = {
+  readonly targetId: string;
+  readonly messages: ReadonlyArray<{ readonly role: string; readonly content: string | null }>;
+};
+type ProviderFailure = "http_error" | "timeout";
+
+/**
+ * Spec 010 research R-06: answers `echo: <last user message as received>`, streamed as two
+ * deltas plus usage; a target with a scripted failure fails every call until reset.
+ */
+function scriptedProvider(
+  calls: ProviderCall[],
+  failures: ReadonlyMap<string, ProviderFailure>,
+): LlmProviderPort {
+  const receive = (input: ProviderCompletionInput) => {
+    calls.push({
+      targetId: input.target.id,
+      messages: input.messages.map((m) => ({ role: m.role, content: m.content })),
+    });
+    const cause = failures.get(input.target.id);
+    if (cause !== undefined) {
+      return err(
+        providerError({
+          targetId: input.target.id,
+          provider: input.target.provider,
+          cause,
+          retryable: false,
+          message: `scripted ${cause}`,
+          ...(cause === "http_error" ? { status: 500 } : {}),
+        }),
+      );
+    }
+    const lastUser = [...input.messages].reverse().find((m) => m.role === "user");
+    return ok(`echo: ${lastUser?.content ?? ""}`);
+  };
+  const usage = { promptTokens: 10, completionTokens: 5 };
+  return {
+    async complete(input) {
+      const answer = receive(input);
+      if (!answer.ok) return answer;
+      return ok({
+        text: answer.value,
+        finishReason: "stop",
+        usage,
+        modelName: input.target.model,
+      });
+    },
+    async stream(input) {
+      const answer = receive(input);
+      if (!answer.ok) return answer;
+      const text = answer.value;
+      const half = Math.ceil(text.length / 2);
+      async function* rest(): AsyncIterable<StreamPart> {
+        yield { type: "delta", text: text.slice(half) };
+        yield { type: "finish", finishReason: "stop", usage };
+      }
+      return ok({ first: text.slice(0, half), modelName: input.target.model, rest: rest() });
+    },
+  };
+}
+
 const policyResult = await loadPolicyFile(resolve(import.meta.dirname, "../policies/default.yaml"));
 if (!policyResult.ok) throw new Error("the default policy must load");
 const policy = policyResult.value;
@@ -135,16 +218,26 @@ const anonymizationNotices = noticeResult.value;
 const keys = [
   { clientId: "dashboard", keyHash: hashApiKey(ADMIN_KEY), role: "admin" as const },
   { clientId: "demo", keyHash: hashApiKey(CLIENT_KEY) },
+  { clientId: "citara", keyHash: hashApiKey(CITARA_KEY) },
 ];
 
-/** Everything a reset discards: audit entries, circuits, the outage flag, the request log. */
+/**
+ * Everything a reset discards: audit entries, circuits, the outage flag, the request log,
+ * provider calls and scripted failures.
+ */
 function buildState() {
   let detectorDown = false;
+  const providerCalls: ProviderCall[] = [];
+  const providerFailures = new Map<string, ProviderFailure>();
+  const provider: LlmProviderPort =
+    PROVIDERS === "scripted"
+      ? scriptedProvider(providerCalls, providerFailures)
+      : { complete: neverCalled, stream: neverCalled };
   const audit = createInMemoryAuditLog();
   const circuitState = createInMemoryCircuitState(systemClock);
   const deps: RouteInferenceDeps = {
     policies: createInMemoryPolicyRepository(policy),
-    providers: { resolve: () => ({ complete: neverCalled, stream: neverCalled }) },
+    providers: { resolve: () => provider },
     clock: systemClock,
     circuitState,
     events: { emit: () => {} },
@@ -191,6 +284,8 @@ function buildState() {
     audit,
     circuitState,
     requests,
+    providerCalls,
+    providerFailures,
     setDetectorDown: (down: boolean) => {
       detectorDown = down;
     },
@@ -242,6 +337,16 @@ control.post("/__e2e/detector", async (c) => {
   const parsed = z.object({ outage: z.boolean() }).safeParse(await c.req.json());
   if (!parsed.success) return c.json({ ok: false, issues: parsed.error.issues }, 400);
   state.setDetectorDown(parsed.data.outage);
+  return c.json({ ok: true });
+});
+
+control.get("/__e2e/provider-calls", (c) => c.json({ calls: state.providerCalls }));
+control.post("/__e2e/provider-script", async (c) => {
+  const parsed = z
+    .object({ targetId: z.string().min(1), fail: z.enum(["http_error", "timeout"]) })
+    .safeParse(await c.req.json());
+  if (!parsed.success) return c.json({ ok: false, issues: parsed.error.issues }, 400);
+  state.providerFailures.set(parsed.data.targetId, parsed.data.fail);
   return c.json({ ok: true });
 });
 
