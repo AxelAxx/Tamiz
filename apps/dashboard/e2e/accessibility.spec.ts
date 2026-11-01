@@ -97,4 +97,16 @@ for (const theme of ["dark", "light"] as const) {
     await expect(page.locator('tr[data-request-id="req-au02"]')).toBeVisible();
     await expectNoSeriousViolations(page, `audit ${theme}`);
   });
+
+  test(`US9-1 cost analytics with data, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await gateway.appendAudit([
+      auditEntry({ requestId: "req-co01", costUsd: 0.0012, baselineCostUsd: 0.0081 }, 60),
+      auditEntry({ requestId: "req-co02", costUsd: 0.0003, baselineCostUsd: 0.0042 }, 90_000),
+    ]);
+    await signIn(page);
+    await page.goto("/cost");
+    await expect(page.getByTestId("cost-totals")).toBeVisible();
+    await expectNoSeriousViolations(page, `cost ${theme}`);
+  });
 }
