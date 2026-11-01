@@ -1,6 +1,6 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { LiveTraffic } from "@/features/live-traffic/live-traffic";
 
-/** Placeholder: the screen is built in `T-008-03` from the design. */
+/** Live traffic (spec 008 US2), the home screen after sign-in. */
 export default function LiveTrafficPage() {
-  return <NotBuilt task="T-008-03" />;
+  return <LiveTraffic />;
 }

@@ -3,8 +3,9 @@
  *
  * Everything after the Tailwind import is the design's token file,
  * specs/008-dashboard/design/tokens.css, with two changes: the prototype-only `icon` utility
- * is dropped (lucide-react styles its own SVGs), and the font families read the next/font
- * variables first, inside `@theme inline` so the utilities resolve them at the element.
+ * is dropped (lucide-react styles its own SVGs), the font families read the next/font
+ * variables first, inside `@theme inline` so the utilities resolve them at the element, and
+ * the reduced-motion overrides sit outside `@layer base` so they beat the utilities.
  */
 @import "tailwindcss";
 
@@ -334,22 +335,27 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-  /* Reduced motion: transforms collapse to a fade; durations stay so state changes are still perceivable. */
-  @media (prefers-reduced-motion: reduce) {
-    .animate-step-in {
-      animation-name: fade-in;
-    }
-    .animate-row-in {
-      animation-name: row-fade;
-    }
-    .animate-sheet-in,
-    .animate-dialog-in {
-      animation-name: fade-in;
-    }
-    .animate-pulse-dot,
-    .animate-spin {
-      animation: none;
-    }
+}
+
+/*
+ * Reduced motion: transforms collapse to a fade; durations stay so state changes are still
+ * perceivable. Outside any layer on purpose: in the token file it sat in `@layer base`, where
+ * the `animate-*` utilities (a later layer) won and it never applied.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-step-in {
+    animation-name: fade-in;
+  }
+  .animate-row-in {
+    animation-name: row-fade;
+  }
+  .animate-sheet-in,
+  .animate-dialog-in {
+    animation-name: fade-in;
+  }
+  .animate-pulse-dot,
+  .animate-spin {
+    animation: none;
   }
 }
 
