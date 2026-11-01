@@ -8,7 +8,7 @@
 | Branch / PR | `010-citara-integration` (Spec Kit naming), cut from `origin/main` at ae45d45 / draft PR opened after this commit |
 | Date | 2026-10-31 |
 | Session | Claude Code (Claude Opus 5.5), side session |
-| Status | **draft, pending Alex's approval** of the spec and of decisions D1-D7; flip to done (and `spec.md` to `Approved`) when he approves |
+| Status | done; approved on 2026-11-01 with decisions D1-D7 as written. Alex delegated the review to the parent session ("Review it and decide"); `spec.md` flipped to `Approved` in the same PR |
 
 ## What was done
 

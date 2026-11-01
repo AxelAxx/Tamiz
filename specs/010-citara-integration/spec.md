@@ -5,7 +5,7 @@
 
 **Created**: 2026-10-31
 
-**Status**: Draft (pending Alex's review)
+**Status**: Approved (2026-11-01; Alex delegated the review: "Review it and decide")
 
 **Input**: User description: "Optional integration of Citara (an independent application of
 the same author) with Tamiz. Citara sends its LLM calls through Tamiz as an
