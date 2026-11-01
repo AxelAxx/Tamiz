@@ -242,39 +242,40 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ## Phase 6: `T-008-08` — Policy editor and the gateway policy endpoints (US5)
 
-The gateway half (T034–T040) does not depend on G1 and may land first in this PR.
+The gateway half (T034–T040) does not depend on G1 and landed first as backlog task
+`T-008-12` (`docs/tasks/done/T-008-12-policy-admin-api.md`).
 
 ### Tests first
 
-- [ ] T034 [P] [US5] `contracts/test/policy-admin.test.ts`: `ActivePolicySchema`,
+- [x] T034 [P] [US5] `contracts/test/policy-admin.test.ts`: `ActivePolicySchema`,
   `ReplacePolicyRequestSchema` (`baseVersion: z.int().min(1)`), `contentHash` 64 hex,
   `savedAt`/`savedBy` nullable; `contracts/replace-policy.example.json` of the spec parses;
   the envelope's optional `issues` and `errorTypeToHttpStatus.conflict === 409`.
-- [ ] T035 [P] [US5] `gateway/test/admin/policy-route.test.ts` (in-process HTTP, in-memory
+- [x] T035 [P] [US5] `gateway/test/admin/policy-route.test.ts` (in-process HTTP, in-memory
   repository): `US5-1` the GET shape for a file policy; `US5-3` each cross-field failure
   (undeclared target, duplicate rule id, unconfigured provider) → 400 with paths and no
   change; `US5-4` version = base + 1, the next `/v1/simulate` and the next chat completion's
   audit entry carry it; `US5-5` stale base → 409 `conflict`; `US5-6` client key 403, none
   401; `US5-8` other id → 400 `policy.id`; one `policy.replaced` log line without the
   document; OpenAPI components present.
-- [ ] T036 [P] [US5] `gateway/test/persistence/policy-repository.test.ts` (Testcontainers):
+- [x] T036 [P] [US5] `gateway/test/persistence/policy-repository.test.ts` (Testcontainers):
   two concurrent `replace` on the same base → exactly one wins, the other `conflict`
   (`US5-5`); boot uses the newest stored version unless the file's version is higher, which
   is then recorded (`US5-7`); rows are never updated.
 
 ### Implementation (gateway)
 
-- [ ] T037 `contracts/src/error.ts` (`conflict`, `issues: Array<{ path: string; message:
+- [x] T037 `contracts/src/error.ts` (`conflict`, `issues: Array<{ path: string; message:
   string }>` optional), `contracts/src/policy-admin.ts`, `index.ts` exports.
-- [ ] T038 `gateway/src/application/ports/policy-repository.port.ts` (`getActiveVersion`,
+- [x] T038 `gateway/src/application/ports/policy-repository.port.ts` (`getActiveVersion`,
   `replace`), `ConflictError` in `domain/errors.ts`, use cases
   `application/use-cases/{get-active-policy,replace-policy}.ts` (R-10 steps 1–6, provider
   check injected).
-- [ ] T039 `gateway/src/infrastructure/policy/{in-memory,postgres}-policy-repository.ts`,
+- [x] T039 `gateway/src/infrastructure/policy/{in-memory,postgres}-policy-repository.ts`,
   `infrastructure/persistence/schema.ts` (`policy_versions`, `data-model.md` §2.4) and the
-  generated `drizzle/0001_policy_versions.sql`; `main.ts` boot selection and wiring;
+  generated `drizzle/0002_policy_versions.sql` (`0001` was taken by `0001_audit_tools`); `main.ts` boot selection and wiring;
   `@tamiz/test-utils` in-memory repository updated.
-- [ ] T040 `gateway/src/presentation/routes/admin/policy.ts` (`GET`, `PUT`, checks in the
+- [x] T040 `gateway/src/presentation/routes/admin/policy.ts` (`GET`, `PUT`, checks in the
   order of `contracts/gateway-policy.md`), `openapi-schemas.ts`, `app.ts`;
   `gateway/README.md`.
 

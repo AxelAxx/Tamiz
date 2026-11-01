@@ -26,14 +26,14 @@ import type { Decision } from "../../domain/model/routing-decision.js";
 import type { AuditLogPort } from "../ports/audit-log.port.js";
 import type { ClockPort } from "../ports/clock.port.js";
 import type { LoggerPort } from "../ports/logger.port.js";
-import type { PolicyRepositoryPort } from "../ports/policy-repository.port.js";
+import type { PolicyReader } from "../ports/policy-repository.port.js";
 import type { RouteInference, RoutingFailure } from "../use-cases/route-inference.js";
 import type { RoutedStreamPart, StreamInference } from "../use-cases/stream-inference.js";
 
 export interface AuditDeps {
   readonly audit: AuditLogPort;
   readonly clock: ClockPort;
-  readonly policies: PolicyRepositoryPort;
+  readonly policies: PolicyReader;
   /**
    * Keyed hash of the messages and tool definitions (HMAC-SHA-256 in production, spec 006
    * research R-03).

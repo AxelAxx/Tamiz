@@ -5,11 +5,13 @@
  * `requestId` is only attached when it satisfies the `RequestId` contract. Spec 002
  * FR-027: a provider timeout is `provider_timeout` (504), any other provider failure
  * `provider_error` (502); validation issues become one message of paths and expected
- * formats, never the offending values.
+ * formats, never the offending values. Spec 008 R-11: an envelope may also list its
+ * `issues` one by one, each with its dot path.
  */
 import {
   type ErrorEnvelope,
   ErrorEnvelopeSchema,
+  type ErrorIssueDto,
   type ErrorType,
   errorTypeToHttpStatus,
   safeRequestId,
@@ -21,11 +23,16 @@ export function toErrorEnvelope(
   type: ErrorType,
   message: string,
   requestId?: string,
+  issues?: ReadonlyArray<ErrorIssueDto>,
 ): ErrorEnvelope {
   const parsedId = requestId === undefined ? undefined : safeRequestId(requestId);
   const envelope: ErrorEnvelope = {
-    error:
-      parsedId?.success === true ? { type, message, requestId: parsedId.data } : { type, message },
+    error: {
+      type,
+      message,
+      ...(parsedId?.success === true && { requestId: parsedId.data }),
+      ...(issues !== undefined && { issues: [...issues] }),
+    },
   };
   return ErrorEnvelopeSchema.parse(envelope);
 }
@@ -56,6 +63,8 @@ export function domainErrorToErrorType(error: DomainError): ErrorType {
       return "provider_unavailable";
     case "privacy_blocked":
       return error.reason === "detector_unavailable" ? "privacy_unavailable" : "policy_blocked";
+    case "conflict":
+      return "conflict";
     default:
       return assertNever(error);
   }

@@ -12,6 +12,7 @@ export const ERROR_CLASSES: Readonly<Record<ErrorType, ErrorClass>> = Object.fre
   unauthorized: "fix_request",
   forbidden: "fix_request",
   not_found: "fix_request",
+  conflict: "fix_request",
   policy_blocked: "never",
   provider_error: "never",
   provider_timeout: "never",

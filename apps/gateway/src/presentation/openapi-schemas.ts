@@ -9,6 +9,7 @@
  * validates exactly like the contract schema.
  */
 import {
+  ActivePolicySchema,
   AuditEntrySchema,
   AuditPageSchema,
   AuditQuerySchema,
@@ -21,6 +22,7 @@ import {
   HealthResponseSchema,
   ProvidersQuerySchema,
   ProvidersReportSchema,
+  ReplacePolicyRequestSchema,
   SimulateResponseSchema,
 } from "@tamiz/contracts";
 
@@ -43,3 +45,7 @@ export const CostReportBody = CostReportSchema.meta({ id: "CostReport" });
 export const CostQueryParams = CostQuerySchema;
 export const ProvidersReportBody = ProvidersReportSchema.meta({ id: "ProvidersReport" });
 export const ProvidersQueryParams = ProvidersQuerySchema;
+export const ActivePolicyBody = ActivePolicySchema.meta({ id: "ActivePolicy" });
+export const ReplacePolicyRequestBody = ReplacePolicyRequestSchema.meta({
+  id: "ReplacePolicyRequest",
+});

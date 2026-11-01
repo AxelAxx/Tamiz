@@ -7,6 +7,7 @@ describe("classifyError (spec 010 data-model section 2)", () => {
     ["invalid_request", 400, "fix_request"],
     ["unauthorized", 401, "fix_request"],
     ["forbidden", 403, "fix_request"],
+    ["conflict", 409, "fix_request"],
     ["policy_blocked", 451, "never"],
     ["provider_error", 502, "never"],
     ["provider_timeout", 504, "never"],

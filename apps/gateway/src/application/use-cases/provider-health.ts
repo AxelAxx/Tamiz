@@ -10,7 +10,7 @@ import type { ModelTarget } from "../../domain/model/model-target.js";
 import type { AuditReaderPort } from "../ports/audit-reader.port.js";
 import type { CircuitStatePort } from "../ports/circuit-state.port.js";
 import type { ClockPort } from "../ports/clock.port.js";
-import type { PolicyRepositoryPort } from "../ports/policy-repository.port.js";
+import type { PolicyReader } from "../ports/policy-repository.port.js";
 
 export interface ProviderHealth {
   readonly targetId: string;
@@ -38,7 +38,7 @@ export type ProviderHealthUseCase = (query: { windowMinutes: number }) => Promis
 
 export function providerHealth(deps: {
   readonly reader: AuditReaderPort;
-  readonly policies: PolicyRepositoryPort;
+  readonly policies: PolicyReader;
   readonly circuitState: CircuitStatePort;
   readonly clock: ClockPort;
 }): ProviderHealthUseCase {

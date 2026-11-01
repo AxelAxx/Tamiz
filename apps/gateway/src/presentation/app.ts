@@ -14,6 +14,7 @@ import { HTTPException } from "hono/http-exception";
 import type { ClockPort } from "../application/ports/clock.port.js";
 import type { LoggerPort } from "../application/ports/logger.port.js";
 import type { CostReportUseCase } from "../application/use-cases/cost-report.js";
+import type { GetActivePolicy } from "../application/use-cases/get-active-policy.js";
 import type { ProviderHealthUseCase } from "../application/use-cases/provider-health.js";
 import type { QueryAuditLog } from "../application/use-cases/query-audit-log.js";
 import type { RouteInference } from "../application/use-cases/route-inference.js";
@@ -25,6 +26,7 @@ import { type Authenticate, apiKeyAuth } from "./middlewares/api-key-auth.js";
 import { requestId } from "./middlewares/request-id.js";
 import { registerAdminAudit } from "./routes/admin/audit.js";
 import { registerAdminCost } from "./routes/admin/cost.js";
+import { type ReplacePolicyHandler, registerAdminPolicy } from "./routes/admin/policy.js";
 import { registerAdminProviders } from "./routes/admin/providers.js";
 import { type ChatEnv, ROUTE_HEADER, registerChatCompletions } from "./routes/chat-completions.js";
 import { registerHealth } from "./routes/health.js";
@@ -45,6 +47,10 @@ export interface AppDeps {
   readonly costReport: CostReportUseCase;
   /** `GET /v1/admin/providers` (spec 006 FR-013). */
   readonly providerHealth: ProviderHealthUseCase;
+  /** `GET /v1/admin/policy` (spec 008 FR-015). */
+  readonly getActivePolicy: GetActivePolicy;
+  /** `PUT /v1/admin/policy` (spec 008 FR-016). */
+  readonly replacePolicy: ReplacePolicyHandler;
   /** Maps a presented API key to its client id (hash + constant-time compare). */
   readonly authenticate: Authenticate;
 }
@@ -86,7 +92,8 @@ function registerRoutes(app: GatewayApp, deps: AppDeps) {
   const simulate = registerSimulate(chat, deps.simulatePolicy);
   const audit = registerAdminAudit(simulate, deps.queryAuditLog);
   const cost = registerAdminCost(audit, deps.costReport);
-  return registerAdminProviders(cost, deps.providerHealth);
+  const providers = registerAdminProviders(cost, deps.providerHealth);
+  return registerAdminPolicy(providers, deps);
 }
 
 /**
@@ -150,7 +157,10 @@ export function createApp(deps: AppDeps): GatewayApp {
   // The JSON validator skips bodies of another media type; refuse them explicitly.
   app.use("/v1/*", async (c, next) => {
     const contentType = c.req.header("content-type")?.toLowerCase() ?? "";
-    if (c.req.method === "POST" && !contentType.startsWith("application/json")) {
+    if (
+      (c.req.method === "POST" || c.req.method === "PUT") &&
+      !contentType.startsWith("application/json")
+    ) {
       return c.json(
         toErrorEnvelope(
           "invalid_request",

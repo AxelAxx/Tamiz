@@ -82,6 +82,8 @@ export {
 export {
   type ErrorEnvelope,
   ErrorEnvelopeSchema,
+  type ErrorIssueDto,
+  ErrorIssueSchema,
   type ErrorType,
   ErrorTypeSchema,
   errorTypeToHttpStatus,
@@ -130,6 +132,16 @@ export {
   type SimulateRoutingInput,
   SimulateRoutingInputSchema,
 } from "./mcp.js";
+export {
+  type ActivePolicyDto,
+  ActivePolicySchema,
+  type PolicySourceDto,
+  PolicySourceSchema,
+  type PolicyVersionMetaDto,
+  PolicyVersionMetaSchema,
+  type ReplacePolicyRequestDto,
+  ReplacePolicyRequestSchema,
+} from "./policy-admin.js";
 export {
   type PrivacyAnalyzeRequestDto,
   PrivacyAnalyzeRequestSchema,

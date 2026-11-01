@@ -40,7 +40,7 @@ import { err, ok, type Result } from "../../domain/result.js";
 import type { CircuitStatePort } from "../ports/circuit-state.port.js";
 import type { ClockPort } from "../ports/clock.port.js";
 import type { ProviderCompletion, ProviderCompletionInput } from "../ports/llm-provider.port.js";
-import type { PolicyRepositoryPort } from "../ports/policy-repository.port.js";
+import type { PolicyReader } from "../ports/policy-repository.port.js";
 import type { RoutingEventsPort } from "../ports/routing-events.port.js";
 import type { TracerPort } from "../ports/tracer.port.js";
 import type { ProviderRegistry } from "../provider-registry.js";
@@ -54,7 +54,7 @@ import {
 } from "./protect-request.js";
 
 export interface RouteInferenceDeps {
-  readonly policies: PolicyRepositoryPort;
+  readonly policies: PolicyReader;
   readonly providers: ProviderRegistry;
   readonly clock: ClockPort;
   readonly circuitState: CircuitStatePort;

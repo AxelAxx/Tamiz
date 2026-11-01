@@ -5,18 +5,23 @@
  *
  * Boot order: validate the environment (including the API key hashes) → load and
  * validate the policy file → check that every provider the policy uses is configured
- * (each step exits 1 listing every issue, before any port is bound) → logger → policy
- * repository, provider registry, circuit state and routing-events sink → `routeInference`
+ * (each step exits 1 listing every issue, before any port is bound) → logger → database
+ * migrations → policy repository (PostgreSQL boots from the newest stored version, spec
+ * 008 R-10; the providers are checked again for it) → provider registry, circuit state and routing-events sink → `routeInference`
  * wrapped by tracing and audit → app → `serve()` → one startup line with address, version and policy.
  */
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { withAudit, withAuditStream } from "./application/audit/with-audit.js";
+import { fileVersion } from "./application/policy/policy-document.js";
+import type { PolicyRepositoryPort } from "./application/ports/policy-repository.port.js";
 import { withTracing, withTracingStream } from "./application/tracing/with-tracing.js";
 import { costReport } from "./application/use-cases/cost-report.js";
+import { getActivePolicy } from "./application/use-cases/get-active-policy.js";
 import { inspectSensitivity } from "./application/use-cases/inspect-sensitivity.js";
 import { providerHealth } from "./application/use-cases/provider-health.js";
 import { queryAuditLog } from "./application/use-cases/query-audit-log.js";
+import { replacePolicy } from "./application/use-cases/replace-policy.js";
 import {
   type RouteInferenceDeps,
   routeInference,
@@ -46,8 +51,10 @@ import {
   createPostgresAuditStore,
 } from "./infrastructure/persistence/audit-log-repository.js";
 import { connectDatabase, runMigrations } from "./infrastructure/persistence/db.js";
-import { loadPolicyFile } from "./infrastructure/policy/file-policy-loader.js";
+import { loadPolicyDocument } from "./infrastructure/policy/file-policy-loader.js";
 import { createInMemoryPolicyRepository } from "./infrastructure/policy/in-memory-policy-repository.js";
+import { toDomainPolicyInput } from "./infrastructure/policy/policy-mapper.js";
+import { createPostgresPolicyRepository } from "./infrastructure/policy/postgres-policy-repository.js";
 import { loadAnonymizationNotices } from "./infrastructure/privacy/anonymization-notice.js";
 import { createHttpPiiDetector } from "./infrastructure/privacy/http-pii-detector.js";
 import { fanOut } from "./infrastructure/telemetry/fan-out.js";
@@ -67,9 +74,18 @@ function orExit<T>(result: Result<T, ConfigurationError>): T {
   process.exit(1);
 }
 
+/** Exits 1 naming only the driver's error code: the URL and messages carry credentials. */
+function databaseFailure(step: string, error: unknown): never {
+  const code = (error as { code?: unknown } | null)?.code;
+  process.stderr.write(`${step} failed (${typeof code === "string" ? code : "unknown"})\n`);
+  process.exit(1);
+}
+
+const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+
 const config = orExit(loadConfig(process.env));
-const policy = orExit(await loadPolicyFile(config.policyFile));
-orExit(checkProviderSettings(policy, config));
+const policyFile = orExit(await loadPolicyDocument(config.policyFile));
+orExit(checkProviderSettings(policyFile.policy, config));
 const anonymizationNotices = orExit(loadAnonymizationNotices());
 
 const logger = createLogger({ level: config.logLevel });
@@ -99,12 +115,53 @@ const inspect = inspectSensitivity({
   }),
   clock: systemClock,
   events,
-  hash: (text) => createHash("sha256").update(text).digest("hex"),
+  hash: sha256,
   timeoutMs: config.privacy.timeoutMs as Milliseconds,
 });
 
+// Spec 006 FR-005: PostgreSQL when DATABASE_URL is set (migrations before listening), else a
+// bounded in-memory log. Never log the URL: errors are reported by their code.
+const database = config.databaseUrl === undefined ? undefined : connectDatabase(config.databaseUrl);
+if (database !== undefined) {
+  try {
+    await runMigrations(database);
+  } catch (error) {
+    databaseFailure("Database migration", error);
+  }
+}
+// Spec 008 R-10: the policy is replaceable through the admin API; with a database its
+// versions are kept and the newest one is used at boot unless the file's version is higher.
+const bootVersion = fileVersion(policyFile, sha256);
+let policies: PolicyRepositoryPort;
+if (database === undefined) {
+  policies = createInMemoryPolicyRepository(bootVersion);
+} else {
+  try {
+    policies = orExit(
+      await createPostgresPolicyRepository({
+        db: database.db,
+        clock: systemClock,
+        file: bootVersion,
+      }),
+    );
+  } catch (error) {
+    databaseFailure("Loading the stored policy", error);
+  }
+}
+const active = await policies.getActiveVersion();
+orExit(checkProviderSettings(active.policy, config));
+logger.info(
+  {
+    policyId: active.policy.id,
+    policyVersion: active.policy.version,
+    source: active.source,
+    persistent: active.persistent,
+  },
+  "routing policy loaded",
+);
+
 const routing: RouteInferenceDeps = {
-  policies: createInMemoryPolicyRepository(policy),
+  policies,
   providers: createProviderRegistry(config.providers),
   clock: systemClock,
   circuitState,
@@ -122,20 +179,6 @@ if (config.audit.hashKey === undefined) {
     {},
     "audit hash key is ephemeral: set TAMIZ_AUDIT_HASH_KEY to correlate across restarts",
   );
-}
-// Spec 006 FR-005: PostgreSQL when DATABASE_URL is set (migrations before listening), else a
-// bounded in-memory log. Never log the URL: errors are reported by their code.
-const database = config.databaseUrl === undefined ? undefined : connectDatabase(config.databaseUrl);
-if (database !== undefined) {
-  try {
-    await runMigrations(database);
-  } catch (error) {
-    const code = (error as { code?: unknown } | null)?.code;
-    process.stderr.write(
-      `Database migration failed (${typeof code === "string" ? code : "unknown"})\n`,
-    );
-    process.exit(1);
-  }
 }
 const auditWriter =
   database === undefined
@@ -165,6 +208,16 @@ const route = withAudit(withTracing(routeInference(routing), tracer), auditDeps)
 const stream = withAuditStream(withTracingStream(streamInference(routing), tracer), auditDeps);
 const auditReader =
   database === undefined ? (auditLog as InMemoryAuditLog) : createPostgresAuditReader(database.db);
+const replace = replacePolicy({
+  policies,
+  checkProviders: (candidate) => {
+    const checked = checkProviderSettings(candidate, config);
+    return checked.ok ? [] : checked.error.issues;
+  },
+  clock: systemClock,
+  hash: sha256,
+  logger,
+});
 const startedAt = systemClock.now();
 const app = createApp({
   clock: systemClock,
@@ -182,6 +235,13 @@ const app = createApp({
     circuitState,
     clock: systemClock,
   }),
+  getActivePolicy: getActivePolicy(policies),
+  replacePolicy: (command) =>
+    replace({
+      input: toDomainPolicyInput(command.policy),
+      baseVersion: command.baseVersion,
+      adminClientId: command.adminClientId,
+    }),
   authenticate: createAuthenticator(
     config.apiKeys,
     database === undefined ? undefined : createPostgresApiKeyRepository(database.db),
@@ -195,8 +255,8 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
       port: info.port,
       version: config.version,
       nodeEnv: config.nodeEnv,
-      policyId: policy.id,
-      policyVersion: policy.version,
+      policyId: active.policy.id,
+      policyVersion: active.policy.version,
     },
     "gateway listening",
   );

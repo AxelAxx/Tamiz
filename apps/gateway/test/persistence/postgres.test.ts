@@ -82,7 +82,11 @@ describe.skipIf(!docker)("PostgreSQL persistence (Testcontainers)", () => {
     const tables = await database.db.execute(
       sql`select table_name from information_schema.tables where table_schema = 'public' order by 1`,
     );
-    expect(tables.map((row) => row["table_name"])).toEqual(["api_keys", "audit_entries"]);
+    expect(tables.map((row) => row["table_name"])).toEqual([
+      "api_keys",
+      "audit_entries",
+      "policy_versions",
+    ]);
   });
 
   it("stores an entry and reads it back equal and contract-valid", async () => {
