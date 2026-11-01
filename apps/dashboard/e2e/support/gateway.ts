@@ -20,10 +20,10 @@ export const gateway = {
     ((await control("/__e2e/requests")) as { requests: ReceivedRequest[] }).requests,
 };
 
-/** Signs in through the placeholder sign-in page and waits for the live traffic screen. */
+/** Signs in through the sign-in page and waits for the live traffic screen. */
 export async function signIn(page: Page): Promise<void> {
   await page.goto("/sign-in");
-  await page.getByLabel("Passphrase").fill(PASSPHRASE);
+  await page.getByLabel("Passphrase", { exact: true }).fill(PASSPHRASE);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/live$/);
 }
