@@ -10,10 +10,10 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    projects: ["packages/*", "apps/*"],
+    projects: ["packages/*", "apps/*", "examples/*/vitest.config.ts"],
     coverage: {
       provider: "v8",
-      include: ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts"],
+      include: ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts", "examples/*/src/**/*.ts"],
       reporter: ["text", "lcov"],
       reportsDirectory: "coverage",
     },

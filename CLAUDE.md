@@ -184,11 +184,14 @@ tamiz/
 │   ├── evals/          Eval runner, datasets, scorers
 │   ├── tsconfig/       Shared strict TypeScript configs
 │   └── test-utils/     In-memory fakes for ports, builders
+├── examples/
+│   └── citara-client/  OpenAI-SDK client calling Tamiz as Citara would (feature 010, not shipped)
 ├── specs/              Spec Kit output, one folder per feature (NNN-short-name)
 ├── docs/
 │   ├── tamiz-project.md   Foundational document
 │   ├── architecture.md    Mermaid diagrams
 │   ├── adr/               ADR-NNNN-*.md (+ TEMPLATE.md)
+│   ├── integrations/      Guides for applications calling Tamiz (citara.md)
 │   └── tasks/             BACKLOG.md, TEMPLATE.md, done/<TASK-ID>-<slug>.md
 ├── .specify/           Spec Kit memory (constitution), templates, scripts
 ├── .claude/skills/     Spec Kit skills (/speckit-*)
@@ -342,6 +345,8 @@ pnpm --filter @tamiz/gateway api-key:add <client> [--admin]   # key stored hashe
 pnpm --filter @tamiz/mcp-server start:http   # MCP server on http://127.0.0.1:3100/mcp (bearer = Tamiz key); stdio: node apps/mcp-server/dist/main.js
 npx @modelcontextprotocol/inspector node apps/mcp-server/dist/main.js   # try the MCP tools by hand (TAMIZ_MCP_GATEWAY_URL/KEY in its env panel)
 pnpm --filter @tamiz/mcp-server agent:demo -- "why did spend rise yesterday?"   # agent: TAMIZ_AGENT_API_KEY (client) + TAMIZ_AGENT_MCP_KEY (admin), server on start:http; TAMIZ_AGENT_TOOL_PROTOCOL=native (default) | text
+pnpm --filter @tamiz/example-citara-client start -- "<prompt>"   # Citara example: TAMIZ_BASE_URL (with /v1) + TAMIZ_API_KEY, optional TAMIZ_ADMIN_KEY for the audit check (docs/integrations/citara.md)
+TAMIZ_E2E_PROVIDERS=scripted pnpm --filter @tamiz/gateway e2e-gateway   # E2E harness whose providers echo (feature 010 tests)
 docker compose up            # full local stack                   (later: OPS)
 ```
 
