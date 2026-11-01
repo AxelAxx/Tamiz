@@ -132,11 +132,13 @@ No designed UI: pages are unstyled placeholders. This phase does not wait for G1
 
 ## Gate G1: design received
 
-- [ ] **G1** Alex has brought the Claude Design output back and placed it in
+- [x] **G1** Alex has brought the Claude Design output back and placed it in
   `specs/008-dashboard/design/` with everything `design-brief.md` §9 lists (screens at
   desktop and phone in both themes with their key states, tokens as CSS variables,
   component notes, iconography, `design/README.md` with the project link). Alex ticks this
-  box in a commit on `main` (or approves the PR that adds `design/`). **Phases 2–5 and 7–10,
+  box in a commit on `main` (or approves the PR that adds `design/`). *Approved by Alex on
+  2026-11-01 (PR #59); Audit, Cost, Providers, Evals and Policy were accepted as a first
+  proposal that may be refined during their screen tasks.* **Phases 2–5 and 7–10,
   and the dashboard half of Phase 6, do not start before this box is ticked.**
 
 ---
