@@ -1,0 +1,298 @@
+/*
+ * Tamiz dashboard design tokens (Tailwind CSS v4 + shadcn/ui convention).
+ * Drop into apps/dashboard/src/app/globals.css after `@import "tailwindcss";`.
+ *
+ * Contract:
+ * - Raw values live on :root / .dark so next-themes only flips a class.
+ * - `@theme inline` maps them to Tailwind colour utilities (bg-local, text-eu, border-danger/30…).
+ * - Every semantic hue has a strong value (text/icon safe, >= 4.5:1 on background, surface
+ *   and its own -soft tint) and a -soft tint for badge fills. Verified in both themes.
+ * - `input` and `ring` are >= 3:1 against background and surface (WCAG 1.4.11).
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: oklch(0.982 0.003 247);
+  --foreground: oklch(0.205 0.016 257);
+  --surface: oklch(1 0 0);
+  --surface-foreground: var(--foreground);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --muted: oklch(0.955 0.005 250);
+  --muted-foreground: oklch(0.47 0.017 257);
+  --accent: oklch(0.945 0.008 250);
+  --accent-foreground: var(--foreground);
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --border: oklch(0.91 0.006 250);
+  --input: oklch(0.65 0.012 257);
+  --ring: oklch(0.53 0.17 258);
+  --primary: oklch(0.255 0.03 258);
+  --primary-foreground: oklch(0.985 0.002 247);
+  --destructive: var(--danger);
+
+  /* Residency: the privacy story. local and eu read as "safe", external as "left the EU". */
+  --local: oklch(0.46 0.105 162);
+  --local-soft: oklch(0.955 0.03 162);
+  --eu: oklch(0.47 0.15 262);
+  --eu-soft: oklch(0.955 0.025 262);
+  --external: oklch(0.505 0.135 50);
+  --external-soft: oklch(0.96 0.03 60);
+
+  --success: oklch(0.47 0.11 150);
+  --success-soft: oklch(0.955 0.035 150);
+  --warning: oklch(0.52 0.115 75);
+  --warning-soft: oklch(0.965 0.045 88);
+  --danger: oklch(0.505 0.19 27);
+  --danger-soft: oklch(0.96 0.025 25);
+  --info: oklch(0.48 0.12 238);
+  --info-soft: oklch(0.955 0.025 238);
+
+  /* Charts: 1 actual, 2 baseline, 3–5 extra series. All >= 3:1 on surface. */
+  --chart-1: oklch(0.53 0.16 258);
+  --chart-2: oklch(0.6 0.02 257);
+  --chart-3: oklch(0.55 0.12 162);
+  --chart-4: oklch(0.62 0.15 50);
+  --chart-5: oklch(0.52 0.16 305);
+
+  --sidebar: oklch(0.97 0.004 250);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: oklch(0.925 0.01 250);
+  --sidebar-border: var(--border);
+
+  --shadow-color: oklch(0.2 0.02 257 / 0.08);
+  --shadow-color-strong: oklch(0.2 0.02 257 / 0.16);
+  --edge: oklch(1 0 0 / 0); /* top hairline highlight on raised surfaces (dark only) */
+  --glow: oklch(1 0 0 / 0); /* ambient light behind the app canvas (dark only) */
+
+  --radius: 0.5rem;
+
+  /* Motion. Microinteractions only; every animation has a fade-only twin (see keyframes). */
+  --duration-instant: 80ms;
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+  --duration-step: 380ms; /* stagger between decision-flow steps */
+  --duration-highlight: 2000ms; /* new live row */
+}
+
+.dark {
+  --background: oklch(0.145 0.012 262);
+  --foreground: oklch(0.955 0.004 247);
+  --surface: oklch(0.18 0.014 262);
+  --muted: oklch(0.22 0.014 262);
+  --muted-foreground: oklch(0.73 0.015 257);
+  --accent: oklch(0.24 0.015 262);
+  --border: oklch(0.27 0.014 262);
+  --input: oklch(0.52 0.016 262);
+  --ring: oklch(0.72 0.14 258);
+  --primary: oklch(0.94 0.008 247);
+  --primary-foreground: oklch(0.2 0.016 257);
+
+  --local: oklch(0.8 0.12 162);
+  --local-soft: oklch(0.29 0.045 162);
+  --eu: oklch(0.8 0.1 262);
+  --eu-soft: oklch(0.29 0.06 262);
+  --external: oklch(0.82 0.11 62);
+  --external-soft: oklch(0.3 0.05 55);
+
+  --success: oklch(0.8 0.13 150);
+  --success-soft: oklch(0.29 0.05 150);
+  --warning: oklch(0.85 0.12 85);
+  --warning-soft: oklch(0.3 0.05 80);
+  --danger: oklch(0.75 0.15 25);
+  --danger-soft: oklch(0.3 0.07 25);
+  --info: oklch(0.8 0.1 238);
+  --info-soft: oklch(0.29 0.05 238);
+
+  --chart-1: oklch(0.72 0.14 258);
+  --chart-2: oklch(0.62 0.02 257);
+  --chart-3: oklch(0.74 0.13 162);
+  --chart-4: oklch(0.78 0.13 55);
+  --chart-5: oklch(0.72 0.14 305);
+
+  --sidebar: oklch(0.13 0.012 262);
+  --sidebar-accent: oklch(0.22 0.015 262);
+
+  --shadow-color: oklch(0 0 0 / 0.35);
+  --shadow-color-strong: oklch(0 0 0 / 0.55);
+  --edge: oklch(1 0 0 / 0.05);
+  --glow: oklch(0.55 0.14 258 / 0.11);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+
+  --color-local: var(--local);
+  --color-local-soft: var(--local-soft);
+  --color-eu: var(--eu);
+  --color-eu-soft: var(--eu-soft);
+  --color-external: var(--external);
+  --color-external-soft: var(--external-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Inline so .dark can swap --shadow-color at the element. */
+  --shadow-xs: inset 0 1px 0 0 var(--edge), 0 1px 2px 0 var(--shadow-color);
+  --shadow-sm: inset 0 1px 0 0 var(--edge), 0 1px 3px 0 var(--shadow-color), 0 1px 2px -1px var(--shadow-color);
+  --shadow-md: inset 0 1px 0 0 var(--edge), 0 4px 12px -2px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+  --shadow-lg: inset 0 1px 0 0 var(--edge), 0 16px 40px -8px var(--shadow-color-strong), 0 4px 12px -4px var(--shadow-color);
+}
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* Dense console scale: body is 14 px, table/UI text 13 px. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-lg: 1rem;
+  --text-lg--line-height: 1.5rem;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.375rem;
+  --text-2xl--line-height: 1.875rem;
+  --text-3xl: 1.75rem;
+  --text-3xl--line-height: 2.25rem;
+
+  --spacing: 0.25rem;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+
+  --animate-step-in: step-in var(--duration-slow) var(--ease-emphasized) both;
+  --animate-fade-in: fade-in var(--duration-base) linear both;
+  --animate-row-in: row-in var(--duration-highlight) var(--ease-standard) both;
+  --animate-row-fade: row-fade var(--duration-highlight) linear both;
+  --animate-sheet-in: sheet-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-dialog-in: dialog-in var(--duration-base) var(--ease-emphasized) both;
+  --animate-pulse-dot: pulse-dot 2s var(--ease-standard) infinite;
+  --animate-spin: spin 1s linear infinite;
+
+  @keyframes step-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes row-in {
+    0% { opacity: 0; transform: translateY(-8px); background-color: var(--info-soft); }
+    12% { opacity: 1; transform: none; background-color: var(--info-soft); }
+    70% { background-color: var(--info-soft); }
+    100% { background-color: transparent; }
+  }
+  @keyframes row-fade {
+    0% { opacity: 0; background-color: var(--info-soft); }
+    12% { opacity: 1; background-color: var(--info-soft); }
+    70% { background-color: var(--info-soft); }
+    100% { background-color: transparent; }
+  }
+  @keyframes sheet-in {
+    from { transform: translateX(16px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes dialog-in {
+    from { transform: scale(0.98); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "tnum" 0;
+  }
+  /* One consistent focus style for every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  /* Reduced motion: transforms collapse to a fade; durations stay so state changes are still perceivable. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-step-in { animation-name: fade-in; }
+    .animate-row-in { animation-name: row-fade; }
+    .animate-sheet-in,
+    .animate-dialog-in { animation-name: fade-in; }
+    .animate-pulse-dot,
+    .animate-spin { animation: none; }
+  }
+}
+
+/* App canvas: background plus a faint ambient light from the top right (invisible in light). */
+@utility bg-app {
+  background:
+    radial-gradient(1100px 420px at 85% -120px, var(--glow), transparent 70%),
+    var(--background);
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* lucide icons rendered from the prototype's sprite; in code this is lucide-react's default. */
+@utility icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
