@@ -66,3 +66,20 @@ describe("SimulateResponseSchema with tool calling (009 tool-calling FR-015)", (
     expect(SimulateResponseSchema.safeParse({ ...example.response, entities }).success).toBe(false);
   });
 });
+
+describe("SimulateResponseSchema policy (spec 008 US5-4)", () => {
+  it("accepts the deciding policy's id and version, and answers without it", () => {
+    const withPolicy = { ...example.response, policy: { id: "default", version: 4 } };
+    expect(SimulateResponseSchema.safeParse(withPolicy).success).toBe(true);
+    expect(SimulateResponseSchema.safeParse(example.response).success).toBe(true);
+  });
+
+  it("rejects a version below 1 and unknown policy fields", () => {
+    for (const policy of [
+      { id: "default", version: 0 },
+      { id: "default", version: 4, hash: "x" },
+    ]) {
+      expect(SimulateResponseSchema.safeParse({ ...example.response, policy }).success).toBe(false);
+    }
+  });
+});

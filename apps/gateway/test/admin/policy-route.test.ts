@@ -114,6 +114,8 @@ describe("PUT /v1/admin/policy", () => {
       await (await app.send("/v1/simulate", simulate())).json(),
     );
     expect(simulated.ruleId).toBe("default");
+    expect(simulated.policy).toEqual({ id: "default", version: saved.policy.version });
+    expect(simulatedBefore.policy).toEqual({ id: "default", version: before.policy.version });
     expect(simulatedBefore.ruleId).toBe("default");
     expect(simulatedBefore.chain.map((t) => t.id)).not.toEqual(["openai-mini", "mistral-small"]);
     expect(simulated.chain.map((t) => t.id)).toEqual(["openai-mini", "mistral-small"]);

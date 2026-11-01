@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
-import type { AuditEntryDto } from "@tamiz/contracts";
-import { CONTROL_URL, PASSPHRASE } from "./fixtures";
+import type { ActivePolicyDto, AuditEntryDto, RoutingPolicyDto } from "@tamiz/contracts";
+import { ADMIN_KEY, CONTROL_URL, GATEWAY_URL, PASSPHRASE } from "./fixtures";
 
 /** One request the E2E gateway received (its control port, `GET /__e2e/requests`). */
 export interface ReceivedRequest {
@@ -25,6 +25,29 @@ export const gateway = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(entries),
     }),
+  /** Turns the scripted detector's outage on or off. */
+  detector: (outage: boolean) =>
+    control("/__e2e/detector", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ outage }),
+    }),
+  /**
+   * Replaces the E2E gateway's policy through its admin API (spec 008 T-008-12); a reset
+   * restores the default one.
+   */
+  editPolicy: async (edit: (policy: RoutingPolicyDto) => RoutingPolicyDto) => {
+    const headers = { authorization: `Bearer ${ADMIN_KEY}`, "content-type": "application/json" };
+    const active = (await (
+      await fetch(`${GATEWAY_URL}/v1/admin/policy`, { headers })
+    ).json()) as ActivePolicyDto;
+    const response = await fetch(`${GATEWAY_URL}/v1/admin/policy`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ baseVersion: active.policy.version, policy: edit(active.policy) }),
+    });
+    if (!response.ok) throw new Error(`policy replace answered ${response.status}`);
+  },
   requests: async () =>
     ((await control("/__e2e/requests")) as { requests: ReceivedRequest[] }).requests,
 };

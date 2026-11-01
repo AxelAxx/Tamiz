@@ -73,4 +73,16 @@ for (const theme of ["dark", "light"] as const) {
     await expect(page.getByRole("dialog")).toBeVisible();
     await expectNoSeriousViolations(page, `live detail ${theme}`);
   });
+
+  test(`US9-1 simulator with an anonymize result, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await signIn(page);
+    await page.goto("/simulator");
+    await page
+      .getByLabel("User message", { exact: true })
+      .fill("Resume el informe de Ana García (ana.garcia@example.com) para el comité.");
+    await page.getByRole("button", { name: "Simulate" }).click();
+    await expect(page.locator('[data-component="verdict"]')).toBeVisible();
+    await expectNoSeriousViolations(page, `simulator ${theme}`);
+  });
 }

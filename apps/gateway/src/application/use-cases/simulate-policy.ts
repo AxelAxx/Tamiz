@@ -23,6 +23,8 @@ export type SimulatePolicyDeps = Pick<
 >;
 
 export interface SimulationResult {
+  /** The policy that decided (spec 008 US5-4). */
+  readonly policy: { readonly id: string; readonly version: number };
   readonly inspection: Inspection;
   readonly decision: Decision;
   /** Where each inspected text is: `inspection.entities[i].textIndex` indexes this list. */
@@ -36,12 +38,14 @@ export type SimulatePolicy = (request: InferenceRequest) => Promise<SimulationRe
 
 export function simulatePolicy(deps: SimulatePolicyDeps): SimulatePolicy {
   return async (request) => {
-    const { inspection, decision } = await decideWithPrivacy(deps, request);
+    const { inspection, decision, policy: active } = await decideWithPrivacy(deps, request);
+    const policy = { id: active.id, version: active.version };
     const locations = inspectedTexts(request).map(({ location }) => location);
-    if (decision.kind === "block") return { inspection, decision, locations };
+    if (decision.kind === "block") return { policy, inspection, decision, locations };
     const sent = protectRequest(decision, inspection, request, deps.anonymizationNotices);
-    if (sent.noticeVersion === undefined) return { inspection, decision, locations };
+    if (sent.noticeVersion === undefined) return { policy, inspection, decision, locations };
     return {
+      policy,
       inspection,
       decision,
       locations,
