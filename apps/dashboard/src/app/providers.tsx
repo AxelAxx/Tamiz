@@ -1,6 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "next-themes";
 import { type ReactNode, useState } from "react";
 import { BffRequestError } from "@/lib/api-client";
 
@@ -20,5 +21,11 @@ function createQueryClient(): QueryClient {
 
 export function Providers({ children }: { readonly children: ReactNode }) {
   const [client] = useState(createQueryClient);
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  // The tokens switch on the `dark` class (`@custom-variant dark` in globals.css); dark is
+  // the design's default, and the system preference applies once chosen.
+  return (
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </ThemeProvider>
+  );
 }

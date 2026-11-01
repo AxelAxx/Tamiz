@@ -16,7 +16,8 @@
       "!.specify",
       "!.claude",
       "!pnpm-lock.yaml",
-      "!services/privacy"
+      "!services/privacy",
+      "!specs/008-dashboard/design"
     ]
   },
   "formatter": {
@@ -25,6 +26,9 @@
     "indentWidth": 2,
     "lineWidth": 100,
     "lineEnding": "lf"
+  },
+  "css": {
+    "parser": { "tailwindDirectives": true }
   },
   "javascript": {
     "formatter": {
