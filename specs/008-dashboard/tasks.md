@@ -334,12 +334,12 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ## Phase 9: `T-008-06` — Cost analytics (US7, cuttable)
 
-- [ ] T049 [P] [US7] `dash/test/cost-view.test.ts`: saving and percent from a report;
+- [x] T049 [P] [US7] `dash/test/cost-view.test.ts`: saving and percent from a report;
   `baseline: null` → unavailable, never zero; range presets in UTC (US7-4).
-- [ ] T050 [US7] `dash/e2e/cost.spec.ts` (entries seeded through the control port; the
+- [x] T050 [US7] `dash/e2e/cost.spec.ts` (entries seeded through the control port; the
   expected totals read from the E2E gateway's `GET /v1/admin/cost`): `US7-1` … `US7-6` as
   written in the spec.
-- [ ] T051 [US7] `dash/src/features/cost-analytics/` (controls, KPI cards, shadcn Chart with
+- [x] T051 [US7] `dash/src/features/cost-analytics/` (controls, KPI cards, shadcn Chart with
   series told apart by more than colour, breakdown table, baseline note);
   `dash/src/app/(console)/cost/page.tsx`. Gates; record; backlog row.
 

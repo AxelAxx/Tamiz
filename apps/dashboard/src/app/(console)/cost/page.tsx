@@ -1,6 +1,6 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { CostAnalytics } from "@/features/cost-analytics/cost-analytics";
 
-/** Placeholder: the screen is built in `T-008-06` from the design. */
+/** Cost analytics (spec 008 US7). */
 export default function CostPage() {
-  return <NotBuilt task="T-008-06" />;
+  return <CostAnalytics />;
 }
