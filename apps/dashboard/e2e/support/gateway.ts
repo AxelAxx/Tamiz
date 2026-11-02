@@ -25,6 +25,13 @@ export const gateway = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(entries),
     }),
+  /** Opens a target's circuit in the shared circuit store for `cooldownMs`. */
+  openCircuit: (targetId: string, cooldownMs: number) =>
+    control("/__e2e/circuit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targetId, cooldownMs }),
+    }),
   /** Turns the scripted detector's outage on or off. */
   detector: (outage: boolean) =>
     control("/__e2e/detector", {

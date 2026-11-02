@@ -111,6 +111,19 @@ for (const theme of ["dark", "light"] as const) {
     await expectNoSeriousViolations(page, `cost ${theme}`);
   });
 
+  test(`US9-1 provider health with an open circuit, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await gateway.appendAudit([
+      auditEntry({ requestId: "req-pr01" }, 60),
+      auditEntry({ requestId: "req-pr02", outcome: "failed", errorType: "provider_error" }, 90),
+    ]);
+    await gateway.openCircuit("mistral-small", 29_000);
+    await signIn(page);
+    await page.goto("/providers");
+    await expect(page.locator('[data-circuit="open"]')).toBeVisible();
+    await expectNoSeriousViolations(page, `providers ${theme}`);
+  });
+
   test(`US9-1 evals with a failing run and an unreadable file, ${theme}`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
     await useReports({

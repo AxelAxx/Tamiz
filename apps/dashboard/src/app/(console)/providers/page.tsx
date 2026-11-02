@@ -1,6 +1,6 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { ProviderHealth } from "@/features/provider-health/provider-health";
 
-/** Placeholder: the screen is built in `T-008-11` from the design. */
+/** Provider health (spec 008 US8). */
 export default function ProvidersPage() {
-  return <NotBuilt task="T-008-11" />;
+  return <ProviderHealth />;
 }

@@ -324,9 +324,9 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ## Phase 8: `T-008-11` — Provider health (US8)
 
-- [ ] T047 [US8] `dash/e2e/providers.spec.ts` (circuit opened through the control port):
+- [x] T047 [US8] `dash/e2e/providers.spec.ts` (circuit opened through the control port):
   `US8-1` … `US8-3` as written in the spec.
-- [ ] T048 [US8] `dash/src/features/provider-health/` (window picker, target rows or cards,
+- [x] T048 [US8] `dash/src/features/provider-health/` (window picker, target rows or cards,
   countdown from `cooldownRemainingMs` and `generatedAt`, 10 s refetch);
   `dash/src/app/(console)/providers/page.tsx`. Gates; record; backlog row.
 
