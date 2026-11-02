@@ -1,0 +1,20 @@
+# Build context of apps/dashboard/Dockerfile (the repository root). BuildKit reads this file
+# instead of a root .dockerignore because it sits next to the Dockerfile.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+apps/dashboard/e2e/.evals
+.git
+.claude
+.specify
+services
+specs
+docs
+**/.env
+**/.env.*
+!**/.env.example

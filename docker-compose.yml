@@ -7,6 +7,7 @@
 #   docker compose up privacy
 #   docker compose up postgres   # DATABASE_URL=postgres://tamiz:tamiz@localhost:5432/tamiz (feature 006)
 #   docker compose up jaeger     # OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318, UI http://localhost:16686
+#   docker compose up dashboard  # http://localhost:3100, configured by apps/dashboard/.env.docker (feature 008)
 
 services:
   valkey:
@@ -61,6 +62,26 @@ services:
     ports:
       - "16686:16686"
       - "4318:4318"
+    restart: unless-stopped
+
+  # Operator console (spec 008). Its configuration comes from apps/dashboard/.env.docker
+  # (copy apps/dashboard/.env.example; git-ignored), read raw so the passphrase hash's `$`
+  # needs no escaping. Until the OPS task adds the gateway to this file, point
+  # TAMIZ_GATEWAY_URL at a gateway on the host: http://host.docker.internal:3000.
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    ports:
+      - "3100:3100"
+    env_file:
+      - path: apps/dashboard/.env.docker
+        format: raw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
 
 volumes:

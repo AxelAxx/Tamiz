@@ -62,8 +62,11 @@ Then:
 6. Evals: download a report and reload the evals screen (US6-1):
 
    ```bash
-   gh run download <run-id> -n evals-report -D apps/dashboard/data/evals/<run-id>
+   gh run download <run-id> -n evals-report -D /tmp/evals-<run-id>
+   cp /tmp/evals-<run-id>/evals.json apps/dashboard/data/evals/evals-report-<date>.json
    ```
+
+   Only files directly in the folder are read.
 
 7. Cost and providers: open both; the totals match `GET /v1/admin/cost` for the same range
    (US7-1); idle targets are listed (US8-1).
@@ -74,8 +77,11 @@ Then:
 
 ```bash
 docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .
-docker compose up dashboard gateway
+cp apps/dashboard/.env.example apps/dashboard/.env.docker   # fill it in; TAMIZ_GATEWAY_URL=http://host.docker.internal:3000
+docker compose up dashboard
 ```
+
+The gateway joins the compose file with the OPS task; until then it runs on the host.
 
 Expected: the image runs as a non-root user, `GET /api/health` answers, and the dashboard
 refuses to start with a missing variable, listing it (US1-6).

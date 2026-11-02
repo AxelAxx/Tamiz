@@ -347,6 +347,10 @@ npx @modelcontextprotocol/inspector node apps/mcp-server/dist/main.js   # try th
 pnpm --filter @tamiz/mcp-server agent:demo -- "why did spend rise yesterday?"   # agent: TAMIZ_AGENT_API_KEY (client) + TAMIZ_AGENT_MCP_KEY (admin), server on start:http; TAMIZ_AGENT_TOOL_PROTOCOL=native (default) | text
 pnpm --filter @tamiz/example-citara-client start -- "<prompt>"   # Citara example: TAMIZ_BASE_URL (with /v1) + TAMIZ_API_KEY, optional TAMIZ_ADMIN_KEY for the audit check (docs/integrations/citara.md)
 TAMIZ_E2E_PROVIDERS=scripted pnpm --filter @tamiz/gateway e2e-gateway   # E2E harness whose providers echo (feature 010 tests)
+pnpm --filter @tamiz/dashboard dev   # dashboard on :3100 (apps/dashboard/.env.local from .env.example)
+pnpm --filter @tamiz/dashboard hash-passphrase   # reads the passphrase on stdin, prints TAMIZ_DASHBOARD_PASSPHRASE_HASH
+pnpm --filter @tamiz/dashboard build && pnpm --filter @tamiz/dashboard e2e   # Playwright vs the E2E gateway (CI job `e2e`)
+docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .   # non-root image; `docker compose up dashboard` reads apps/dashboard/.env.docker
 docker compose up            # full local stack                   (later: OPS)
 ```
 

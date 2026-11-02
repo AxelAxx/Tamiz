@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { ADMIN_KEY, DASHBOARD_URL, DATA_ENDPOINTS, PAGES } from "./support/fixtures";
 import { gateway, signIn } from "./support/gateway";
 
-// Spec 008 US1-3, FR-002 (tasks.md T006, first version; extended in T053).
+// Spec 008 US1-3, FR-002, SC-003 (tasks.md T006, T053): every screen, every data endpoint,
+// a simulation and a policy save.
 
 test("US1-3 the admin key reaches the gateway on every call and the browser never sees it", async ({
   page,
@@ -43,6 +44,17 @@ test("US1-3 the admin key reaches the gateway on every call and the browser neve
     );
     expect(status, `${endpoint.method} ${endpoint.path}`).toBe(200);
   }
+  // A policy save through the editor's endpoint: the active policy, saved back unchanged.
+  const saved = await page.evaluate(async () => {
+    const active = await (await fetch("/api/policy")).json();
+    const response = await fetch("/api/policy", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ baseVersion: active.policy.version, policy: active.policy }),
+    });
+    return response.status;
+  });
+  expect(saved, "PUT /api/policy").toBe(200);
   await page.waitForLoadState("networkidle");
 
   const cookies = JSON.stringify(await page.context().cookies(DASHBOARD_URL));
@@ -58,6 +70,7 @@ test("US1-3 the admin key reaches the gateway on every call and the browser neve
       "/v1/admin/cost",
       "/v1/admin/providers",
       "/v1/simulate",
+      "/v1/admin/policy",
     ]),
   );
   for (const call of calls) {

@@ -269,9 +269,11 @@ export function TrafficList({
               <button
                 type="button"
                 className="flex w-full flex-col gap-2 px-4 py-3 text-left"
-                aria-label={`Open details for request ${entry.requestId}`}
+                data-request-id={entry.requestId}
                 onClick={() => onOpen(entry)}
               >
+                {/* The name is the visible card plus this, so it starts with what is seen. */}
+                <span className="sr-only">Open details for request {entry.requestId}: </span>
                 <span className="flex w-full items-center gap-1.5">
                   {target === undefined ? (
                     <>

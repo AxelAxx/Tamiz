@@ -24,7 +24,8 @@ flowchart LR
     infra --> redis[("Redis / Valkey: circuit state, rate limit, cache")]
     infra -->|OTLP| jaeger["Jaeger"]
 
-    dash["Dashboard (Next.js 16)"] -->|"read-only admin API"| pres
+    browser["Operator browser"] -->|"/api/* (session cookie)"| dash
+    dash["Dashboard BFF (Next.js 16 route handlers, admin key server-side)"] -->|"GET /v1/admin/*, PUT /v1/admin/policy, POST /v1/simulate"| pres
     host["MCP host (Claude Desktop / Code)"] -->|"MCP: stdio or streamable HTTP"| mcp
     mcp["MCP server (apps/mcp-server)"] -->|"POST /v1/simulate, GET /v1/admin/* (read-only)"| pres
     agent["Agent (AI SDK 6, apps/mcp-server/src/agent)"] -->|"MCP tools over HTTP (admin key)"| mcp
@@ -187,12 +188,16 @@ flowchart LR
 
 ## Dashboard
 
-Organised by feature, routes stay thin:
+Organised by feature, routes stay thin. The browser only calls the dashboard's own `/api/*`
+route handlers (the BFF): they check the session (and the origin, for writes), call the
+gateway with the admin key held on the server, and parse every answer with the contract
+schemas. Eval reports are read from a folder, not from the gateway (spec 008 R-09).
 
 ```
 apps/dashboard/src/
-├── app/                 routes only
-├── features/            live-traffic, audit-log, policy-editor, cost-analytics, eval-results
+├── app/                 routes only: (auth)/sign-in, (console)/*, api/* (the BFF)
+├── features/            shell, shared, live-traffic, audit-log, policy-editor/{simulator,editor},
+│                        cost-analytics, provider-health, eval-results
 ├── components/ui/       shadcn
-└── lib/api-client.ts    typed Hono RPC client (hc)
+└── lib/                 api-client.ts (browser), schemas.ts, server/ (env, session, gateway hc client)
 ```

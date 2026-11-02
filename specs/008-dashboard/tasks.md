@@ -347,20 +347,20 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ## Phase 10: `T-008-09` — Container, CI, accessibility sweep, polish
 
-- [ ] T052 `dash/e2e/accessibility.spec.ts`: every screen with data and in its empty and
+- [x] T052 `dash/e2e/accessibility.spec.ts`: every screen with data and in its empty and
   error states, light and dark, 1280×800 and 390×844 → `US9-1` no serious or critical
   violations; `US9-2` keyboard walk of each screen's controls; `US9-6` no horizontal scroll
   and every action reachable on phone width.
-- [ ] T053 `dash/e2e/key-leak.spec.ts` extended to every finished screen, a simulation and a
+- [x] T053 `dash/e2e/key-leak.spec.ts` extended to every finished screen, a simulation and a
   policy save (`US1-3`, SC-003).
-- [ ] T054 `dash/Dockerfile` (multi-stage, `node:22-alpine`, standalone output, user `node`,
+- [x] T054 `dash/Dockerfile` (multi-stage, `node:22-alpine`, standalone output, user `node`,
   read-only root except `/tmp`, healthcheck `GET /api/health`), `.dockerignore`;
   `docker-compose.yml` gains `dashboard` (port 3100, depends on `gateway`); a test that starts
   the built server with a missing variable and expects a non-zero exit listing it (`US1-6`).
-- [ ] T055 `.github/workflows/ci.yml`: job `e2e` (build, Playwright Chromium, the E2E
+- [x] T055 `.github/workflows/ci.yml`: job `e2e` (build, Playwright Chromium, the E2E
   gateway, `next start`, traces and screenshots uploaded on failure; under 10 minutes,
   SC-006) and `docker build` of the dashboard in `ci`.
-- [ ] T056 Polish: `README.md` (dashboard section, status 008), `docs/architecture.md`
+- [x] T056 Polish: `README.md` (dashboard section, status 008), `docs/architecture.md`
   (dashboard and BFF in the system view), `CLAUDE.md` §12 (dashboard commands), the
   quickstart run recorded; gates; record; backlog row.
 
