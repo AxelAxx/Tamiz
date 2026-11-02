@@ -351,7 +351,9 @@ pnpm --filter @tamiz/dashboard dev   # dashboard on :3100 (apps/dashboard/.env.l
 pnpm --filter @tamiz/dashboard hash-passphrase   # reads the passphrase on stdin, prints TAMIZ_DASHBOARD_PASSPHRASE_HASH
 pnpm --filter @tamiz/dashboard build && pnpm --filter @tamiz/dashboard e2e   # Playwright vs the E2E gateway (CI job `e2e`)
 docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .   # non-root image; `docker compose up dashboard` reads apps/dashboard/.env.docker
-docker compose up            # full local stack                   (later: OPS)
+pnpm compose:env             # secrets for compose: apps/{gateway,dashboard}/.env.docker (prints the keys once)
+docker compose up -d         # full local stack; the first start pulls llama3.1:8b (service ollama-pull) (T-OPS-01)
+docker build -f apps/gateway/Dockerfile -t tamiz-gateway .   # non-root gateway image
 ```
 
 Vitest hides the output of passing tests in this agent environment; add

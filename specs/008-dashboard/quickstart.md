@@ -77,11 +77,11 @@ Then:
 
 ```bash
 docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .
-cp apps/dashboard/.env.example apps/dashboard/.env.docker   # fill it in; TAMIZ_GATEWAY_URL=http://host.docker.internal:3000
-docker compose up dashboard
+pnpm compose:env              # writes apps/{gateway,dashboard}/.env.docker (T-OPS-01)
+docker compose up -d dashboard   # starts the gateway and its dependencies first
 ```
 
-The gateway joins the compose file with the OPS task; until then it runs on the host.
+Compose sets `TAMIZ_GATEWAY_URL` to the gateway service (`http://gateway:3000`).
 
 Expected: the image runs as a non-root user, `GET /api/health` answers, and the dashboard
 refuses to start with a missing variable, listing it (US1-6).

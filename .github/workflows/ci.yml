@@ -110,8 +110,12 @@ jobs:
       - name: "Dashboard: docker build"
         run: docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .
 
-      # - name: Docker build (OPS: whole stack)
-      #   run: docker compose build
+      # T-OPS-01: the gateway image and the compose file that runs the whole stack.
+      - name: "Gateway: docker build"
+        run: docker build -f apps/gateway/Dockerfile -t tamiz-gateway .
+
+      - name: "Compose: config"
+        run: docker compose config --quiet
 
   # Spec 008 SC-006 (T-008-09): the dashboard's browser flows. Playwright starts the E2E
   # gateway (the real app with in-memory fakes) and `next start` on the production build.

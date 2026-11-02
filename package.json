@@ -19,6 +19,7 @@
     "evals": "turbo run build --filter=@tamiz/evals... && node packages/evals/dist/cli.js",
     "evals:readme": "turbo run build --filter=@tamiz/evals... && node packages/evals/dist/readme-cli.js",
     "build": "turbo run build",
+    "compose:env": "pnpm --filter @tamiz/dashboard compose-env",
     "commitlint": "commitlint --edit",
     "prepare": "husky"
   },

@@ -10,7 +10,8 @@ import { hashPassphrase } from "../src/lib/server/passphrase";
 
 const input = createInterface({ input: process.stdin, output: process.stderr, terminal: false });
 if (process.stdin.isTTY) process.stderr.write("Passphrase: ");
-const passphrase = ((await input.question("")) ?? "").replace(/\r$/, "");
+// Windows PowerShell pipes a byte order mark ahead of the text, and a CRLF after it.
+const passphrase = ((await input.question("")) ?? "").replace(/^﻿/, "").replace(/\r$/, "");
 input.close();
 
 if (passphrase.length < 12) {
