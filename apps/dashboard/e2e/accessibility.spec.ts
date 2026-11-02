@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { ERRORED, FAILING, useReports } from "./fixtures/evals";
 import { expectNoSeriousViolations } from "./support/axe";
 import { auditEntry, gateway, signIn } from "./support/gateway";
 
@@ -108,5 +109,18 @@ for (const theme of ["dark", "light"] as const) {
     await page.goto("/cost");
     await expect(page.getByTestId("cost-totals")).toBeVisible();
     await expectNoSeriousViolations(page, `cost ${theme}`);
+  });
+
+  test(`US9-1 evals with a failing run and an unreadable file, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await useReports({
+      "evals-2026-10-30.json": FAILING,
+      "evals-2026-10-29.json": ERRORED,
+      "broken.json": "{",
+    });
+    await signIn(page);
+    await page.goto("/evals");
+    await expect(page.locator('[data-component="failing-cases"]')).toBeVisible();
+    await expectNoSeriousViolations(page, `evals ${theme}`);
   });
 }

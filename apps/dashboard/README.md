@@ -37,10 +37,25 @@ src/
 └── lib/
     ├── api-client.ts     browser client of /api/*
     ├── schemas.ts        BFF-only shapes (BffErrorSchema, EvalsListSchema)
-    └── server/           env, session, passphrase, origin, handler, gateway, bff, context
+    └── server/           env, session, passphrase, origin, handler, gateway, bff, context, evals
+data/evals/               committed snapshot of a CI eval report (the evals screen's default folder)
 e2e/                      Playwright: titles start with the scenario id (US1-1 …)
 scripts/hash-passphrase.ts
 ```
+
+## Eval reports
+
+The evals screen reads every `*.json` file in `TAMIZ_DASHBOARD_EVALS_DIR` (default
+`./data/evals`) on each request; it never asks the gateway. To add a CI run, download its
+`evals-report` artifact and copy its `evals.json` into that folder under a name of its own
+(only files directly in the folder are read):
+
+```bash
+gh run download <run-id> --repo AxelAxx/tamiz --name evals-report --dir /tmp/evals-<run-id>
+cp /tmp/evals-<run-id>/evals.json data/evals/evals-report-<date>.json
+```
+
+Files that do not parse are listed on the screen as unreadable, by name.
 
 ## Configuration
 
