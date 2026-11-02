@@ -354,6 +354,7 @@ docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .   # non-root imag
 pnpm compose:env             # secrets for compose: apps/{gateway,dashboard}/.env.docker (prints the keys once)
 docker compose up -d         # full local stack; the first start pulls llama3.1:8b (service ollama-pull) (T-OPS-01)
 docker build -f apps/gateway/Dockerfile -t tamiz-gateway .   # non-root gateway image
+COMPOSE_FILE=docker-compose.yml:docker-compose.demo.yml docker compose up -d   # public demo on a VPS: Caddy TLS, demo-eu policy (docs/deploy.md, T-OPS-02)
 ```
 
 Vitest hides the output of passing tests in this agent environment; add
@@ -389,6 +390,9 @@ licence Apache-2.0 (ADR-0003, `LICENSE` + `NOTICE` at the root); public reposito
 https://github.com/AxelAxx/tamiz under Alex's personal account (section 2); `main` is
 protected since `T-001-05`: required check `ci`, pull requests only, admins included.
 
+Decided on 2026-11-02: the public demo runs the gateway on a Hetzner Cloud server in
+Germany and the dashboard on Vercel (`fra1`); steps in `docs/deploy.md` (`T-OPS-02`).
+
 Still open (ask Alex, do not assume):
 
-- Public demo hosting details (VPS provider and region).
+- Who may use the public demo without the passphrase (`T-OPS-03`).

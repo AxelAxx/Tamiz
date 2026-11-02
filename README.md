@@ -221,7 +221,8 @@ compliance product.
 - **One operator passphrase.** The dashboard has no users or roles. The privacy service
   has no authentication and must stay on an internal network, as the compose file keeps
   it.
-- **No public demo yet.** It is planned as `T-OPS-02`; for now, run it locally.
+- **No public demo yet.** The deployment is ready ([`docs/deploy.md`](docs/deploy.md): Hetzner in Germany and Vercel in Frankfurt);
+  until it is online, run it locally.
 
 ## Project
 

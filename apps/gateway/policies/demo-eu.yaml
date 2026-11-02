@@ -1,0 +1,50 @@
+# Public demo policy (T-OPS-02): an EU provider and the local model, nothing in the US.
+# Needs only MISTRAL_API_KEY. Critical data stays on the local model; names, emails and
+# phones reach Mistral only anonymized; everything else goes to Mistral, falling back to
+# the local model. On a server without Ollama (the `local-model` profile off), local
+# requests fail and are audited as failed; the simulator still shows every decision.
+
+id: demo-eu
+version: 3
+defaultTimeoutMs: 30000
+
+resilience:
+  requestDeadlineMs: 60000
+  maxAttempts: 2
+  backoff: { baseDelayMs: 250, maxDelayMs: 2000 }
+  circuitBreaker: { failureThreshold: 5, cooldownMs: 30000 }
+
+privacy:
+  onDetectorError: restrict_to_local   # fail closed
+  localRoute: [ollama-llama]
+  levels:
+    none:     { action: allow }
+    low:      { action: allow }
+    high:     { action: anonymize, residency: [local, eu] }
+    critical: { action: restrict_to_local }
+
+targets:
+  - id: ollama-llama
+    provider: ollama
+    model: llama3.1:8b
+    region: local
+    residency: local
+    pricing: { inputUsdPerMillion: 0, outputUsdPerMillion: 0 }
+    timeoutMs: 60000
+  - id: mistral-small
+    provider: mistral
+    model: mistral-small-latest
+    region: eu-west
+    residency: eu
+    pricing: { inputUsdPerMillion: 0.1, outputUsdPerMillion: 0.3 }
+
+rules:
+  # Local only, explicitly: a fallback may never leave the machine.
+  - id: pinned-local
+    when: { requestedModel: [tamiz-local] }
+    residency: [local]
+    route: [ollama-llama]
+
+default:
+  residency: [eu, local]
+  route: [mistral-small, ollama-llama]

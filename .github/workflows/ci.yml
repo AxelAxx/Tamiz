@@ -115,7 +115,10 @@ jobs:
         run: docker build -f apps/gateway/Dockerfile -t tamiz-gateway .
 
       - name: "Compose: config"
-        run: docker compose config --quiet
+        run: |
+          docker compose config --quiet
+          TAMIZ_DEMO_DOMAIN=demo.example.com TAMIZ_POSTGRES_PASSWORD=ci \
+            docker compose -f docker-compose.yml -f docker-compose.demo.yml config --quiet
 
   # Spec 008 SC-006 (T-008-09): the dashboard's browser flows. Playwright starts the E2E
   # gateway (the real app with in-memory fakes) and `next start` on the production build.
