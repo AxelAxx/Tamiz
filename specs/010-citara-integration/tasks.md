@@ -93,7 +93,7 @@
 
 ## Phase 8: User Story 5 — full stack run (P3, backlog `T-010-03`)
 
-- [ ] T021 [US5] After `T-OPS-01`: run `quickstart.md` section 3 against `docker compose up` with a `citara` client key and an admin key; record the output (keys redacted) in `docs/tasks/done/T-010-03-citara-compose-run.md`; set `T-010-03` to `done`.
+- [x] T021 [US5] After `T-OPS-01`: run `quickstart.md` section 3 against `docker compose up` with a `citara` client key and an admin key; record the output (keys redacted) in `docs/tasks/done/T-010-03-citara-compose-run.md`; set `T-010-03` to `done`.
 
 ---
 

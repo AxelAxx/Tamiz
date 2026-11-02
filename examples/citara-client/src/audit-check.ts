@@ -22,6 +22,7 @@ export interface AuditCheckInput {
   readonly requestId: string;
   /** Epoch milliseconds taken just before the first attempt. */
   readonly startedAt: number;
+  /** How long to poll, counted from the start of the check (after the answer), not from `startedAt`. */
   readonly waitMs: number;
 }
 
@@ -34,12 +35,16 @@ type PageOutcome =
   | { readonly kind: "missing" }
   | { readonly kind: "forbidden" | "unauthorized" | "malformed" };
 
-/** Polls until the entry appears, the deadline passes, or the key is refused. */
+/**
+ * Polls until the entry appears, the deadline passes, or the key is refused. The deadline
+ * starts now: a slow answer (a local model takes seconds) must not use up the wait for an
+ * entry the gateway writes asynchronously after answering.
+ */
 export async function checkAudit(
   input: AuditCheckInput,
   deps: AuditCheckDeps,
 ): Promise<AuditCheckResult> {
-  const deadline = input.startedAt + input.waitMs;
+  const deadline = deps.now() + input.waitMs;
   for (;;) {
     const outcome = await scanWindow(input, deps);
     if (outcome.kind !== "missing") return outcome;

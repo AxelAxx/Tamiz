@@ -44,12 +44,14 @@ Other checks:
 ## 3. Full stack (`T-010-03`, needs `T-OPS-01`)
 
 ```bash
+pnpm compose:env              # prints the `ops` admin key (T-OPS-01)
 docker compose up -d
-pnpm --filter @tamiz/gateway api-key:add citara
-pnpm --filter @tamiz/gateway api-key:add ops --admin
+DATABASE_URL=postgres://tamiz:tamiz@localhost:5432/tamiz \
+pnpm --filter @tamiz/gateway api-key:add citara   # a client key stored hashed in the database
+pnpm --filter @tamiz/example-citara-client build
 TAMIZ_BASE_URL=http://localhost:3000/v1 TAMIZ_API_KEY=<citara key> TAMIZ_ADMIN_KEY=<ops key> \
 pnpm --filter @tamiz/example-citara-client start -- "Summarise the case of the customer with DNI 12345678Z"
 ```
 
 Expected: the answer comes from `ollama-llama` (a real local model), the audit line shows
-`clientId: "citara"`; record the output (keys redacted) in the `T-010-03` task record.
+`clientId: "citara"`. The recorded run is in `docs/tasks/done/T-010-03-citara-compose-run.md`.

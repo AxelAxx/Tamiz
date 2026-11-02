@@ -65,6 +65,22 @@ describe("checkAudit (spec 010 data-model section 5, research R-07)", () => {
     expect(requests).toHaveLength(3);
   });
 
+  it("edge (slow answer, T-010-03): the wait starts with the check, not with the request", async () => {
+    const { deps, requests } = harness([auditPage([]), auditPage([auditEntry("req-1")])]);
+    // The local model answered 12 s after the request started, well past `waitMs`.
+    let clock = STARTED + 12_000;
+    const slow = {
+      ...deps,
+      now: () => clock,
+      sleep: async (ms: number) => {
+        clock += ms;
+      },
+    };
+    const result = await checkAudit(INPUT, slow);
+    expect(result.kind).toBe("found");
+    expect(requests).toHaveLength(2);
+  });
+
   it("gives up at the deadline with not_found", async () => {
     const { deps, requests } = harness(Array.from({ length: 10 }, () => auditPage([])));
     const result = await checkAudit({ ...INPUT, waitMs: 500 }, deps);
