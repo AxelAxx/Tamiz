@@ -1,8 +1,93 @@
 # Tamiz — Architecture
 
-Diagrams for the system view, the request flow and the gateway layers. The narrative and
-rationale live in `docs/tamiz-project.md` section 4 and in `docs/adr/`. C4 context and
-container diagrams are completed in task `T-DOC-02`.
+Diagrams for the system context and containers (C4), the system view, the request flow
+and the gateway layers. The narrative and rationale live in `docs/tamiz-project.md`
+section 4 and in `docs/adr/`.
+
+## C4: system context
+
+Who uses Tamiz and which outside systems it talks to (C4 level 1, drawn as a flowchart
+because Mermaid's C4 layout overlaps its labels). Personal data crosses only the
+boundaries the routing policy allows. Critical data never leaves the deployment. Names,
+emails and phones leave only anonymized, and only to EU-resident providers. Locations
+(low sensitivity) may go anywhere. These are the rules of `policies/default.yaml`; a
+policy can be stricter.
+
+```mermaid
+flowchart TB
+    operator["<b>Operator</b><br/>[Person]<br/>Runs the deployment, edits the policy,<br/>reads audit and cost"]
+    app["<b>Client application</b><br/>[Software system]<br/>Any OpenAI-SDK client: a clinic's<br/>assistant, Citara, an agent"]
+    host["<b>MCP host</b><br/>[Software system]<br/>Claude Desktop, Claude Code<br/>or any MCP client"]
+
+    subgraph deploy["Your deployment (EU)"]
+        tamiz["<b>Tamiz</b><br/>[Software system]<br/>Inspects each request for personal data,<br/>routes it by policy, survives provider<br/>failures, audits every decision"]
+    end
+
+    mistral["<b>Mistral API</b><br/>[Software system]<br/>EU-resident provider"]
+    frontier["<b>Anthropic / OpenAI</b><br/>[Software system]<br/>Frontier providers, US"]
+
+    app -->|"Chat completions<br/>[HTTPS, OpenAI-compatible, client key]"| tamiz
+    operator -->|"Dashboard<br/>[HTTPS, passphrase]"| tamiz
+    host -->|"Read-only tools<br/>[MCP, admin key]"| tamiz
+    tamiz -->|"No critical data; names,<br/>emails, phones anonymized<br/>[HTTPS]"| mistral
+    tamiz -->|"At most locations,<br/>no other personal data<br/>[HTTPS]"| frontier
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#999,stroke:#6b6b6b,color:#fff
+    class operator person
+    class tamiz system
+    class app,host,mistral,frontier external
+    style deploy fill:none,stroke:#888,stroke-dasharray:6 4
+```
+
+## C4: containers
+
+What runs inside a deployment (C4 level 2): the services of `docker-compose.yml`, plus
+the MCP server, which runs next to its host. Only the gateway, the dashboard and Jaeger's
+UI are meant to be reachable from outside. The privacy service has no authentication and
+stays on the internal network.
+
+```mermaid
+flowchart TB
+    app["<b>Client application</b><br/>[Software system]<br/>OpenAI SDK"]
+    operator["<b>Operator</b><br/>[Person]"]
+    host["<b>MCP host</b><br/>[Software system]"]
+
+    subgraph tamiz["Tamiz"]
+        direction TB
+        dashboard["<b>Dashboard</b><br/>[Container: Next.js 16]<br/>Operator console; its server-side<br/>BFF holds the admin key"]
+        mcp["<b>MCP server</b><br/>[Container: Node.js 22, MCP SDK]<br/>Four read-only tools<br/>over the admin API"]
+        gateway["<b>Gateway</b><br/>[Container: Node.js 22, Hono]<br/>OpenAI-compatible API, routing policy,<br/>resilience, audit, admin API"]
+        privacy["<b>Privacy service</b><br/>[Container: Python 3.12, FastAPI,<br/>Presidio, spaCy]<br/>Finds personal data (positions,<br/>never values), anonymizes"]
+        ollama["<b>Ollama</b><br/>[Container: llama3.1:8b]<br/>The local model: the only<br/>target for critical data"]
+        postgres[("<b>PostgreSQL 17</b><br/>[Database]<br/>Audit log, API keys, policy<br/>versions; never content")]
+        valkey[("<b>Valkey</b><br/>[Key-value store]<br/>Circuit breaker state shared<br/>between gateway instances")]
+        jaeger["<b>Jaeger</b><br/>[Container: OpenTelemetry]<br/>Traces with GenAI<br/>attributes; never content"]
+    end
+
+    providers["<b>Cloud providers</b><br/>[Software system]<br/>Mistral (EU), Anthropic, OpenAI"]
+
+    app -->|"POST /v1/chat/completions<br/>[HTTPS, client key]"| gateway
+    operator -->|"Uses<br/>[HTTPS, session cookie]"| dashboard
+    host -->|"Calls tools<br/>[stdio or streamable HTTP]"| mcp
+    dashboard -->|"Admin API, simulate<br/>[HTTP, admin key]"| gateway
+    mcp -->|"Admin API, simulate<br/>[HTTP, admin key]"| gateway
+    gateway -->|"Analyze, anonymize<br/>[HTTP, internal only]"| privacy
+    gateway -->|"Local inference<br/>[HTTP]"| ollama
+    gateway -->|"Audit, keys, policies<br/>[SQL]"| postgres
+    gateway -->|"Circuit state<br/>[RESP]"| valkey
+    gateway -->|"Spans<br/>[OTLP/HTTP]"| jaeger
+    gateway -->|"Cloud inference<br/>[HTTPS]"| providers
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef external fill:#999,stroke:#6b6b6b,color:#fff
+    class operator person
+    class dashboard,mcp,gateway,privacy,ollama,postgres,valkey,jaeger container
+    class app,host,providers external
+    style tamiz fill:none,stroke:#888,stroke-dasharray:6 4
+```
 
 ## System view
 
@@ -61,7 +146,7 @@ sequenceDiagram
     alt block (or detector failed with onDetectorError: block)
         U-->>P: Result.err(Blocked) → 451 / 503, no provider called
     else anonymize
-        U->>U: <KIND_n> placeholders + versioned notice; mapping in a closure
+        U->>U: <KIND_n> placeholders + versioned notice, mapping in a closure
     end
     U->>R: execute(chain)
     R->>L: call target 1
@@ -70,7 +155,7 @@ sequenceDiagram
     R->>L: call target 2
     L-->>R: response
     R-->>U: response (+ fallback event)
-    U->>U: restore placeholders (one pass; streams through a placeholder-safe buffer)
+    U->>U: restore placeholders (one pass, streams through a placeholder-safe buffer)
     U->>A: AuditEntry (no content) + span (GenAI attrs) + events
     U-->>P: Result.ok(response)
     P-->>C: 200 + x-tamiz-route / x-tamiz-fallback / x-tamiz-sensitivity / x-tamiz-privacy
