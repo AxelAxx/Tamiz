@@ -12,7 +12,8 @@
     "typecheck": "next typegen && tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "e2e": "playwright test",
-    "hash-passphrase": "tsx scripts/hash-passphrase.ts"
+    "hash-passphrase": "tsx scripts/hash-passphrase.ts",
+    "compose-env": "tsx scripts/compose-env.ts"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",

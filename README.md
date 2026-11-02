@@ -204,13 +204,38 @@ it with `pnpm --filter @tamiz/gateway dev`. `docker compose up valkey` plus
 `docker compose up jaeger` with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` shows
 the traces (UI on http://localhost:16686).
 
-## Planned quick start
+## Quick start
+
+Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
+Node.js 22 with pnpm for the one-off secrets step:
 
 ```bash
-docker compose up
+pnpm install
+pnpm compose:env        # asks for a dashboard passphrase, prints a client key and an admin key
+docker compose up -d    # gateway, privacy, dashboard, postgres, valkey, ollama, jaeger
+docker compose logs -f ollama-pull   # first start only: downloads llama3.1:8b (about 5 GB)
 ```
 
-(Available after task `T-OPS-01`.) The full README with the simulator GIF, eval results
+The stack is healthy in well under two minutes; the model download comes on top, once.
+`pnpm compose:env` writes `apps/gateway/.env.docker` and `apps/dashboard/.env.docker`
+(git-ignored) and starts the gateway on `policies/local-only.yaml`, which needs no cloud
+key. For the full routing policy, set the three provider keys in
+`apps/gateway/.env.docker`, change `TAMIZ_POLICY_FILE` to `policies/default.yaml`, and
+run `docker compose up -d gateway`.
+
+Send a request with personal data through the gateway (replace the key with the client
+key `pnpm compose:env` printed):
+
+```bash
+curl -s http://localhost:3000/v1/chat/completions \
+  -H "authorization: Bearer tmz_..." -H "content-type: application/json" \
+  -d '{"model":"tamiz-auto","messages":[{"role":"user","content":"Resume el expediente de 12345678Z."}]}' \
+  -D - -o /dev/null | grep -i x-tamiz
+```
+
+Then open the dashboard on http://localhost:3100 (the passphrase you chose) to see it in
+live traffic and the audit log, and Jaeger on http://localhost:16686 (service
+`tamiz-gateway`) for its trace. The full README with the simulator GIF, eval results
 table and limitations is written in task `T-DOC-01`.
 
 ## License
