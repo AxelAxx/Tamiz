@@ -17,6 +17,7 @@ import {
   HealthResponseSchema,
   type ProvidersReportDto,
   ProvidersReportSchema,
+  type ReplacePolicyRequestDto,
   type SimulateResponse,
   SimulateResponseSchema,
 } from "@tamiz/contracts";
@@ -85,6 +86,8 @@ export const api = {
   providers: (query: { windowMinutes?: number } = {}): Promise<ProvidersReportDto> =>
     request(withQuery("/api/providers", query), ProvidersReportSchema),
   policy: (): Promise<ActivePolicyDto> => request("/api/policy", ActivePolicySchema),
+  replacePolicy: (body: ReplacePolicyRequestDto): Promise<ActivePolicyDto> =>
+    request("/api/policy", ActivePolicySchema, { method: "PUT", ...json(body) }),
   evals: (): Promise<EvalsList> => request("/api/evals", EvalsListSchema),
   simulate: (body: ChatCompletionRequest): Promise<SimulateResponse> =>
     request("/api/simulate", SimulateResponseSchema, { method: "POST", ...json(body) }),

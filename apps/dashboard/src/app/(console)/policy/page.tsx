@@ -1,6 +1,6 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { PolicyEditor } from "@/features/policy-editor/editor/policy-editor";
 
-/** Placeholder: the screen is built in `T-008-08` from the design. */
+/** The policy editor (spec 008 US5). */
 export default function PolicyPage() {
-  return <NotBuilt task="T-008-08" />;
+  return <PolicyEditor />;
 }

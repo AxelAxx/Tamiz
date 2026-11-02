@@ -114,7 +114,7 @@ of section 1.
 | Resilience | **Own implementation** (circuit breaker, retry, timeout): it is the core of the project, never imported |
 | Privacy service | Python 3.12 · uv · FastAPI + Pydantic v2 · Presidio (Analyzer + Anonymizer) · spaCy `es_core_news_lg` · Ruff + strict mypy + pytest |
 | Models | Local: Ollama (Llama/Qwen/small Mistral) · EU: Mistral API · Frontier: Anthropic / OpenAI · Cheap: small model of any provider |
-| Dashboard | Next.js 16 (App Router) + React 19 · Tailwind CSS v4 · shadcn/ui · shadcn Charts (Recharts) · TanStack Table + Query · Hono RPC client (`hc`) · React Hook Form + Zod · Motion · lucide-react · next-themes |
+| Dashboard | Next.js 16 (App Router) + React 19 · Tailwind CSS v4 · shadcn/ui · shadcn Charts (Recharts) · TanStack Table + Query · Hono RPC client (`hc`) · React Hook Form + Zod · Motion · lucide-react · next-themes · CodeMirror 6 + `yaml` (policy editor, spec 008 R-12) |
 | MCP / agent | `@modelcontextprotocol/sdk` · AI SDK 6 agent that calls the LLM **through Tamiz** |
 | Testing | Vitest · Testcontainers (Postgres, Redis) · MSW · Playwright · contract tests against Zod · own eval runner in `packages/evals` |
 | Delivery | Docker Compose (gateway, privacy, dashboard, postgres, redis, ollama, jaeger) · GitHub Actions · multi-stage non-root images · demo on Vercel + EU VPS |

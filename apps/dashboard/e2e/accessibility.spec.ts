@@ -111,6 +111,20 @@ for (const theme of ["dark", "light"] as const) {
     await expectNoSeriousViolations(page, `cost ${theme}`);
   });
 
+  test(`US9-1 policy editor with an issue, ${theme}`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
+    await signIn(page);
+    await page.goto("/policy");
+    const editor = page.getByTestId("policy-yaml");
+    await expect(editor).toContainText("id: default");
+    await expectNoSeriousViolations(page, `policy ${theme}`);
+    await editor.click();
+    await page.keyboard.press("ControlOrMeta+End");
+    await page.keyboard.insertText("\nextra: 1");
+    await expect(page.locator('[data-component="policy-issues"]')).toBeVisible();
+    await expectNoSeriousViolations(page, `policy issues ${theme}`);
+  });
+
   test(`US9-1 provider health with an open circuit, ${theme}`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem("theme", t), theme);
     await gateway.appendAudit([
