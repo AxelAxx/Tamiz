@@ -283,9 +283,9 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ### Tests first (dashboard, after G1)
 
-- [ ] T041 [P] [US5] `dash/test/yaml-issues.test.ts`: YAML → `RoutingPolicySchema` issues →
+- [x] T041 [P] [US5] `dash/test/yaml-issues.test.ts`: YAML → `RoutingPolicySchema` issues →
   lines through `LineCounter`; YAML syntax errors as issues at their line (US5-2).
-- [ ] T042 [US5] `dash/e2e/policy-editor.spec.ts`: `US5-1` header with source, version and
+- [x] T042 [US5] `dash/e2e/policy-editor.spec.ts`: `US5-1` header with source, version and
   the not-persistent warning (E2E gateway without a database); `US5-2` issues within 1 s
   and save disabled; `US5-3` gateway issues listed after a refused save; `US5-4` save →
   "version N+1", then the simulator shows the new version; `US5-5` conflict dialog after a
@@ -293,7 +293,7 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ### Implementation (dashboard, after G1)
 
-- [ ] T043 [US5] `dash/src/app/api/policy/route.ts` (`GET`, `PUT` with origin check);
+- [x] T043 [US5] `dash/src/app/api/policy/route.ts` (`GET`, `PUT` with origin check);
   `dash/src/features/policy-editor/editor/` (CodeMirror 6 YAML with lint gutter, 300 ms
   debounced shape check, issue list, action bar, conflict dialog, unsaved-changes guard,
   in-place session-expired dialog); `dash/src/app/(console)/policy/page.tsx`, per the
