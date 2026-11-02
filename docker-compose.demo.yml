@@ -1,0 +1,58 @@
+# Public demo on a VPS (T-OPS-02, docs/deploy.md). Layered on docker-compose.yml:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.demo.yml   (in the server's .env)
+#   docker compose up -d                          # EU route only
+#   docker compose --profile local-model up -d    # plus Ollama, on a server with 16 GB RAM
+#
+# Only Caddy is published (80 and 443, TLS from Let's Encrypt). The gateway, Postgres,
+# Valkey, the privacy service and Ollama stay on the compose network; Jaeger's UI is bound
+# to the server's loopback for an SSH tunnel. The dashboard runs on Vercel, not here.
+# The server's .env sets TAMIZ_DEMO_DOMAIN and TAMIZ_POSTGRES_PASSWORD.
+
+services:
+  caddy:
+    image: caddy:2.10
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      TAMIZ_DEMO_DOMAIN: ${TAMIZ_DEMO_DOMAIN:?set TAMIZ_DEMO_DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      gateway: { condition: service_healthy }
+    restart: unless-stopped
+
+  gateway:
+    ports: !reset []
+    environment:
+      DATABASE_URL: postgres://tamiz:${TAMIZ_POSTGRES_PASSWORD:?set TAMIZ_POSTGRES_PASSWORD in .env}@postgres:5432/tamiz
+    depends_on:
+      ollama: { condition: service_healthy, required: false }
+
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${TAMIZ_POSTGRES_PASSWORD:?set TAMIZ_POSTGRES_PASSWORD in .env}
+
+  valkey:
+    ports: !reset []
+
+  jaeger:
+    ports: !override
+      - "127.0.0.1:16686:16686"
+
+  ollama:
+    profiles: ["local-model"]
+
+  ollama-pull:
+    profiles: ["local-model"]
+
+  dashboard:
+    profiles: ["local-dashboard"]
+
+volumes:
+  caddy-data:
+  caddy-config:

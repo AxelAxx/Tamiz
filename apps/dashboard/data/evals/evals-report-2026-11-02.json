@@ -1,0 +1,905 @@
+{
+  "schemaVersion": 1,
+  "run": {
+    "startedAt": "2026-11-02T12:04:06.519Z",
+    "durationMs": 200416,
+    "gitSha": "10d17b39215c8df44bb18ba779b4ac53d8027547",
+    "selection": ["leak", "detection", "routing", "quality", "cost"],
+    "datasets": [
+      {
+        "name": "pii-leak-es",
+        "version": 2,
+        "cases": 200
+      },
+      {
+        "name": "pii-detection-es",
+        "version": 1,
+        "cases": 160
+      },
+      {
+        "name": "routing",
+        "version": 1,
+        "cases": 44
+      },
+      {
+        "name": "quality-es",
+        "version": 1,
+        "cases": 24
+      }
+    ],
+    "policy": {
+      "id": "default",
+      "version": 3
+    },
+    "services": {
+      "gateway": "0.1.0"
+    },
+    "models": {
+      "answer": "qwen2.5:1.5b",
+      "judge": "qwen2.5:3b"
+    }
+  },
+  "status": "pass",
+  "evals": [
+    {
+      "id": "leak",
+      "status": "pass",
+      "durationMs": 2401,
+      "metrics": [
+        {
+          "name": "leak_rate.CIF",
+          "value": 0.5,
+          "unit": "ratio"
+        },
+        {
+          "name": "leak_rate.CREDIT_CARD",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "eq",
+            "bound": 0
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.DNI",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "eq",
+            "bound": 0
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.EMAIL",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "lt",
+            "bound": 0.02
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.IBAN",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "eq",
+            "bound": 0
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.LOCATION",
+          "value": 0.25,
+          "unit": "ratio"
+        },
+        {
+          "name": "leak_rate.NIE",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "eq",
+            "bound": 0
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.NSS",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "eq",
+            "bound": 0
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.PERSON",
+          "value": 0.008333333333333333,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "lt",
+            "bound": 0.02
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.PHONE",
+          "value": 0,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "lt",
+            "bound": 0.02
+          },
+          "pass": true
+        },
+        {
+          "name": "values.CIF",
+          "value": 20,
+          "unit": "count"
+        },
+        {
+          "name": "values.CREDIT_CARD",
+          "value": 27,
+          "unit": "count"
+        },
+        {
+          "name": "values.DNI",
+          "value": 53,
+          "unit": "count"
+        },
+        {
+          "name": "values.EMAIL",
+          "value": 47,
+          "unit": "count"
+        },
+        {
+          "name": "values.IBAN",
+          "value": 47,
+          "unit": "count"
+        },
+        {
+          "name": "values.LOCATION",
+          "value": 40,
+          "unit": "count"
+        },
+        {
+          "name": "values.NIE",
+          "value": 39,
+          "unit": "count"
+        },
+        {
+          "name": "values.NSS",
+          "value": 37,
+          "unit": "count"
+        },
+        {
+          "name": "values.PERSON",
+          "value": 120,
+          "unit": "count"
+        },
+        {
+          "name": "values.PHONE",
+          "value": 36,
+          "unit": "count"
+        },
+        {
+          "name": "values.tool_messages",
+          "value": 86,
+          "unit": "count",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 40
+          },
+          "pass": true
+        },
+        {
+          "name": "leak_rate.tool_messages",
+          "value": 0,
+          "unit": "ratio"
+        },
+        {
+          "name": "cases",
+          "value": 200,
+          "unit": "count"
+        }
+      ],
+      "failing": [
+        {
+          "id": "pii-leak-0011",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0011",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 55
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0027",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0027",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 55
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0043",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0043",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 55
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0054",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "PERSON",
+            "messageIndex": 0,
+            "start": 36,
+            "end": 66
+          },
+          "actual": {
+            "privacyAction": "anonymize",
+            "sensitivity": "high",
+            "chain": "ollama-llama,mistral-small"
+          }
+        },
+        {
+          "id": "pii-leak-0059",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0059",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 54
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0075",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0075",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 55
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0091",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0091",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 55
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0107",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0107",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 58
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0123",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 44
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0123",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 48,
+            "end": 54
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0139",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 46
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0139",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 50,
+            "end": 56
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0155",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "CIF",
+            "messageIndex": 0,
+            "start": 35,
+            "end": 46
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        },
+        {
+          "id": "pii-leak-0155",
+          "reason": "value would reach a non-local target verbatim",
+          "expected": {
+            "kind": "LOCATION",
+            "messageIndex": 0,
+            "start": 50,
+            "end": 58
+          },
+          "actual": {
+            "privacyAction": "allow",
+            "sensitivity": "low",
+            "chain": "ollama-llama,mistral-small,openai-mini"
+          }
+        }
+      ],
+      "failingCount": 21
+    },
+    {
+      "id": "detection",
+      "status": "pass",
+      "durationMs": 1145,
+      "metrics": [
+        {
+          "name": "recall.CIF",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.CIF",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.CIF",
+          "value": 24,
+          "unit": "count"
+        },
+        {
+          "name": "recall.CREDIT_CARD",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.CREDIT_CARD",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.CREDIT_CARD",
+          "value": 20,
+          "unit": "count"
+        },
+        {
+          "name": "recall.DNI",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.DNI",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.DNI",
+          "value": 26,
+          "unit": "count"
+        },
+        {
+          "name": "recall.EMAIL",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.EMAIL",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.EMAIL",
+          "value": 28,
+          "unit": "count"
+        },
+        {
+          "name": "recall.IBAN",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.IBAN",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.IBAN",
+          "value": 24,
+          "unit": "count"
+        },
+        {
+          "name": "recall.LOCATION",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "precision.LOCATION",
+          "value": 0.7358490566037735,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.LOCATION",
+          "value": 39,
+          "unit": "count"
+        },
+        {
+          "name": "recall.NIE",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.NIE",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.NIE",
+          "value": 13,
+          "unit": "count"
+        },
+        {
+          "name": "recall.NSS",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.NSS",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.NSS",
+          "value": 19,
+          "unit": "count"
+        },
+        {
+          "name": "recall.PERSON",
+          "value": 0.8909090909090909,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.8
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.PERSON",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.PERSON",
+          "value": 55,
+          "unit": "count"
+        },
+        {
+          "name": "recall.PHONE",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "precision.PHONE",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "support.PHONE",
+          "value": 23,
+          "unit": "count"
+        },
+        {
+          "name": "cases",
+          "value": 160,
+          "unit": "count"
+        }
+      ],
+      "failing": [
+        {
+          "id": "pii-detection-0005",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 10,
+            "end": 40
+          }
+        },
+        {
+          "id": "pii-detection-0033",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 24,
+            "end": 54
+          }
+        },
+        {
+          "id": "pii-detection-0035",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 62,
+            "end": 91
+          }
+        },
+        {
+          "id": "pii-detection-0052",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 26,
+            "end": 54
+          }
+        },
+        {
+          "id": "pii-detection-0126",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 26,
+            "end": 50
+          }
+        },
+        {
+          "id": "pii-detection-0158",
+          "reason": "missed",
+          "expected": {
+            "kind": "PERSON",
+            "start": 50,
+            "end": 74
+          }
+        }
+      ],
+      "failingCount": 6
+    },
+    {
+      "id": "routing",
+      "status": "pass",
+      "durationMs": 3519,
+      "metrics": [
+        {
+          "name": "route_accuracy",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        },
+        {
+          "name": "task_type_accuracy",
+          "value": 1,
+          "unit": "ratio"
+        },
+        {
+          "name": "cases",
+          "value": 44,
+          "unit": "count"
+        }
+      ],
+      "failing": [],
+      "failingCount": 0
+    },
+    {
+      "id": "quality",
+      "status": "pass",
+      "durationMs": 193265,
+      "metrics": [
+        {
+          "name": "mean_score.routed",
+          "value": 0.875,
+          "unit": "score"
+        },
+        {
+          "name": "judge_errors",
+          "value": 0,
+          "unit": "count"
+        },
+        {
+          "name": "tokens.routed_output",
+          "value": 732,
+          "unit": "count"
+        },
+        {
+          "name": "cases",
+          "value": 24,
+          "unit": "count"
+        },
+        {
+          "name": "mean_score.comparison",
+          "value": 0.875,
+          "unit": "score"
+        },
+        {
+          "name": "relative_score",
+          "value": 1,
+          "unit": "ratio",
+          "threshold": {
+            "comparison": "gte",
+            "bound": 0.95
+          },
+          "pass": true
+        }
+      ],
+      "failing": [
+        {
+          "id": "quality-020",
+          "reason": "low score",
+          "actual": {
+            "score": 2,
+            "taskType": "chat"
+          }
+        }
+      ],
+      "failingCount": 1
+    },
+    {
+      "id": "cost",
+      "status": "pass",
+      "durationMs": 79,
+      "metrics": [
+        {
+          "name": "cost.routed_estimate",
+          "value": 0.03759330000000001,
+          "unit": "usd"
+        },
+        {
+          "name": "cost.baseline_estimate",
+          "value": 0.2912969999999999,
+          "unit": "usd"
+        },
+        {
+          "name": "saving",
+          "value": 0.870945117869391,
+          "unit": "ratio"
+        },
+        {
+          "name": "cases",
+          "value": 44,
+          "unit": "count"
+        }
+      ],
+      "failing": [],
+      "failingCount": 0
+    }
+  ]
+}

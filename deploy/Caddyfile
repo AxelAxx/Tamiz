@@ -1,0 +1,11 @@
+# Public entry of the demo gateway (T-OPS-02). Caddy obtains and renews the certificate
+# for TAMIZ_DEMO_DOMAIN on its own. Every request still needs a Tamiz API key.
+{$TAMIZ_DEMO_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+	reverse_proxy gateway:3000
+}

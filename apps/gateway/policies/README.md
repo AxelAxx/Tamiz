@@ -13,6 +13,8 @@ load.
   processing and `long-documents-eu` only `eu` and `local`. Needs `MISTRAL_API_KEY`,
   `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`.
 - `local-only.yaml` — a single Ollama target; nothing leaves the machine.
+- `demo-eu.yaml` — the public demo (`T-OPS-02`): Mistral in the EU and the local model,
+  no US target; same privacy section as `default.yaml`. Needs only `MISTRAL_API_KEY`.
 
 Since feature 003 (`specs/003-resilience`), two optional additions:
 

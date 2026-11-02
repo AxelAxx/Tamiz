@@ -11,13 +11,16 @@ import { loadPolicyFile } from "../../src/infrastructure/policy/file-policy-load
 const policyPath = (name: string) => resolve(import.meta.dirname, "../../policies", name);
 
 describe("shipped policies (spec 005)", () => {
-  it.each(["default.yaml", "local-only.yaml"])("US6-4: %s loads at version 3", async (name) => {
-    const loaded = await loadPolicyFile(policyPath(name));
-    expect(loaded.ok).toBe(true);
-    if (!loaded.ok) return;
-    expect(loaded.value.version).toBe(3);
-    expect(loaded.value.privacy.localRoute).toEqual(["ollama-llama"]);
-  });
+  it.each(["default.yaml", "local-only.yaml", "demo-eu.yaml"])(
+    "US6-4: %s loads at version 3",
+    async (name) => {
+      const loaded = await loadPolicyFile(policyPath(name));
+      expect(loaded.ok).toBe(true);
+      if (!loaded.ok) return;
+      expect(loaded.value.version).toBe(3);
+      expect(loaded.value.privacy.localRoute).toEqual(["ollama-llama"]);
+    },
+  );
 
   it("the default policy is research R-11", async () => {
     const loaded = await loadPolicyFile(policyPath("default.yaml"));

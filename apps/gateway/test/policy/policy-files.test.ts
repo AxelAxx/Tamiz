@@ -13,6 +13,7 @@ describe("shipped policy files", () => {
   it.each([
     ["apps/gateway/policies/default.yaml", ["pinned-local", "pinned-frontier"]],
     ["apps/gateway/policies/local-only.yaml", []],
+    ["apps/gateway/policies/demo-eu.yaml", ["pinned-local"]],
     ["packages/evals/policies/quality-ci.yaml", ["pinned-local"]],
   ])("%s loads", async (file, rules) => {
     const loaded = await loadPolicyFile(path(file));
@@ -27,5 +28,12 @@ describe("shipped policy files", () => {
     const rule = (id: string) => loaded.value.rules.find((r) => r.id === id);
     expect(rule("pinned-frontier")?.route).toEqual(["anthropic-sonnet"]);
     expect(rule("pinned-local")?.route).toEqual(["ollama-llama"]);
+  });
+
+  it("the public demo policy (T-OPS-02) never names a US target", async () => {
+    const loaded = await loadPolicyFile(path("apps/gateway/policies/demo-eu.yaml"));
+    if (!loaded.ok) throw new Error("demo policy must load");
+    expect(loaded.value.targets.map((t) => t.residency).sort()).toEqual(["eu", "local"]);
+    expect(loaded.value.default.residency).toEqual(["eu", "local"]);
   });
 });
