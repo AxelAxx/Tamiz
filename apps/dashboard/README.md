@@ -17,10 +17,12 @@ Design output after gate G1 (`T-008-10` onwards).
   calls one gateway endpoint with the admin key, parses the answer with the contract and
   answers `Cache-Control: no-store`. The admin key lives only in `src/lib/server/*`
   (`import "server-only"`).
-- **Sign-in.** One operator passphrase, stored as an scrypt hash; sessions are in memory,
-  8 hours absolute, revoked on sign-out; 5 failures per minute per address, then a minute
-  of refusals. `src/proxy.ts` redirects pages without a validly signed cookie to
-  `/sign-in`; every data endpoint checks the session store itself.
+- **Sign-in.** One operator passphrase, stored as an scrypt hash, or a read-only visitor
+  session when `TAMIZ_DASHBOARD_VISITOR_ACCESS=true`. A session is a signed cookie
+  (`nonce.role.expiresAt.signature`, 8 hours absolute), valid in any process with the
+  secret; sign-out clears it and revokes it in that process. 5 failures per minute per
+  address, then a minute of refusals. `src/proxy.ts` redirects pages without a valid,
+  unexpired cookie to `/sign-in`; every data endpoint checks the session again.
 - **Writes** (`POST`/`PUT`/`DELETE`) are refused with `403 forbidden_origin` unless their
   `Origin` (or `Referer`) is `TAMIZ_DASHBOARD_PUBLIC_URL`'s origin.
 - **The gateway client** is `hc<GatewayRoutes>` (type-only import from

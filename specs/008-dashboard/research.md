@@ -100,6 +100,37 @@ signed-in operators are admins of the gateway (spec Assumptions).
 - stateless signed cookies (JWT): no server state, but sign-out could not revoke a copied
   cookie.
 
+**Amendment (2026-11-02, backlog `T-OPS-04`)**: sessions are now **stateless signed
+cookies**. The in-memory map tied a session to the process that created it. On Vercel
+(`T-OPS-02`) requests spread over serverless instances that do not share memory and are
+recycled, so a signed-in user would be sent back to sign-in at random.
+
+- **Cookie.** `tamiz_session` = `<nonce>.<role>.<expiresAt>.<HMAC-SHA-256 base64url>`:
+  - `nonce`: 16 random bytes, base64url;
+  - `role`: `operator` or `visitor`;
+  - `expiresAt`: epoch milliseconds, at most 8 hours after sign-in.
+
+  Every instance holding `TAMIZ_DASHBOARD_SESSION_SECRET` verifies it; nothing is looked
+  up.
+- **Gate.** `proxy.ts` now also checks `expiresAt`, so an expired cookie lands on
+  `/sign-in?session=expired` instead of loading a page whose data calls answer `401`.
+- **Sign-out.** It clears the cookie in the browser, and adds the nonce to an in-memory
+  revocation list until the cookie's expiry. On one process (Docker, `next start`) a copied
+  cookie therefore stops working at once (US1-4). On serverless, only the instance that
+  handled the sign-out knows about the revocation; another instance accepts a copied
+  cookie until its expiry (at most 8 hours). This weaker guarantee is the price of not
+  adding a shared store to a Vercel deployment. It is documented in `docs/deploy.md`.
+  Rotating the session secret ends every session at once.
+- **Restart.** A restart no longer signs anyone out (only the revocation list is lost).
+- **Rate limits** stay in memory per process; on serverless they are per instance
+  (documented).
+
+Rejected for this amendment:
+- a shared store (Valkey) reached from Vercel: it publishes the store or needs a hosted
+  one, for one console;
+- a shorter session with sliding renewal: it shortens the window of a copied cookie but
+  not to zero, and it adds a cookie write to every request.
+
 ## R-04 Cross-origin writes are refused by `Origin`, plus `SameSite=Strict`
 
 **Decision**: every non-GET route handler compares the `Origin` header (or `Referer` when

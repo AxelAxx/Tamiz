@@ -155,6 +155,8 @@ The simulation should say `"sensitivity":"critical"` and
    - the simulator decides as in step 4;
    - the evals screen shows the bundled reports;
    - live traffic shows the requests you send with the `demo` key.
+   - moving between screens for a few minutes never sends you back to sign-in (sessions
+     are signed cookies that every instance accepts, `T-OPS-04`).
 
 If a variable is missing or malformed, the deployment's function logs list it.
 
@@ -197,6 +199,12 @@ For the operator:
   budget until it is rotated. The spending limit on the Mistral key is the backstop.
 - **The sign-in rate limit and the visitor limits are per serverless instance on
   Vercel**, so they are weaker than on a single server.
+- **Sign-out on Vercel ends the session in that browser, not everywhere.** Sessions are
+  signed cookies (`T-OPS-04`), so any instance accepts them, and the dashboard needs no
+  shared store. Sign-out clears the cookie, but a copy of it made before then is refused
+  only by the instance that handled the sign-out; others accept it until it expires (at
+  most 8 hours). To end every session at once, change `TAMIZ_DASHBOARD_SESSION_SECRET`
+  and redeploy.
 - **The local model is slow on CPU.** On an 8 GB server there is none, and requests that
   must stay local fail. They are audited as failed, and the simulator still shows the
   decision.

@@ -9,7 +9,7 @@ import {
   createWindowLimiter,
   SESSION_TTL_MS,
 } from "../src/lib/server/session";
-import { signSessionId, verifySessionCookie } from "../src/lib/server/session-cookie";
+import { signSession, verifySessionCookie } from "../src/lib/server/session-cookie";
 
 // Spec 008 US1-2, US1-4, FR-001, research R-03, data-model §3.1-3.2 (tasks.md T002);
 // US10 (visitor role and limits, backlog T-OPS-03).
@@ -58,14 +58,45 @@ describe("passphrase hash", () => {
 });
 
 describe("session cookie", () => {
-  it("US1-2: a tampered cookie is invalid", () => {
-    const value = signSessionId("abc", SECRET);
-    expect(verifySessionCookie(value, SECRET)).toBe("abc");
-    expect(verifySessionCookie(`abd${value.slice(3)}`, SECRET)).toBeUndefined();
+  const claims = {
+    nonce: "bm9uY2Utbm9uY2Utbm9uYw",
+    role: "operator",
+    expiresAt: Date.parse("2026-10-31T17:00:00.000Z"),
+  } as const;
+
+  it("US1-2: carries nonce, role and expiry, signed; a tampered cookie is invalid", () => {
+    const value = signSession(claims, SECRET);
+    expect(value.split(".")).toHaveLength(4);
+    expect(verifySessionCookie(value, SECRET)).toEqual(claims);
+    // The role cannot be raised by editing the cookie (FR-026).
+    expect(verifySessionCookie(value.replace(".operator.", ".visitor."), SECRET)).toBeUndefined();
+    expect(
+      verifySessionCookie(signSession({ ...claims, role: "visitor" }, SECRET), SECRET)?.role,
+    ).toBe("visitor");
+    expect(verifySessionCookie(value.replace(/\.(\d+)\./, ".9$1."), SECRET)).toBeUndefined();
     expect(verifySessionCookie(`${value.slice(0, -1)}A`, SECRET)).toBeUndefined();
     expect(verifySessionCookie(value, `${SECRET}x`)).toBeUndefined();
     expect(verifySessionCookie("abc", SECRET)).toBeUndefined();
     expect(verifySessionCookie("", SECRET)).toBeUndefined();
+  });
+
+  it("refuses a well-signed payload that is not nonce.role.expiresAt", () => {
+    const signRaw = (payload: string) =>
+      `${payload}.${crypto.createHmac("sha256", SECRET).update(payload).digest("base64url")}`;
+    expect(verifySessionCookie(signRaw("n.operator.1"), SECRET)).toEqual({
+      nonce: "n",
+      role: "operator",
+      expiresAt: 1,
+    });
+    for (const payload of [
+      "abc",
+      "n.admin.1",
+      "n.operator.soon",
+      "n.operator.1.extra",
+      "n!.visitor.1",
+    ]) {
+      expect(verifySessionCookie(signRaw(payload), SECRET), payload).toBeUndefined();
+    }
   });
 });
 
@@ -76,32 +107,44 @@ describe("session store", () => {
     const { cookie, expiresAt } = store.create();
     expect(SESSION_TTL_MS).toBe(8 * 60 * 60 * 1000);
     expect(expiresAt).toBe(clock.now() + SESSION_TTL_MS);
+    expect(verifySessionCookie(cookie, SECRET)?.expiresAt).toBe(expiresAt);
     expect(store.isValid(cookie)).toBe(true);
     // Using the session does not extend it.
     clock.advance(SESSION_TTL_MS - 1);
     expect(store.isValid(cookie)).toBe(true);
     clock.advance(1);
     expect(store.isValid(cookie)).toBe(false);
-    expect(store.size()).toBe(0);
   });
 
-  it("US1-2: the id is 32 random bytes and the cookie is signed", () => {
+  it("T-OPS-04: a session holds in another process with the same secret", () => {
+    const clock = fakeNow();
+    const signedIn = createSessionStore({ secret: SECRET, now: clock.now });
+    const elsewhere = createSessionStore({ secret: SECRET, now: clock.now });
+    const { cookie } = signedIn.create("visitor");
+    expect(elsewhere.roleOf(cookie)).toBe("visitor");
+    // Another secret (a rotation) ends every session.
+    expect(createSessionStore({ secret: `${SECRET}2`, now: clock.now }).isValid(cookie)).toBe(
+      false,
+    );
+  });
+
+  it("US1-2: the nonce is 16 random bytes and the cookie is signed", () => {
     const store = createSessionStore({ secret: SECRET, now: fakeNow().now });
     const { cookie } = store.create();
-    const id = verifySessionCookie(cookie, SECRET);
-    expect(Buffer.from(id ?? "", "base64url")).toHaveLength(32);
+    const nonce = verifySessionCookie(cookie, SECRET)?.nonce;
+    expect(Buffer.from(nonce ?? "", "base64url")).toHaveLength(16);
+    expect(store.create().cookie).not.toBe(cookie);
     expect(store.isValid(cookie.replace(/.$/, (c) => (c === "A" ? "B" : "A")))).toBe(false);
-    // A well-signed id the store never issued is refused.
-    expect(store.isValid(signSessionId("forged", SECRET))).toBe(false);
   });
 
-  it("US1-4: sign-out deletes the session, so a copied cookie stops working", () => {
+  it("US1-4: sign-out revokes the session in this process, so a copied cookie stops working", () => {
     const store = createSessionStore({ secret: SECRET, now: fakeNow().now });
     const { cookie } = store.create();
     const other = store.create().cookie;
     store.revoke(cookie);
     expect(store.isValid(cookie)).toBe(false);
     expect(store.isValid(other)).toBe(true);
+    expect(store.size()).toBe(1);
   });
 
   it("US10-2: a session has a role, operator by default, and loses it when it ends", () => {
@@ -111,19 +154,19 @@ describe("session store", () => {
     const visitor = store.create("visitor").cookie;
     expect(store.roleOf(operator)).toBe("operator");
     expect(store.roleOf(visitor)).toBe("visitor");
-    expect(store.roleOf(signSessionId("forged", SECRET))).toBeUndefined();
     store.revoke(visitor);
     expect(store.roleOf(visitor)).toBeUndefined();
     clock.advance(SESSION_TTL_MS);
     expect(store.roleOf(operator)).toBeUndefined();
   });
 
-  it("sweeps expired sessions", () => {
+  it("sweeps revocations of expired sessions", () => {
     const clock = fakeNow();
     const store = createSessionStore({ secret: SECRET, now: clock.now });
-    store.create();
-    clock.advance(SESSION_TTL_MS);
-    store.create();
+    store.revoke(store.create().cookie);
+    clock.advance(SESSION_TTL_MS / 2);
+    store.revoke(store.create().cookie);
+    clock.advance(SESSION_TTL_MS / 2);
     store.sweep();
     expect(store.size()).toBe(1);
   });

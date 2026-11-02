@@ -140,16 +140,19 @@ Append-only: rows are never updated or deleted by the gateway.
 
 ## 3. Dashboard server state
 
-### 3.1 Operator session (in memory)
+### 3.1 Session (a signed cookie, research R-03 amendment `T-OPS-04`)
+
+The cookie value is `<nonce>.<role>.<expiresAt>.<signature>`; nothing is stored per session.
 
 | Field | Notes |
 |---|---|
-| `id` | 32 random bytes, base64url; the cookie carries `id.signature` |
-| `createdAt` | |
-| `expiresAt` | `createdAt + 8 h`; absolute, not sliding |
-| `role` | `operator` (passphrase) or `visitor` (spec US10); never in the cookie |
+| `nonce` | 16 random bytes, base64url; identifies the session for revocation |
+| `role` | `operator` (passphrase) or `visitor` (spec US10) |
+| `expiresAt` | epoch ms, sign-in + 8 h; absolute, not sliding |
+| `signature` | HMAC-SHA-256 of `nonce.role.expiresAt` under `TAMIZ_DASHBOARD_SESSION_SECRET`, base64url |
 
-Sign-out and expiry delete the entry. A periodic sweep removes expired entries.
+Revoked nonces (in memory, per process): `nonce → expiresAt`, added at sign-out, removed by
+a periodic sweep once expired.
 
 ### 3.2 Sign-in attempts (in memory)
 

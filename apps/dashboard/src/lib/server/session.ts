@@ -1,26 +1,28 @@
 /**
- * Sessions and the rate limits, in memory (spec 008 FR-001, FR-026, FR-028, research R-03,
- * data-model §3.1-3.2). A restart signs everyone out; that is accepted for one instance.
+ * Sessions and the rate limits (spec 008 FR-001, FR-026, FR-028, research R-03 and its
+ * `T-OPS-04` amendment, data-model §3.1-3.2). A session is a signed cookie, so it holds in
+ * any process with the secret; only sign-out revocations and the rate limits are in memory.
  */
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { signSessionId, verifySessionCookie } from "./session-cookie";
+import { type SessionRole, signSession, verifySessionCookie } from "./session-cookie";
+
+export type { SessionRole } from "./session-cookie";
 
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
-/** Who a session belongs to (US10): the server holds it, the cookie never carries it. */
-export type SessionRole = "operator" | "visitor";
-
 export interface SessionStore {
-  /** A new session; the cookie carries `id.signature`. */
+  /** A new session; the cookie carries its role and expiry, signed. */
   create(role?: SessionRole): { readonly cookie: string; readonly expiresAt: number };
-  /** The signature is right and the session exists and has not expired. */
+  /** The signature is right, the session has not expired and was not signed out here. */
   isValid(cookie: string): boolean;
   /** The role of a valid session, else `undefined`. */
   roleOf(cookie: string): SessionRole | undefined;
+  /** Sign-out: this process refuses the cookie until it expires (US1-4). */
   revoke(cookie: string): void;
-  /** Removes expired sessions. */
+  /** Forgets revocations of sessions that have expired anyway. */
   sweep(): void;
+  /** Revocations held. */
   size(): number;
 }
 
@@ -30,37 +32,29 @@ export function createSessionStore(deps: {
   readonly ttlMs?: number;
 }): SessionStore {
   const ttlMs = deps.ttlMs ?? SESSION_TTL_MS;
-  const sessions = new Map<string, { readonly expiresAt: number; readonly role: SessionRole }>();
-  const idOf = (cookie: string) => verifySessionCookie(cookie, deps.secret);
-  const roleOf = (cookie: string): SessionRole | undefined => {
-    const id = idOf(cookie);
-    if (id === undefined) return undefined;
-    const session = sessions.get(id);
-    if (session === undefined) return undefined;
-    if (deps.now() >= session.expiresAt) {
-      sessions.delete(id);
-      return undefined;
-    }
-    return session.role;
+  const revoked = new Map<string, number>();
+  const live = (cookie: string) => {
+    const claims = verifySessionCookie(cookie, deps.secret);
+    if (claims === undefined || deps.now() >= claims.expiresAt) return undefined;
+    return revoked.has(claims.nonce) ? undefined : claims;
   };
   return {
     create(role = "operator") {
-      const id = randomBytes(32).toString("base64url");
       const expiresAt = deps.now() + ttlMs;
-      sessions.set(id, { expiresAt, role });
-      return { cookie: signSessionId(id, deps.secret), expiresAt };
+      const nonce = randomBytes(16).toString("base64url");
+      return { cookie: signSession({ nonce, role, expiresAt }, deps.secret), expiresAt };
     },
-    isValid: (cookie) => roleOf(cookie) !== undefined,
-    roleOf,
+    isValid: (cookie) => live(cookie) !== undefined,
+    roleOf: (cookie) => live(cookie)?.role,
     revoke(cookie) {
-      const id = idOf(cookie);
-      if (id !== undefined) sessions.delete(id);
+      const claims = live(cookie);
+      if (claims !== undefined) revoked.set(claims.nonce, claims.expiresAt);
     },
     sweep() {
       const now = deps.now();
-      for (const [id, { expiresAt }] of sessions) if (now >= expiresAt) sessions.delete(id);
+      for (const [nonce, expiresAt] of revoked) if (now >= expiresAt) revoked.delete(nonce);
     },
-    size: () => sessions.size,
+    size: () => revoked.size,
   };
 }
 
