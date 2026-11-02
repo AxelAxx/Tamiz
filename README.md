@@ -10,7 +10,7 @@ with anonymization or blocking when required), survives provider failures with f
 chains and circuit breakers, audits every decision without ever storing prompt content,
 and proves it all with privacy-leak and routing evals that gate CI.
 
-> Status: features `001` … `007` and `009` done; `008` in progress.
+> Status: features `001` … `009` done.
 >
 > - **001 contracts and skeleton**: pnpm + Turborepo + Biome workspace, Zod contracts,
 >   gateway skeleton, architecture check, CI.
@@ -84,6 +84,22 @@ and proves it all with privacy-leak and routing evals that gate CI.
 >   [Evals](#evals) section below. Walkthrough:
 >   [`specs/007-evals-gate/quickstart.md`](specs/007-evals-gate/quickstart.md).
 >
+> - **008 dashboard**: `apps/dashboard`, a Next.js 16 operator console behind one
+>   passphrase. Its server-side BFF holds the gateway's admin key, so the browser never
+>   sees it. Screens:
+>   - live traffic;
+>   - the policy simulator (the text is highlighted where personal data was found, with
+>     the decision step by step);
+>   - the audit log with filters;
+>   - cost against "everything to frontier";
+>   - provider health with circuit states;
+>   - eval results from the CI reports;
+>   - a YAML policy editor that saves new versions with conflict detection.
+>
+>   Light and dark, keyboard and screen-reader checked with axe on every screen, phone
+>   width included. A non-root Docker image. Walkthrough:
+>   [`specs/008-dashboard/quickstart.md`](specs/008-dashboard/quickstart.md).
+>
 > - **009 MCP server and agent**: `apps/mcp-server` exposes four read-only MCP tools over
 >   stdio and streamable HTTP, for Claude Desktop, Claude Code or any MCP host:
 >   - `simulate_routing`;
@@ -97,7 +113,7 @@ and proves it all with privacy-leak and routing evals that gate CI.
 >   its own operator tooling. Setup:
 >   [`apps/mcp-server/README.md`](apps/mcp-server/README.md).
 >
-> Next: feature `008-dashboard`.
+> Next: the full Docker Compose stack and the public demo (OPS), then the docs (DOC).
 >
 > Repository: https://github.com/AxelAxx/tamiz
 
