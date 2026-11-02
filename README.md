@@ -3,11 +3,11 @@
 **Privacy-aware LLM gateway.** Use the best model for every request without sensitive
 data leaving where it belongs.
 
-![The Tamiz policy simulator: a request with a name, a DNI and an email is inspected, rated critical and routed to the local model](docs/images/simulator.png)
+![Tamiz in 17 seconds: a request with a name, a DNI and an email is detected in the simulator, rated critical and kept local; sent through the gateway, it is answered by the local model and appears in live traffic and the audit detail, without its text](docs/images/demo.gif)
 
-*A request with a patient's name, DNI and email. Tamiz finds all three, rates the
-request critical, and keeps it on the local model. The simulator shows the decision
-without calling any model.*
+*A request with a patient's name, DNI and email. Tamiz finds all three, rates the request
+critical and keeps it on the local model. The same request, sent through the gateway, is
+answered by Ollama and audited: decision, entities and cost, never the text.*
 
 ## Why
 
@@ -110,7 +110,7 @@ gateway follows Clean Architecture, and dependency-cruiser fails CI on a layer v
 Every public contract is a Zod schema in `packages/contracts`, and the OpenAPI document,
 the dashboard and the MCP server derive from it.
 
-- Diagrams (system view, request flow, gateway layers): [`docs/architecture.md`](docs/architecture.md).
+- Diagrams (C4 context and containers, request flow, gateway layers): [`docs/architecture.md`](docs/architecture.md).
 - Decisions:
   - [ADR-0001](docs/adr/ADR-0001-clean-architecture-contract-first.md) Clean Architecture and contract-first;
   - [ADR-0002](docs/adr/ADR-0002-english-single-repository-language.md) English as the single repository language;
