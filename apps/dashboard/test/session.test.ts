@@ -6,11 +6,13 @@ import {
   clientAddress,
   createSessionStore,
   createSignInLimiter,
+  createWindowLimiter,
   SESSION_TTL_MS,
 } from "../src/lib/server/session";
 import { signSessionId, verifySessionCookie } from "../src/lib/server/session-cookie";
 
-// Spec 008 US1-2, US1-4, FR-001, research R-03, data-model §3.1-3.2 (tasks.md T002).
+// Spec 008 US1-2, US1-4, FR-001, research R-03, data-model §3.1-3.2 (tasks.md T002);
+// US10 (visitor role and limits, backlog T-OPS-03).
 
 vi.mock("node:crypto", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:crypto")>();
@@ -102,6 +104,20 @@ describe("session store", () => {
     expect(store.isValid(other)).toBe(true);
   });
 
+  it("US10-2: a session has a role, operator by default, and loses it when it ends", () => {
+    const clock = fakeNow();
+    const store = createSessionStore({ secret: SECRET, now: clock.now });
+    const operator = store.create().cookie;
+    const visitor = store.create("visitor").cookie;
+    expect(store.roleOf(operator)).toBe("operator");
+    expect(store.roleOf(visitor)).toBe("visitor");
+    expect(store.roleOf(signSessionId("forged", SECRET))).toBeUndefined();
+    store.revoke(visitor);
+    expect(store.roleOf(visitor)).toBeUndefined();
+    clock.advance(SESSION_TTL_MS);
+    expect(store.roleOf(operator)).toBeUndefined();
+  });
+
   it("sweeps expired sessions", () => {
     const clock = fakeNow();
     const store = createSessionStore({ secret: SECRET, now: clock.now });
@@ -145,6 +161,30 @@ describe("sign-in rate limit", () => {
     limiter.recordSuccess("a");
     for (let i = 0; i < 4; i++) limiter.recordFailure("a");
     expect(limiter.check("a")).toEqual({ allowed: true });
+  });
+});
+
+describe("visitor limits", () => {
+  it("US10-4, US10-5: 10 uses per fixed 60 s window per address, then Retry-After", () => {
+    const clock = fakeNow();
+    const limiter = createWindowLimiter({ now: clock.now });
+    for (let i = 0; i < 10; i++) expect(limiter.take("a")).toEqual({ allowed: true });
+    expect(limiter.take("a")).toEqual({ allowed: false, retryAfterSeconds: 60 });
+    // Another address has its own window.
+    expect(limiter.take("b")).toEqual({ allowed: true });
+    clock.advance(45_000);
+    expect(limiter.take("a")).toEqual({ allowed: false, retryAfterSeconds: 15 });
+    clock.advance(15_000);
+    expect(limiter.take("a")).toEqual({ allowed: true });
+  });
+
+  it("refused uses do not extend the window", () => {
+    const clock = fakeNow();
+    const limiter = createWindowLimiter({ now: clock.now, limit: 1, windowMs: 1000 });
+    limiter.take("a");
+    for (let i = 0; i < 5; i++) limiter.take("a");
+    clock.advance(1000);
+    expect(limiter.take("a")).toEqual({ allowed: true });
   });
 });
 

@@ -43,6 +43,7 @@ import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { GatewayStatus } from "./gateway-status";
 import { LogoMark } from "./logo";
+import { useSessionRole } from "./session-role";
 
 interface Screen {
   readonly href: string;
@@ -94,6 +95,7 @@ function OperatorMenu() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { dark, toggle } = useResolvedTheme();
+  const visitor = useSessionRole() === "visitor";
   async function signOut() {
     await api.signOut().catch(() => undefined);
     queryClient.clear();
@@ -116,8 +118,12 @@ function OperatorMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <p className="font-medium">Operator</p>
-          <p className="text-xs text-muted-foreground">Signed in with passphrase</p>
+          <p data-testid="session-role" className="font-medium">
+            {visitor ? "Visitor" : "Operator"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {visitor ? "Read-only demo session" : "Signed in with passphrase"}
+          </p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem className="h-9 md:hidden" onSelect={toggle}>

@@ -359,6 +359,41 @@ screen in both themes and at desktop and mobile widths.
 
 ---
 
+### User Story 10 - A visitor explores the public demo without the passphrase (Priority: P3)
+
+*Addendum of 2026-11-02, backlog `T-OPS-03`.* The public demo (`T-OPS-02`) should be
+explorable by anyone with its address, but the operator passphrase also opens the policy
+editor, which changes what the gateway does. When the operator turns visitor access on, the
+sign-in page offers a visitor session: every screen can be read and the simulator can be
+used, a little at a time, but nothing that changes the gateway is allowed.
+
+**Why this priority**: It turns the deployed demo into something a reader of the README can
+open. It is off by default, so a self-hosted dashboard is unchanged.
+
+**Independent Test**: Start the dashboard with visitor access on, enter as a visitor, visit
+every screen, run simulations until the limit, and try to save the policy.
+
+**Acceptance Scenarios**:
+
+1. **Given** visitor access is off (the default), **When** the sign-in page is opened or a
+   visitor session is requested, **Then** the page offers only the passphrase and the request
+   is refused with `404`, creating no session.
+2. **Given** visitor access is on, **When** someone chooses "Explore as a visitor" on the
+   sign-in page, **Then** they land on the live traffic screen with a session of at most 8
+   hours, every screen loads, and the operator menu says "Visitor".
+3. **Given** a visitor session, **When** it saves the policy, **Then** the dashboard refuses
+   with `403 forbidden_role` and nothing reaches the gateway; the policy screen shows the
+   active policy read-only, says that saving needs the operator passphrase, and offers no
+   save.
+4. **Given** a visitor session, **When** it runs more than 10 simulations in a minute from one
+   address, **Then** further simulations are refused with `429` and `Retry-After` until the
+   minute ends, without calling the gateway; operator sessions have no such limit.
+5. **Given** visitor access is on, **When** more than 10 visitor sessions are requested in a
+   minute from one address, **Then** further requests are refused with `429` and
+   `Retry-After`.
+
+---
+
 ### Edge Cases
 
 - **The gateway is down or slow**: every screen keeps what it has, shows a non-blocking
@@ -463,9 +498,23 @@ Cross-cutting (backlog `T-008-09`, every screen task):
 - **FR-024**: Screens MUST follow the design received from Claude Design for layout, tokens and
   components; deviations are recorded in the task record of the screen.
 
+Visitor access (addendum, backlog `T-OPS-03`):
+
+- **FR-025**: The dashboard MUST offer visitor sessions only when its configuration turns
+  visitor access on; it is off by default, and a malformed setting refuses to start (FR-005).
+- **FR-026**: A session MUST carry a role, operator or visitor, held by the dashboard's
+  server; the cookie carries no role.
+- **FR-027**: A visitor session MUST be able to use every read endpoint and the simulator,
+  and MUST be refused with `403` on every other state-changing endpoint except sign-out.
+- **FR-028**: Visitor simulations and visitor session creation MUST each be limited to 10 per
+  minute per address (the address as in FR-001), answering `429` with `Retry-After`.
+- **FR-029**: The screens MUST show a visitor that it is one, and MUST NOT offer a visitor
+  an action it would be refused.
+
 ### Key Entities
 
-- **Operator session**: who is signed in, since when, until when; holds no gateway credential.
+- **Operator session**: who is signed in (operator or visitor, US10), since when, until when;
+  holds no gateway credential.
 - **Audit entry** (feature 006): what was decided for one request and what it cost; never what
   was said.
 - **Simulation** (feature 005): the decision the gateway would take for given messages, with
@@ -500,7 +549,8 @@ Cross-cutting (backlog `T-008-09`, every screen task):
 - **One operator role.** Everyone who signs in is an admin of this gateway; there are no
   read-only operators in this feature. The sign-in is a shared operator passphrase (stored
   hashed in the dashboard's configuration), suited to a small team self-hosting the gateway;
-  single sign-on is out of scope.
+  single sign-on is out of scope. The addendum of 2026-11-02 (US10) adds an opt-in visitor
+  role for the public demo; it never writes.
 - **One gateway instance per dashboard** for policy edits: a saved policy applies to the
   instance that stored it, and to others only when they restart from the shared history.
   Multi-instance live reload is out of scope.

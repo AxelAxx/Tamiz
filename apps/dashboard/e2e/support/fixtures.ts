@@ -6,10 +6,13 @@
 import { resolve } from "node:path";
 
 export const DASHBOARD_PORT = 3100;
+/** A second dashboard on the same build with visitor access off (spec 008 US10-1). */
+export const NO_VISITOR_DASHBOARD_PORT = 3102;
 export const GATEWAY_PORT = 3210;
 export const CONTROL_PORT = 3211;
 
 export const DASHBOARD_URL = `http://localhost:${DASHBOARD_PORT}`;
+export const NO_VISITOR_DASHBOARD_URL = `http://localhost:${NO_VISITOR_DASHBOARD_PORT}`;
 export const GATEWAY_URL = `http://127.0.0.1:${GATEWAY_PORT}`;
 export const CONTROL_URL = `http://127.0.0.1:${CONTROL_PORT}`;
 

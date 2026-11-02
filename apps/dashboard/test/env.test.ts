@@ -35,6 +35,7 @@ describe("dashboard configuration", () => {
       publicOrigin: "https://tamiz.example.com",
       evalsDir: "./data/evals",
       trustProxy: false,
+      visitorAccess: false,
     });
   });
 
@@ -72,10 +73,18 @@ describe("dashboard configuration", () => {
     ["TAMIZ_DASHBOARD_SESSION_SECRET", "too-short-secret"],
     ["TAMIZ_DASHBOARD_PUBLIC_URL", "tamiz.example.com"],
     ["TAMIZ_DASHBOARD_TRUST_PROXY", "yes"],
+    ["TAMIZ_DASHBOARD_VISITOR_ACCESS", "on"],
   ])("US1-6: refuses a malformed %s", (name, value) => {
     const issues = issuesOf({ ...complete, [name]: value });
     expect(issues).toHaveLength(1);
     expect(issues[0]).toMatch(new RegExp(`^${name}: `));
+  });
+
+  it("US10-1: visitor access is off unless set to true", () => {
+    const on = parseEnv({ ...complete, TAMIZ_DASHBOARD_VISITOR_ACCESS: "true" });
+    expect(on.ok && on.value.visitorAccess).toBe(true);
+    const off = parseEnv({ ...complete, TAMIZ_DASHBOARD_VISITOR_ACCESS: "false" });
+    expect(off.ok && off.value.visitorAccess).toBe(false);
   });
 
   it("US1-6: lists several malformed variables together", () => {

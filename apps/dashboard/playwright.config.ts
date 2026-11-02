@@ -15,12 +15,25 @@ import {
   EVALS_DIR,
   GATEWAY_PORT,
   GATEWAY_URL,
+  NO_VISITOR_DASHBOARD_PORT,
+  NO_VISITOR_DASHBOARD_URL,
   PASSPHRASE,
   SESSION_SECRET,
 } from "./e2e/support/fixtures";
 import { hashPassphrase } from "./src/lib/server/passphrase";
 
 const { CI } = process.env;
+
+const dashboardEnv = {
+  TAMIZ_GATEWAY_URL: GATEWAY_URL,
+  TAMIZ_DASHBOARD_ADMIN_KEY: ADMIN_KEY,
+  TAMIZ_DASHBOARD_PASSPHRASE_HASH: hashPassphrase(PASSPHRASE),
+  TAMIZ_DASHBOARD_SESSION_SECRET: SESSION_SECRET,
+  TAMIZ_DASHBOARD_EVALS_DIR: EVALS_DIR,
+  // The rate-limit tests send their own X-Forwarded-For, so their lock-outs stay apart
+  // from the other tests' address.
+  TAMIZ_DASHBOARD_TRUST_PROXY: "true",
+};
 
 export default defineConfig({
   testDir: "e2e",
@@ -52,16 +65,17 @@ export default defineConfig({
       command: `pnpm exec next start -p ${DASHBOARD_PORT}`,
       url: `${DASHBOARD_URL}/api/health`,
       env: {
-        TAMIZ_GATEWAY_URL: GATEWAY_URL,
-        TAMIZ_DASHBOARD_ADMIN_KEY: ADMIN_KEY,
-        TAMIZ_DASHBOARD_PASSPHRASE_HASH: hashPassphrase(PASSPHRASE),
-        TAMIZ_DASHBOARD_SESSION_SECRET: SESSION_SECRET,
+        ...dashboardEnv,
         TAMIZ_DASHBOARD_PUBLIC_URL: DASHBOARD_URL,
-        TAMIZ_DASHBOARD_EVALS_DIR: EVALS_DIR,
-        // The rate-limit test sends its own X-Forwarded-For, so its lock-out stays apart
-        // from the other tests' address.
-        TAMIZ_DASHBOARD_TRUST_PROXY: "true",
+        TAMIZ_DASHBOARD_VISITOR_ACCESS: "true",
       },
+      reuseExistingServer: CI === undefined,
+      timeout: 60_000,
+    },
+    {
+      command: `pnpm exec next start -p ${NO_VISITOR_DASHBOARD_PORT}`,
+      url: `${NO_VISITOR_DASHBOARD_URL}/api/health`,
+      env: { ...dashboardEnv, TAMIZ_DASHBOARD_PUBLIC_URL: NO_VISITOR_DASHBOARD_URL },
       reuseExistingServer: CI === undefined,
       timeout: 60_000,
     },

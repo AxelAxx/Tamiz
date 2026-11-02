@@ -8,6 +8,7 @@ import {
   readJson,
   withNoStore,
   withOrigin,
+  withRole,
   withSession,
 } from "../src/lib/server/handler";
 
@@ -61,6 +62,28 @@ describe("handler wrappers", () => {
     );
     expect(same.status).toBe(200);
     expect(same.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("US10-3: a session of another role is refused with 403 forbidden_role", async () => {
+    const inner = vi.fn(async () => Response.json({ ok: true }));
+    const roles: Record<string, string> = { op: "operator", vis: "visitor" };
+    const handler = withRole("tamiz_session", (cookie) => roles[cookie], "operator")(inner);
+    const visitor = await handler(
+      new Request(`${ORIGIN}/api/policy`, {
+        method: "PUT",
+        headers: { cookie: "tamiz_session=vis" },
+      }),
+    );
+    expect(visitor.status).toBe(403);
+    expect((await visitor.json()).error.type).toBe("forbidden_role");
+    expect(inner).not.toHaveBeenCalled();
+    const operator = await handler(
+      new Request(`${ORIGIN}/api/policy`, {
+        method: "PUT",
+        headers: { cookie: "tamiz_session=op" },
+      }),
+    );
+    expect(operator.status).toBe(200);
   });
 
   it("reads one cookie among several", () => {

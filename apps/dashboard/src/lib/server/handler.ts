@@ -1,6 +1,6 @@
 /**
  * Route handlers are composed from small wrappers (spec 008 research R-01, constitution
- * IX): `withNoStore`, `withOrigin`, `withSession`. Each refuses with the BFF error shape
+ * IX): `withNoStore`, `withOrigin`, `withSession`, `withRole`. Each refuses with the BFF error shape
  * before the wrapped handler runs, so a refused request never reads its body or calls the
  * gateway.
  */
@@ -58,6 +58,25 @@ export function withSession(cookieName: string, isValid: (cookie: string) => boo
       ? handler(request)
       : bffError(401, "unauthenticated", "Sign in to continue");
   };
+}
+
+/** A valid session whose role is not `allowed` is refused with `403` (spec US10-3). */
+export function withRole(
+  cookieName: string,
+  roleOf: (cookie: string) => string | undefined,
+  allowed: string,
+): Wrapper {
+  return (handler) => async (request) => {
+    const cookie = readCookie(request, cookieName);
+    const role = cookie === undefined ? undefined : roleOf(cookie);
+    return role === allowed
+      ? handler(request)
+      : bffError(403, "forbidden_role", "A visitor session cannot do this; sign in as operator");
+  };
+}
+
+export function rateLimited(retryAfterSeconds: number, message: string): Response {
+  return bffError(429, "rate_limited", message, {}, { "retry-after": String(retryAfterSeconds) });
 }
 
 /** Issue paths in dot form (`messages.0.content`), `(root)` for the root; never values. */

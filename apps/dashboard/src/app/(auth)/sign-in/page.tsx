@@ -1,10 +1,13 @@
 import { Clock } from "lucide-react";
 import { LogoMark } from "@/features/shell/logo";
+import { serverContext } from "@/lib/server/context";
 import { SignInForm } from "./sign-in-form";
+import { VisitorEntry } from "./visitor-entry";
 
 /**
  * The sign-in page, outside the console shell (design `signin.html`). `?session=expired` is
- * set by the page gate when a session cookie was present but no longer valid.
+ * set by the page gate when a session cookie was present but no longer valid. With visitor
+ * access on (spec 008 US10) it also offers a read-only visitor session.
  */
 export default async function SignInPage({
   searchParams,
@@ -37,6 +40,7 @@ export default async function SignInPage({
           <div className="mt-5">
             <SignInForm />
           </div>
+          {serverContext().env.visitorAccess ? <VisitorEntry /> : null}
         </div>
       </main>
     </div>
