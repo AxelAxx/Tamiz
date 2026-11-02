@@ -3,119 +3,119 @@
 **Privacy-aware LLM gateway.** Use the best model for every request without sensitive
 data leaving where it belongs.
 
-Tamiz is a self-hosted gateway that sits between your application and LLM providers. It
-inspects each request for personal data (Spanish DNI/NIE, IBAN, emails, phones, names…),
-routes it by a declarative policy (local Ollama, EU-resident provider, or frontier model,
-with anonymization or blocking when required), survives provider failures with fallback
-chains and circuit breakers, audits every decision without ever storing prompt content,
-and proves it all with privacy-leak and routing evals that gate CI.
+![The Tamiz policy simulator: a request with a name, a DNI and an email is inspected, rated critical and routed to the local model](docs/images/simulator.png)
 
-> Status: features `001` … `009` done.
->
-> - **001 contracts and skeleton**: pnpm + Turborepo + Biome workspace, Zod contracts,
->   gateway skeleton, architecture check, CI.
-> - **002 provider routing**: the OpenAI-compatible `POST /v1/chat/completions` with API
->   keys, a declarative YAML routing policy, four providers (Ollama, Mistral, Anthropic,
->   OpenAI), cost per request, `/openapi.json`, and a routing dataset gated at ≥ 95 %
->   (currently 44/44). Walkthrough:
->   [`specs/002-provider-routing/quickstart.md`](specs/002-provider-routing/quickstart.md).
-> - **003 resilience**: timeouts, retries with jittered backoff, per-target circuit
->   breakers (optionally shared through Valkey), fallback along the decided chain with a
->   residency guard that blocks instead of degrading (`451`), `x-tamiz-fallback`, and
->   streaming (`stream: true`) with fallback before the first token. Walkthrough:
->   [`specs/003-resilience/quickstart.md`](specs/003-resilience/quickstart.md).
->
-> - **004 privacy service**: a Python service (`services/privacy`, FastAPI + Presidio +
->   spaCy `es_core_news_lg`) with `POST /analyze` (findings and a sensitivity level, never
->   values) and `POST /anonymize` (reversible `<DNI_1>`-style placeholders; the mapping is
->   returned, stored nowhere). Spanish recognizers check the control characters of DNI,
->   NIE, CIF, IBAN and NSS. Detection on the synthetic corpus v1 (324 cases), gated in CI:
->
->   | Kind | Precision | Recall |
->   |---|---|---|
->   | DNI, NIE, CIF, IBAN, NSS, phone, email, card | 1.000 | 1.000 |
->   | Person (gate: recall ≥ 0.80) | 0.871 | 0.917 |
->   | Location (reported) | 0.805 | 0.939 |
->
->   The corpus is generated in the formats the recognizers target, so these figures
->   guard against regressions; they are not field accuracy. The PII-leak eval of feature
->   007 measures what reaches providers. Walkthrough:
->   [`specs/004-privacy-service/quickstart.md`](specs/004-privacy-service/quickstart.md).
->
-> - **005 privacy-aware routing**: every request is inspected by the privacy service
->   before routing, and the policy's `privacy` section turns the sensitivity level into an
->   action:
->   - `allow`;
->   - `anonymize`: `<KIND_n>` placeholders reach the provider, and the answer is restored
->     in memory, also when streaming, even with placeholders split across chunks;
->   - `restrict_to_local`;
->   - `block` (`451`).
->
->   With the default policy, critical data (DNI, NIE, NSS, IBAN, card) never leaves the
->   machine, and names, emails and phones leave only anonymized and only to EU or local
->   targets. If the privacy service fails, the gateway fails closed. Responses say what
->   happened (`x-tamiz-sensitivity`, `x-tamiz-privacy`), and `POST /v1/simulate` shows the
->   decision without calling any model. Walkthrough:
->   [`specs/005-privacy-aware-routing/quickstart.md`](specs/005-privacy-aware-routing/quickstart.md).
->
-> - **006 audit and telemetry**: every request that reaches the routing decision leaves
->   one audit entry: the decision, the entity kinds and counts, target, fallbacks, tokens,
->   cost, the "everything to the frontier model" baseline cost, and latency. It never holds
->   content; the messages are identified only by an HMAC. Entries go to PostgreSQL with
->   migrations at boot and an asynchronous batched writer, or to a bounded in-memory log.
->   Admin keys (`403` for client keys) open the admin API:
->   - `GET /v1/admin/audit`: filtered, keyset-paginated entries;
->   - `GET /v1/admin/cost`: actual vs baseline cost by day, route or model;
->   - `GET /v1/admin/providers`: circuit state, error rate and latency p50/p95 per target.
->
->   Each request is also an OpenTelemetry trace: a `tamiz.request` span with the decision,
->   one `chat {model}` span per provider attempt with the GenAI semantic-convention
->   attributes, and routing, circuit and privacy steps as span events. Spans are exported
->   over OTLP when `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`docker compose up jaeger`). A
->   capture test searches logs, events, audit entries and spans for the test texts and
->   finds none. Walkthrough:
->   [`specs/006-audit-and-telemetry/quickstart.md`](specs/006-audit-and-telemetry/quickstart.md).
->
->   <!-- Jaeger screenshot: added with T-OPS-01 / T-DOC-01, once the full stack runs. -->
->
-> - **007 evals gate**: `pnpm evals` runs the leak, detection, routing, quality
->   (LLM-as-judge) and cost evals against the real services. The CI job `evals` runs them on
->   every pull request with local models and blocks below threshold. Results are in the
->   [Evals](#evals) section below. Walkthrough:
->   [`specs/007-evals-gate/quickstart.md`](specs/007-evals-gate/quickstart.md).
->
-> - **008 dashboard**: `apps/dashboard`, a Next.js 16 operator console behind one
->   passphrase. Its server-side BFF holds the gateway's admin key, so the browser never
->   sees it. Screens:
->   - live traffic;
->   - the policy simulator (the text is highlighted where personal data was found, with
->     the decision step by step);
->   - the audit log with filters;
->   - cost against "everything to frontier";
->   - provider health with circuit states;
->   - eval results from the CI reports;
->   - a YAML policy editor that saves new versions with conflict detection.
->
->   Light and dark, keyboard and screen-reader checked with axe on every screen, phone
->   width included. A non-root Docker image. Walkthrough:
->   [`specs/008-dashboard/quickstart.md`](specs/008-dashboard/quickstart.md).
->
-> - **009 MCP server and agent**: `apps/mcp-server` exposes four read-only MCP tools over
->   stdio and streamable HTTP, for Claude Desktop, Claude Code or any MCP host:
->   - `simulate_routing`;
->   - `query_audit_log`;
->   - `get_cost_report`;
->   - `get_provider_health`.
->
->   An allowlist chooses the tools, and the admin key stays with the server. A small
->   agent (AI SDK 6 + MCP client) answers "why did spend rise yesterday?". Its own model
->   calls go **through Tamiz** on the local-only `pinned-local` rule, so the gateway audits
->   its own operator tooling. Setup:
->   [`apps/mcp-server/README.md`](apps/mcp-server/README.md).
->
-> Next: the full Docker Compose stack and the public demo (OPS), then the docs (DOC).
->
-> Repository: https://github.com/AxelAxx/tamiz
+*A request with a patient's name, DNI and email. Tamiz finds all three, rates the
+request critical, and keeps it on the local model. The simulator shows the decision
+without calling any model.*
+
+## Why
+
+Small European teams in health, legal, fintech and HR want to use LLMs, but they cannot
+send personal data to any provider they like. Today they either keep AI away from that
+data or use it without control. Tamiz is a self-hosted, OpenAI-compatible gateway that
+sits between the application and the providers and makes that decision on every request:
+
+1. **Inspects** each request for personal data: Spanish DNI, NIE, CIF, IBAN, NSS, cards,
+   emails, phones, names and locations. That covers message text, tool-call arguments,
+   tool results and tool definitions.
+2. **Routes** it by a declarative YAML policy:
+   - critical data stays on a local model (Ollama);
+   - names, emails and phones leave only anonymized, and only to EU-resident or local
+     targets;
+   - everything else goes to the cheapest target that fits the task.
+3. **Resists** provider failures with timeouts, retries, circuit breakers and fallback
+   chains. A fallback that would break residency **blocks** instead of degrading.
+4. **Audits** every decision (entities found, rule, target, cost, latency) in PostgreSQL
+   and OpenTelemetry, without ever storing prompt content.
+5. **Proves** it: privacy-leak, detection, routing, quality and cost evals run on every
+   pull request and block the merge below threshold. Results are [below](#evals).
+
+Applications switch by changing the base URL and the API key of their OpenAI client.
+Responses tell them what happened: `x-tamiz-route`, `x-tamiz-sensitivity`,
+`x-tamiz-privacy`, `x-tamiz-fallback`.
+
+## Quick start
+
+Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
+Node.js 22 with pnpm for the one-off secrets step:
+
+```bash
+git clone https://github.com/AxelAxx/tamiz.git && cd tamiz
+pnpm install
+pnpm compose:env        # asks for a dashboard passphrase, prints a client key and an admin key
+docker compose up -d    # gateway, privacy, dashboard, postgres, valkey, ollama, jaeger
+docker compose logs -f ollama-pull   # first start only: downloads llama3.1:8b (about 5 GB)
+```
+
+The first `up` builds three images (about six minutes, mostly the privacy service's
+spaCy model). After that, the stack is healthy in under 30 seconds. The model download
+comes on top, once.
+
+`pnpm compose:env` writes `apps/gateway/.env.docker` and `apps/dashboard/.env.docker`
+(git-ignored). The gateway starts on `policies/local-only.yaml`, which needs no cloud
+account. For the full routing policy:
+
+1. set the Mistral, Anthropic and OpenAI keys in `apps/gateway/.env.docker`;
+2. change `TAMIZ_POLICY_FILE` to `policies/default.yaml`;
+3. run `docker compose up -d gateway`.
+
+Send a request with personal data, using the client key `pnpm compose:env` printed:
+
+```bash
+curl -s http://localhost:3000/v1/chat/completions \
+  -H "authorization: Bearer tmz_..." -H "content-type: application/json" \
+  -d '{"model":"tamiz-auto","messages":[{"role":"user","content":"Resume el expediente de 12345678Z."}]}' \
+  -D - -o /dev/null | grep -i x-tamiz
+```
+
+```text
+x-tamiz-privacy: restrict_to_local
+x-tamiz-route: ollama-llama
+x-tamiz-rule: default
+x-tamiz-sensitivity: critical
+```
+
+Then look at the result:
+
+| Where | What you see |
+|---|---|
+| Dashboard, http://localhost:3100 (your passphrase) | The request in live traffic and the audit log; the simulator, cost, provider health, eval results and the policy editor |
+| Jaeger, http://localhost:16686 (service `tamiz-gateway`) | The `tamiz.request` span with the decision, a `chat llama3.1:8b` span with the GenAI attributes, and the privacy and routing events |
+| MCP, [`apps/mcp-server`](apps/mcp-server/README.md) | The same data as tools for Claude Desktop, Claude Code or any MCP host (the `ops` admin key) |
+
+## How it works
+
+```mermaid
+flowchart LR
+    app["Your app (OpenAI SDK)"] -->|"POST /v1/chat/completions"| gw
+    subgraph gw["Tamiz gateway"]
+        direction LR
+        inspect["Inspect"] --> decide["Decide (policy)"] --> protect["Allow / anonymize / local only / block"] --> exec["Execute (timeout, retry, breaker, fallback)"] --> audit["Audit + trace"]
+    end
+    inspect -.->|"/analyze"| privacy["Privacy service (Presidio + Spanish recognizers)"]
+    exec -->|local| ollama["Ollama"]
+    exec -->|EU| mistral["Mistral"]
+    exec -->|frontier| frontier["Anthropic / OpenAI"]
+    audit --> pg[("PostgreSQL")]
+    audit --> jaeger["Jaeger"]
+    dash["Dashboard"] -->|"admin API"| gw
+    mcp["MCP server"] -->|"admin API"| gw
+```
+
+The routing decision is a pure domain function: it takes the policy and the request and
+returns an ordered chain plus a privacy action. Everything with I/O sits behind ports,
+which keeps the decision exhaustively testable (property-based tests included). The
+gateway follows Clean Architecture, and dependency-cruiser fails CI on a layer violation.
+Every public contract is a Zod schema in `packages/contracts`, and the OpenAPI document,
+the dashboard and the MCP server derive from it.
+
+- Diagrams (system view, request flow, gateway layers): [`docs/architecture.md`](docs/architecture.md).
+- Decisions:
+  - [ADR-0001](docs/adr/ADR-0001-clean-architecture-contract-first.md) Clean Architecture and contract-first;
+  - [ADR-0002](docs/adr/ADR-0002-english-single-repository-language.md) English as the single repository language;
+  - [ADR-0003](docs/adr/ADR-0003-apache-2-licence.md) the Apache-2.0 licence.
+- The ten principles every change answers to: [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
 
 ## Evals
 
@@ -125,8 +125,8 @@ pull request, with local models, and the pull request cannot merge below a thres
 All data is synthetic and versioned in `packages/evals/datasets/`.
 
 - **PII leak**: would a personal value reach a non-local provider verbatim, through any
-  target of the decided chain, fallbacks included? 160 synthetic Spanish requests (health,
-  legal, fintech, HR).
+  target of the decided chain, fallbacks included? 200 synthetic Spanish requests (health,
+  legal, fintech, HR); 40 of them carry the values in tool-call arguments and tool results.
 - **Detection**: precision and recall of the privacy service on held-out sentences in
   harder formats than its development corpus.
 - **Routing**: the 44 routing cases through `POST /v1/simulate`, with the real inspection.
@@ -136,7 +136,7 @@ All data is synthetic and versioned in `packages/evals/datasets/`.
 - **Cost**: the routing cases priced on the decided target and on the most expensive one.
 
 <!-- evals:start -->
-Last run: 2026-10-31, commit `7f423cd`, policy `default` v3 — overall **pass**.
+Last run: 2026-11-02, commit `10d17b3`, policy `default` v3 — overall **pass**.
 
 | Eval | Metric | Result | Threshold | |
 |---|---|---|---|---|
@@ -146,8 +146,9 @@ Last run: 2026-10-31, commit `7f423cd`, policy `default` v3 — overall **pass**
 | PII leak | `leak_rate.IBAN` | 0.00 % | = 0.00 % | ✓ pass |
 | PII leak | `leak_rate.NIE` | 0.00 % | = 0.00 % | ✓ pass |
 | PII leak | `leak_rate.NSS` | 0.00 % | = 0.00 % | ✓ pass |
-| PII leak | `leak_rate.PERSON` | 1.00 % | < 2.00 % | ✓ pass |
+| PII leak | `leak_rate.PERSON` | 0.83 % | < 2.00 % | ✓ pass |
 | PII leak | `leak_rate.PHONE` | 0.00 % | < 2.00 % | ✓ pass |
+| PII leak | `values.tool_messages` | 86 | ≥ 40 | ✓ pass |
 | Detection | `recall.CIF` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Detection | `recall.CREDIT_CARD` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Detection | `recall.DNI` | 100.00 % | ≥ 95.00 % | ✓ pass |
@@ -164,23 +165,76 @@ Last run: 2026-10-31, commit `7f423cd`, policy `default` v3 — overall **pass**
 | Cost | `cost.baseline_estimate` | $0.29130 | reported | reported |
 | Cost | `saving` | 87.09 % | reported | reported |
 
-Datasets: pii-leak-es v1 (160), pii-detection-es v1 (160), routing v1 (44), quality-es v1 (24). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
+Datasets: pii-leak-es v2 (200), pii-detection-es v1 (160), routing v1 (44), quality-es v1 (24). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
 <!-- evals:end -->
 
 Limitations: detection is statistical (spaCy for names), so the figures are a measured
 defence layer on synthetic data, not a guarantee. CI runs small local models, so the
 quality figures track regressions rather than absolute quality.
 
-## Where to start
+## Features
 
-- `CLAUDE.md` — the project map and working protocol (read first).
-- `docs/tamiz-project.md` — foundational document (vision, stack, architecture, roadmap).
-- `.specify/memory/constitution.md` — the ten non-negotiable principles.
-- `docs/architecture.md` — diagrams.
-- `docs/adr/` — architecture decision records.
-- `docs/tasks/BACKLOG.md` — the task list for the 14-day roadmap.
+Each feature was specified before it was built (GitHub Spec Kit). Its spec, plan and
+tasks are in `specs/`, with Given/When/Then criteria mapped one to one to tests. Each
+walkthrough reproduces the feature by hand.
 
-## Developing
+| # | Feature | What it adds | Walkthrough |
+|---|---|---|---|
+| 001 | Contracts and skeleton | pnpm + Turborepo + Biome workspace, Zod contracts, gateway skeleton, architecture check, CI | [spec](specs/001-contracts-and-skeleton/) |
+| 002 | Provider routing | OpenAI-compatible `POST /v1/chat/completions`, API keys, YAML routing policy, four providers (Ollama, Mistral, Anthropic, OpenAI), cost per request, `/openapi.json` | [quickstart](specs/002-provider-routing/quickstart.md) |
+| 003 | Resilience | Timeouts, jittered retries, per-target circuit breakers (shareable through Valkey), fallback along the chain with a residency guard (`451`), streaming with fallback before the first token | [quickstart](specs/003-resilience/quickstart.md) |
+| 004 | Privacy service | Python, FastAPI + Presidio + spaCy `es_core_news_lg`. Spanish recognizers that check DNI, NIE, CIF, IBAN and NSS control characters. `/analyze` returns kinds and positions, never values; `/anonymize` returns reversible placeholders | [quickstart](specs/004-privacy-service/quickstart.md) |
+| 005 | Privacy-aware routing | The policy's `privacy` section maps the sensitivity level to `allow`, `anonymize`, `restrict_to_local` or `block`. Placeholders are restored in memory, also mid-stream. The gateway fails closed if detection fails. `POST /v1/simulate` | [quickstart](specs/005-privacy-aware-routing/quickstart.md) |
+| 006 | Audit and telemetry | A content-free audit entry per request (PostgreSQL, messages identified only by an HMAC). Admin API for audit, cost against the "everything to frontier" baseline, and provider health. OpenTelemetry traces with GenAI attributes | [quickstart](specs/006-audit-and-telemetry/quickstart.md) |
+| 007 | Evals gate | `pnpm evals`: leak, detection, routing, quality (LLM-as-judge) and cost against the real services, run in CI with local models, blocking below threshold | [quickstart](specs/007-evals-gate/quickstart.md) |
+| 008 | Dashboard | Next.js 16 operator console: live traffic, policy simulator, audit log, cost, provider health, eval results, YAML policy editor with versioning. A server-side BFF holds the admin key. Checked with axe on every screen, both themes and phone width | [quickstart](specs/008-dashboard/quickstart.md) |
+| 009 | MCP server and agent | Four read-only MCP tools (`simulate_routing`, `query_audit_log`, `get_cost_report`, `get_provider_health`). An agent whose own model calls go **through Tamiz**, so the gateway audits its own tooling. OpenAI function tools through the gateway, inspected like any text | [README](apps/mcp-server/README.md) |
+| 010 | Citara integration | An OpenAI-SDK client that calls Tamiz the way an existing application would, with an integration guide | [guide](docs/integrations/citara.md) |
+
+## Limitations
+
+Tamiz is a defence layer with published metrics, not a guarantee and not a certified
+compliance product.
+
+- **Detection is statistical for names and locations.** Structured identifiers have
+  check digits and are matched almost perfectly. Names rely on spaCy and are missed
+  sometimes: about 1 in 10 in the detection eval, and 0.83 % of them reach a non-local
+  provider in the leak eval. If a category must never leave the machine, use
+  `restrict_to_local` for it rather than `anonymize`.
+- **The figures come from synthetic Spanish data.** The datasets are generated in the
+  formats the recognizers target, so they guard against regressions; they are not field
+  accuracy. Other languages and identifier formats are not covered by the recognizers.
+- **Quality is measured with small local models.** CI answers with `qwen2.5:1.5b` and
+  judges with `qwen2.5:3b`, against an accepted baseline. That catches regressions, not
+  absolute quality. The comparison with the frontier route needs provider keys and is
+  run by hand.
+- **Anonymization costs context.** The provider sees `<PERSON_1>`, not the name, so some
+  answers lose detail. The mapping lives only in the gateway process's memory, for the
+  duration of the request.
+- **Inspection adds latency** to every request: a call to the privacy service, cached by
+  a hash of the messages. The local model needs real hardware: `llama3.1:8b` wants about
+  8 GB of RAM, and it answers slowly on a CPU.
+- **Task classification is rule-based** (keyword cues and size), so an unusual phrasing
+  can land on the wrong rule. A learned classifier can replace it behind the same function.
+- **A stream falls back only before its first token.** Once text has reached the client,
+  a provider failure ends the stream with an error.
+- **One operator passphrase.** The dashboard has no users or roles. The privacy service
+  has no authentication and must stay on an internal network, as the compose file keeps
+  it.
+- **No public demo yet.** It is planned as `T-OPS-02`; for now, run it locally.
+
+## Project
+
+This is a two-week portfolio project, built spec-first with Claude Code. Clarity and
+demonstrable rigour matter as much as features.
+
+- [`CLAUDE.md`](CLAUDE.md): the project map and working protocol.
+- [`docs/tamiz-project.md`](docs/tamiz-project.md): the foundational document (vision,
+  stack, architecture, roadmap; in Spanish, the project's working notes).
+- [`docs/tasks/BACKLOG.md`](docs/tasks/BACKLOG.md): every task, and in `docs/tasks/done/`
+  what each one decided and learned.
+
+### Developing
 
 Node.js 22 LTS (`.nvmrc`) and pnpm 10 (pinned by `packageManager`; `corepack enable pnpm`
 or `npm install -g pnpm@10`).
@@ -189,56 +243,24 @@ or `npm install -g pnpm@10`).
 pnpm install      # also installs the commit-message hook
 pnpm lint         # Biome
 pnpm typecheck    # tsc per package
+pnpm arch         # dependency-cruiser layer rules
 pnpm test         # every package from the root (Vitest projects); add --coverage for the table
-pnpm test:packages  # per-package Vitest through Turborepo (cached)
 pnpm build        # tsc per package
+pnpm evals        # the eval suite against running services (packages/evals/README.md)
 ```
 
 Commits follow Conventional Commits and are checked by commitlint on `commit-msg`.
 
-To run the gateway locally, copy `.env.example` (every variable is documented there),
-generate a key with `pnpm --filter @tamiz/gateway generate-api-key <client>`, and start
-it with `pnpm --filter @tamiz/gateway dev`. `docker compose up valkey` plus
-`REDIS_URL=redis://localhost:6379` shares circuit breaker state between instances;
-`docker compose up postgres` with `DATABASE_URL` keeps the audit log, and
-`docker compose up jaeger` with `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` shows
-the traces (UI on http://localhost:16686).
+To run the gateway on the host instead of in compose:
+1. copy `.env.example` (every variable is documented there);
+2. generate a key with `pnpm --filter @tamiz/gateway generate-api-key <client>`;
+3. start the services it uses with `docker compose up -d valkey privacy postgres jaeger`;
+4. run `pnpm --filter @tamiz/gateway dev`.
 
-## Quick start
-
-Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
-Node.js 22 with pnpm for the one-off secrets step:
-
-```bash
-pnpm install
-pnpm compose:env        # asks for a dashboard passphrase, prints a client key and an admin key
-docker compose up -d    # gateway, privacy, dashboard, postgres, valkey, ollama, jaeger
-docker compose logs -f ollama-pull   # first start only: downloads llama3.1:8b (about 5 GB)
-```
-
-The stack is healthy in well under two minutes; the model download comes on top, once.
-`pnpm compose:env` writes `apps/gateway/.env.docker` and `apps/dashboard/.env.docker`
-(git-ignored) and starts the gateway on `policies/local-only.yaml`, which needs no cloud
-key. For the full routing policy, set the three provider keys in
-`apps/gateway/.env.docker`, change `TAMIZ_POLICY_FILE` to `policies/default.yaml`, and
-run `docker compose up -d gateway`.
-
-Send a request with personal data through the gateway (replace the key with the client
-key `pnpm compose:env` printed):
-
-```bash
-curl -s http://localhost:3000/v1/chat/completions \
-  -H "authorization: Bearer tmz_..." -H "content-type: application/json" \
-  -d '{"model":"tamiz-auto","messages":[{"role":"user","content":"Resume el expediente de 12345678Z."}]}' \
-  -D - -o /dev/null | grep -i x-tamiz
-```
-
-Then open the dashboard on http://localhost:3100 (the passphrase you chose) to see it in
-live traffic and the audit log, and Jaeger on http://localhost:16686 (service
-`tamiz-gateway`) for its trace. The full README with the simulator GIF, eval results
-table and limitations is written in task `T-DOC-01`.
+The privacy service has its own toolchain (uv, Ruff, mypy, pytest): see
+[`services/privacy/README.md`](services/privacy/README.md).
 
 ## License
 
 Apache License 2.0. Copyright 2026 Alex Martinez. See `LICENSE` and `NOTICE`
-(rationale in `docs/adr/ADR-0003-apache-2-licence.md`).
+(rationale in [ADR-0003](docs/adr/ADR-0003-apache-2-licence.md)).
