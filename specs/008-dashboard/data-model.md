@@ -147,6 +147,7 @@ Append-only: rows are never updated or deleted by the gateway.
 | `id` | 32 random bytes, base64url; the cookie carries `id.signature` |
 | `createdAt` | |
 | `expiresAt` | `createdAt + 8 h`; absolute, not sliding |
+| `role` | `operator` (passphrase) or `visitor` (spec US10); never in the cookie |
 
 Sign-out and expiry delete the entry. A periodic sweep removes expired entries.
 
@@ -154,6 +155,9 @@ Sign-out and expiry delete the entry. A periodic sweep removes expired entries.
 
 `address → { failures: number, windowStart: number, blockedUntil?: number }`: 5 failures per
 60 s window, then refused for 60 s (US1-2).
+
+Visitor limits (US10): `address → { count, windowStart }`, one map for visitor sessions
+created and one for visitor simulations, 10 per fixed 60 s window each.
 
 ### 3.3 Configuration (`src/lib/server/env.ts`, Zod)
 
@@ -166,6 +170,7 @@ Sign-out and expiry delete the entry. A periodic sweep removes expired entries.
 | `TAMIZ_DASHBOARD_PUBLIC_URL` | URL; its origin is the allowed `Origin` |
 | `TAMIZ_DASHBOARD_EVALS_DIR` | path, default `./data/evals` |
 | `TAMIZ_DASHBOARD_TRUST_PROXY` | `true` \| `false`, default `false` |
+| `TAMIZ_DASHBOARD_VISITOR_ACCESS` | `true` \| `false`, default `false` (spec US10) |
 
 ## 4. Browser state
 

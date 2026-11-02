@@ -8,8 +8,10 @@ import { z } from "zod";
 export const BFF_ERROR_TYPES = [
   "unauthenticated", // no or expired session (401)
   "forbidden_origin", // cross-origin write (403)
+  "forbidden_role", // a visitor session asked for an operator write (403, US10)
+  "not_found", // visitor sessions are off (404, US10)
   "invalid_request", // the request fails its contract, refused before the gateway (400)
-  "rate_limited", // too many failed sign-ins (429, Retry-After)
+  "rate_limited", // too many failed sign-ins or visitor uses (429, Retry-After)
   "gateway_credentials", // the gateway answered 401/403 to the dashboard (502)
   "gateway_unreachable", // network error or timeout (504)
   "contract", // the gateway answer failed its schema (502)
@@ -31,6 +33,9 @@ export type BffErrorType = (typeof BFF_ERROR_TYPES)[number];
 export const SignInRequestSchema = z.strictObject({ passphrase: z.string().min(1).max(1024) });
 
 export const OkSchema = z.strictObject({ ok: z.literal(true) });
+
+export const SessionInfoSchema = z.strictObject({ role: z.enum(["operator", "visitor"]) });
+export type SessionInfo = z.infer<typeof SessionInfoSchema>;
 
 export const DashboardHealthSchema = z.strictObject({ status: z.literal("ok") });
 

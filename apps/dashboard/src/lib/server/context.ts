@@ -10,14 +10,19 @@ import { createGatewayClient, type GatewayCallLog, type GatewayClient } from "./
 import {
   createSessionStore,
   createSignInLimiter,
+  createWindowLimiter,
   type SessionStore,
   type SignInLimiter,
+  type WindowLimiter,
 } from "./session";
 
 export interface ServerContext {
   readonly env: DashboardEnv;
   readonly sessions: SessionStore;
   readonly signIn: SignInLimiter;
+  /** Spec US10-5, US10-4: visitor sessions created and visitor simulations, per address. */
+  readonly visitorSessions: WindowLimiter;
+  readonly visitorSimulations: WindowLimiter;
   readonly gateway: GatewayClient;
   readonly log: (line: GatewayCallLog) => void;
 }
@@ -33,6 +38,8 @@ function build(): ServerContext {
     env,
     sessions,
     signIn: createSignInLimiter({ now: Date.now }),
+    visitorSessions: createWindowLimiter({ now: Date.now }),
+    visitorSimulations: createWindowLimiter({ now: Date.now }),
     gateway: createGatewayClient({ baseUrl: env.gatewayUrl, adminKey: env.adminKey }),
     log: (line) => process.stdout.write(`${JSON.stringify({ msg: "gateway call", ...line })}\n`),
   };

@@ -1,7 +1,7 @@
 # HTTP contract: dashboard endpoints (BFF)
 
 The browser calls only these endpoints, on the dashboard's own origin (research R-01).
-Every endpoint except `POST /api/session` and `GET /api/health` needs a valid session
+Every endpoint except `POST /api/session`, `POST /api/session/visitor` and `GET /api/health` needs a valid session
 cookie; without one it answers `401 { error: { type: "unauthenticated" } }` and calls
 nothing. Every non-GET endpoint checks `Origin` first (research R-04) and answers
 `403 forbidden_origin` on a mismatch.
@@ -12,6 +12,8 @@ Errors use `BffErrorSchema` (`data-model.md` §1.3).
 |---|---|---|---|
 | `POST /api/session` | `{ passphrase }` | — | `{ ok: true }` + `Set-Cookie: tamiz_session` |
 | `DELETE /api/session` | — | — | `{ ok: true }`, cookie cleared, session deleted |
+| `GET /api/session` | — | — | `{ role: "operator" \| "visitor" }` (US10) |
+| `POST /api/session/visitor` | — | — | `{ ok: true }` + `Set-Cookie: tamiz_session` (US10; `404` when visitor access is off) |
 | `GET /api/health` | — | — | `{ status: "ok" }` (the dashboard only; container healthcheck) |
 | `GET /api/gateway-health` | — | `GET /health` | `HealthResponse` |
 | `GET /api/audit` | `AuditQuery` (query string) | `GET /v1/admin/audit` | `AuditPage` |
@@ -38,6 +40,12 @@ Rules for every handler:
 
 `POST /api/session` failures: wrong passphrase → `401 { error: { type: "unauthenticated",
 message: "Wrong passphrase" } }`; rate limited → `429` with `Retry-After`.
+
+Visitor sessions (spec US10, addendum `T-OPS-03`): a visitor may call every `GET` endpoint,
+`POST /api/simulate` and `DELETE /api/session`; any other write answers
+`403 { error: { type: "forbidden_role" } }` before the gateway is called. Visitor
+simulations and `POST /api/session/visitor` are each limited to 10 per minute per address
+(`429 rate_limited` with `Retry-After`).
 
 ## Environment
 

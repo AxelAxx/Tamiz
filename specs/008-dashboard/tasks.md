@@ -54,6 +54,9 @@ deviations go in its task record (FR-024).
 | US4-6 table semantics, detail | T032 | US9-4 polite throttled announcements | T023 |
 | | | US9-5 theme persists, no flash | T016 |
 | | | US9-6 phone layout | T016, T052 |
+| US10-1 visitor access off by default | T057, T061 | US10-4 visitor simulation budget | T058, T061 |
+| US10-2 visitor session, every screen | T057, T061 | US10-5 visitor session budget | T058, T061 |
+| US10-3 visitor cannot save the policy | T059, T060, T061 | | |
 
 ---
 
@@ -378,6 +381,20 @@ T-008-08 (gateway half) has no dependency inside the feature and may start at an
 
 Within a phase: tests first, then implementation; `[P]` tasks touch different files.
 
+## Phase 11: `T-OPS-03` — Visitor access for the public demo (US10, addendum 2026-11-02)
+
+- [x] T057 `TAMIZ_DASHBOARD_VISITOR_ACCESS` (default `false`) in `env.ts`; sessions carry a
+  role in the store (`roleOf`), never in the cookie; `POST /api/session/visitor` (`404` when
+  off) and `GET /api/session` (`test/env.test.ts`, `test/session.test.ts`)
+- [x] T058 `createWindowLimiter` (10 per fixed minute per address) for visitor sessions and
+  visitor simulations (`test/session.test.ts`)
+- [x] T059 `withRole` wrapper: operator-only writes answer `403 forbidden_role`;
+  `sessionWrite` for sign-out, `simulateWrite` with the visitor budget (`test/handler.test.ts`)
+- [x] T060 Screens: "Explore as a visitor" on the sign-in page, "Visitor" in the operator
+  menu, read-only policy editor without save
+- [x] T061 Playwright `e2e/visitor.spec.ts` (US10-1 … US10-5), with a second dashboard on
+  the same build with visitor access off
+
 ## Totals
 
 | Phase | Backlog | Tasks |
@@ -393,7 +410,8 @@ Within a phase: tests first, then implementation; `[P]` tasks touch different fi
 | 8 | `T-008-11` | T047–T048 (2) |
 | 9 | `T-008-06` | T049–T051 (3) |
 | 10 | `T-008-09` | T052–T056 (5) |
-| **Total** | | **56 + G1** |
+| 11 | `T-OPS-03` (addendum US10) | T057–T061 (5) |
+| **Total** | | **61 + G1** |
 
 ## Implementation strategy
 

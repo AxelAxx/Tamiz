@@ -37,6 +37,9 @@ const EnvSchema = z.object({
   TAMIZ_DASHBOARD_TRUST_PROXY: z
     .enum(["true", "false"], { error: "expected true or false" })
     .default("false"),
+  TAMIZ_DASHBOARD_VISITOR_ACCESS: z
+    .enum(["true", "false"], { error: "expected true or false" })
+    .default("false"),
 });
 
 export interface DashboardEnv {
@@ -48,6 +51,8 @@ export interface DashboardEnv {
   readonly publicOrigin: string;
   readonly evalsDir: string;
   readonly trustProxy: boolean;
+  /** Spec US10: the sign-in page offers read-only visitor sessions. */
+  readonly visitorAccess: boolean;
 }
 
 export type EnvResult =
@@ -73,6 +78,7 @@ export function parseEnv(source: Readonly<Record<string, string | undefined>>): 
       publicOrigin: new URL(env.TAMIZ_DASHBOARD_PUBLIC_URL).origin,
       evalsDir: env.TAMIZ_DASHBOARD_EVALS_DIR,
       trustProxy: env.TAMIZ_DASHBOARD_TRUST_PROXY === "true",
+      visitorAccess: env.TAMIZ_DASHBOARD_VISITOR_ACCESS === "true",
     },
   };
 }

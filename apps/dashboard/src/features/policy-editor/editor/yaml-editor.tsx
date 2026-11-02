@@ -4,7 +4,8 @@
  * A thin React wrapper over CodeMirror 6 for YAML (spec 008 research R-12): line numbers, a
  * lint gutter fed with the issues the screen computes, history and the default keymap.
  * `Tab` indents; `Esc` then `Tab` leaves the editor (CodeMirror's documented model).
- * `Mod-s` asks to save.
+ * `Mod-s` asks to save. `readOnly` (a visitor session, spec 008 US10-3) keeps the text,
+ * selection and focus but refuses every edit.
  *
  * The editor owns its text while the operator types; the screen replaces it only through
  * `document.revision` (load, reload, discard, after a save).
@@ -99,6 +100,7 @@ export function YamlEditor({
   describedBy,
   onChange,
   onSave,
+  readOnly = false,
 }: {
   readonly document: { readonly text: string; readonly revision: number };
   readonly issues: ReadonlyArray<EditorIssue>;
@@ -108,6 +110,7 @@ export function YamlEditor({
   readonly describedBy?: string;
   readonly onChange: (text: string) => void;
   readonly onSave: () => void;
+  readonly readOnly?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
@@ -130,6 +133,7 @@ export function YamlEditor({
           history(),
           indentUnit.of("  "),
           EditorState.tabSize.of(2),
+          EditorState.readOnly.of(readOnly),
           keymap.of([
             {
               key: "Mod-s",
@@ -151,6 +155,7 @@ export function YamlEditor({
             "aria-label": label,
             ...(describedBy === undefined ? {} : { "aria-describedby": describedBy }),
             "data-testid": "policy-yaml",
+            ...(readOnly ? { "aria-readonly": "true" } : {}),
             // Explicit, so checkers see a focusable element inside the scroll region.
             tabindex: "0",
           }),

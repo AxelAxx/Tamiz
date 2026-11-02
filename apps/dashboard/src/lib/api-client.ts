@@ -28,6 +28,8 @@ import {
   type EvalsList,
   EvalsListSchema,
   OkSchema,
+  type SessionInfo,
+  SessionInfoSchema,
 } from "./schemas";
 
 export class BffRequestError extends Error {
@@ -76,6 +78,8 @@ export const api = {
   signIn: (passphrase: string) =>
     request("/api/session", OkSchema, { method: "POST", ...json({ passphrase }) }),
   signOut: () => request("/api/session", OkSchema, { method: "DELETE" }),
+  enterAsVisitor: () => request("/api/session/visitor", OkSchema, { method: "POST" }),
+  session: (): Promise<SessionInfo> => request("/api/session", SessionInfoSchema),
   gatewayHealth: (): Promise<HealthResponse> =>
     request("/api/gateway-health", HealthResponseSchema),
   audit: (query: Partial<AuditQueryDto> = {}): Promise<AuditPageDto> =>

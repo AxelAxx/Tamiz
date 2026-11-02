@@ -1,7 +1,6 @@
 /**
- * Operator sessions and the sign-in rate limit, in memory (spec 008 FR-001, research R-03,
- * data-model §3.1-3.2). A restart signs every operator out; that is accepted for one
- * instance.
+ * Sessions and the rate limits, in memory (spec 008 FR-001, FR-026, FR-028, research R-03,
+ * data-model §3.1-3.2). A restart signs everyone out; that is accepted for one instance.
  */
 import "server-only";
 import { randomBytes } from "node:crypto";
@@ -9,11 +8,16 @@ import { signSessionId, verifySessionCookie } from "./session-cookie";
 
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
+/** Who a session belongs to (US10): the server holds it, the cookie never carries it. */
+export type SessionRole = "operator" | "visitor";
+
 export interface SessionStore {
   /** A new session; the cookie carries `id.signature`. */
-  create(): { readonly cookie: string; readonly expiresAt: number };
+  create(role?: SessionRole): { readonly cookie: string; readonly expiresAt: number };
   /** The signature is right and the session exists and has not expired. */
   isValid(cookie: string): boolean;
+  /** The role of a valid session, else `undefined`. */
+  roleOf(cookie: string): SessionRole | undefined;
   revoke(cookie: string): void;
   /** Removes expired sessions. */
   sweep(): void;
@@ -26,35 +30,37 @@ export function createSessionStore(deps: {
   readonly ttlMs?: number;
 }): SessionStore {
   const ttlMs = deps.ttlMs ?? SESSION_TTL_MS;
-  const expiries = new Map<string, number>();
+  const sessions = new Map<string, { readonly expiresAt: number; readonly role: SessionRole }>();
   const idOf = (cookie: string) => verifySessionCookie(cookie, deps.secret);
+  const roleOf = (cookie: string): SessionRole | undefined => {
+    const id = idOf(cookie);
+    if (id === undefined) return undefined;
+    const session = sessions.get(id);
+    if (session === undefined) return undefined;
+    if (deps.now() >= session.expiresAt) {
+      sessions.delete(id);
+      return undefined;
+    }
+    return session.role;
+  };
   return {
-    create() {
+    create(role = "operator") {
       const id = randomBytes(32).toString("base64url");
       const expiresAt = deps.now() + ttlMs;
-      expiries.set(id, expiresAt);
+      sessions.set(id, { expiresAt, role });
       return { cookie: signSessionId(id, deps.secret), expiresAt };
     },
-    isValid(cookie) {
-      const id = idOf(cookie);
-      if (id === undefined) return false;
-      const expiresAt = expiries.get(id);
-      if (expiresAt === undefined) return false;
-      if (deps.now() >= expiresAt) {
-        expiries.delete(id);
-        return false;
-      }
-      return true;
-    },
+    isValid: (cookie) => roleOf(cookie) !== undefined,
+    roleOf,
     revoke(cookie) {
       const id = idOf(cookie);
-      if (id !== undefined) expiries.delete(id);
+      if (id !== undefined) sessions.delete(id);
     },
     sweep() {
       const now = deps.now();
-      for (const [id, expiresAt] of expiries) if (now >= expiresAt) expiries.delete(id);
+      for (const [id, { expiresAt }] of sessions) if (now >= expiresAt) sessions.delete(id);
     },
-    size: () => expiries.size,
+    size: () => sessions.size,
   };
 }
 
@@ -103,6 +109,49 @@ export function createSignInLimiter(deps: {
     },
     recordSuccess(address) {
       attempts.delete(address);
+    },
+  };
+}
+
+export interface WindowLimiter {
+  /** Counts one use by `address`; refused once `limit` uses fall in the current window. */
+  take(address: string): SignInCheck;
+}
+
+const MAX_TRACKED_ADDRESSES = 10_000;
+
+/** US10-4, US10-5: `limit` uses per fixed `windowMs` window per address. */
+export function createWindowLimiter(deps: {
+  readonly now: () => number;
+  readonly limit?: number;
+  readonly windowMs?: number;
+}): WindowLimiter {
+  const limit = deps.limit ?? 10;
+  const windowMs = deps.windowMs ?? 60_000;
+  const windows = new Map<string, { count: number; windowStart: number }>();
+  return {
+    take(address) {
+      const now = deps.now();
+      const current = windows.get(address);
+      const entry =
+        current === undefined || now - current.windowStart >= windowMs
+          ? { count: 0, windowStart: now }
+          : current;
+      if (entry.count >= limit) {
+        return {
+          allowed: false,
+          retryAfterSeconds: Math.ceil((entry.windowStart + windowMs - now) / 1000),
+        };
+      }
+      entry.count += 1;
+      windows.set(address, entry);
+      // A public demo sees many addresses: past windows are dropped once the map grows.
+      if (windows.size > MAX_TRACKED_ADDRESSES) {
+        for (const [key, { windowStart }] of windows) {
+          if (now - windowStart >= windowMs) windows.delete(key);
+        }
+      }
+      return { allowed: true };
     },
   };
 }

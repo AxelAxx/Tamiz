@@ -392,7 +392,8 @@ protected since `T-001-05`: required check `ci`, pull requests only, admins incl
 
 Decided on 2026-11-02: the public demo runs the gateway on a Hetzner Cloud server in
 Germany and the dashboard on Vercel (`fra1`); steps in `docs/deploy.md` (`T-OPS-02`).
+Anyone may explore the public demo as a read-only visitor
+(`TAMIZ_DASHBOARD_VISITOR_ACCESS=true`, spec 008 US10, `T-OPS-03`); the passphrase stays
+private because it opens the policy editor.
 
-Still open (ask Alex, do not assume):
-
-- Who may use the public demo without the passphrase (`T-OPS-03`).
+Still open (ask Alex, do not assume): nothing at the moment.

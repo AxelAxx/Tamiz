@@ -149,6 +149,7 @@ The simulation should say `"sensitivity":"critical"` and
    | `TAMIZ_DASHBOARD_SESSION_SECRET` | from `apps/dashboard/.env.docker` |
    | `TAMIZ_DASHBOARD_PUBLIC_URL` | the production URL, for example `https://tamiz.vercel.app` |
    | `TAMIZ_DASHBOARD_TRUST_PROXY` | `true` (Vercel sets `X-Forwarded-For` itself) |
+   | `TAMIZ_DASHBOARD_VISITOR_ACCESS` | `true` for a public demo (section 6), else leave it out |
 
 3. Deploy. Open the URL and sign in with the passphrase. Then check:
    - the simulator decides as in step 4;
@@ -159,9 +160,18 @@ If a variable is missing or malformed, the deployment's function logs list it.
 
 ## 6. Who gets in
 
-The dashboard is an operator console, not a read-only showcase. The passphrase opens
-every screen: audit, cost, provider health, and the policy editor, which saves new
-policy versions that the gateway uses at once. So:
+The dashboard is an operator console. The passphrase opens every screen: audit, cost,
+provider health, and the policy editor, which saves new policy versions that the gateway
+uses at once.
+
+**Visitors** (`TAMIZ_DASHBOARD_VISITOR_ACCESS=true`, `T-OPS-03`): the sign-in page also
+offers "Explore as a visitor". A visitor session can read every screen and run the
+simulator, at most 10 simulations a minute per address; the policy is shown read-only and
+a save is refused with `403`. At most 10 visitor sessions a minute are opened per address.
+Simulations call the privacy service but no model, so a visitor spends no Mistral credit.
+This is the setting to link from the README.
+
+For the operator:
 
 - **Do not publish the passphrase.** Share it on request, and change it afterwards:
   1. run `pnpm --filter @tamiz/dashboard hash-passphrase`;
@@ -170,8 +180,6 @@ policy versions that the gateway uses at once. So:
 - **Do not publish the `demo` client key.** Every request with it can cost money on the
   Mistral key. For a public "try it" experience, use the GIF and the README's quick
   start instead.
-
-A public read-only mode is a separate task (`T-OPS-03`).
 
 ## 7. Operating it
 
@@ -187,8 +195,8 @@ A public read-only mode is a separate task (`T-OPS-03`).
 
 - **No request rate limit in the gateway.** A leaked client key can spend the Mistral
   budget until it is rotated. The spending limit on the Mistral key is the backstop.
-- **The sign-in rate limit is per serverless instance on Vercel**, so it is weaker than
-  on a single server.
+- **The sign-in rate limit and the visitor limits are per serverless instance on
+  Vercel**, so they are weaker than on a single server.
 - **The local model is slow on CPU.** On an 8 GB server there is none, and requests that
   must stay local fail. They are audited as failed, and the simulator still shows the
   decision.

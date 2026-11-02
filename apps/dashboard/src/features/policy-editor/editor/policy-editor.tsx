@@ -8,6 +8,7 @@
  * saving waits until there are none. A save sends `{ baseVersion, policy }`; the gateway
  * checks cross-field rules again and either answers the new version, refuses with issues,
  * or refuses with a conflict when someone saved first. Nothing is overwritten silently.
+ * A visitor session (US10-3) sees the same policy read-only, with no save.
  */
 import type { ActivePolicyDto } from "@tamiz/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,7 @@ import {
   CircleX,
   Copy,
   Database,
+  Eye,
   FlaskConical,
   Monitor,
   RefreshCw,
@@ -40,6 +42,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { BADGE, TONE } from "@/features/shared/badges";
 import { RegionError } from "@/features/shared/region-states";
+import { useSessionRole } from "@/features/shell/session-role";
 import { api, BffRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import {
@@ -384,12 +387,32 @@ function Loading() {
   );
 }
 
+function ReadOnlyFooter({ onReload }: { readonly onReload: () => void }) {
+  return (
+    <div
+      data-component="policy-read-only"
+      className="flex flex-wrap items-center gap-2 border-t px-4 py-3"
+    >
+      <span className="mr-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Eye aria-hidden="true" className="size-3.5" />
+        Read-only: you are exploring as a visitor. Saving needs the operator passphrase.
+      </span>
+      <Button variant="ghost" size="sm" onClick={onReload}>
+        <RefreshCw aria-hidden="true" />
+        Reload from gateway
+      </Button>
+    </div>
+  );
+}
+
 function Editor({
   loaded,
   onReload,
+  readOnly,
 }: {
   readonly loaded: ActivePolicyDto;
   readonly onReload: () => Promise<ActivePolicyDto | undefined>;
+  readonly readOnly: boolean;
 }) {
   const queryClient = useQueryClient();
   const [base, setBase] = useState(loaded);
@@ -520,6 +543,7 @@ function Editor({
               describedBy="policy-issues-summary"
               onChange={setText}
               onSave={onSave}
+              readOnly={readOnly}
             />
           </div>
           {saveError === undefined ? null : (
@@ -531,45 +555,49 @@ function Editor({
               Not saved: {saveError}
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3">
-            <span
-              data-testid="draft-state"
-              className="mr-auto flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              {dirty ? (
-                <>
-                  <CircleDot aria-hidden="true" className="size-3.5 text-info" />
-                  Unsaved changes
-                </>
-              ) : (
-                <>
-                  <Check aria-hidden="true" className="size-3.5" />
-                  No changes
-                </>
-              )}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void reload()}
-              disabled={save.isPending}
-            >
-              <RefreshCw aria-hidden="true" />
-              Reload from gateway
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={discard}
-              disabled={!dirty || save.isPending}
-            >
-              Discard changes
-            </Button>
-            <Button size="sm" onClick={onSave} disabled={!canSave}>
-              <Save aria-hidden="true" />
-              {save.isPending ? "Saving…" : `Save as version ${base.policy.version + 1}`}
-            </Button>
-          </div>
+          {readOnly ? (
+            <ReadOnlyFooter onReload={() => void reload()} />
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3">
+              <span
+                data-testid="draft-state"
+                className="mr-auto flex items-center gap-1.5 text-xs text-muted-foreground"
+              >
+                {dirty ? (
+                  <>
+                    <CircleDot aria-hidden="true" className="size-3.5 text-info" />
+                    Unsaved changes
+                  </>
+                ) : (
+                  <>
+                    <Check aria-hidden="true" className="size-3.5" />
+                    No changes
+                  </>
+                )}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void reload()}
+                disabled={save.isPending}
+              >
+                <RefreshCw aria-hidden="true" />
+                Reload from gateway
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={discard}
+                disabled={!dirty || save.isPending}
+              >
+                Discard changes
+              </Button>
+              <Button size="sm" onClick={onSave} disabled={!canSave}>
+                <Save aria-hidden="true" />
+                {save.isPending ? "Saving…" : `Save as version ${base.policy.version + 1}`}
+              </Button>
+            </div>
+          )}
         </section>
         <SidePanel
           issues={issues}
@@ -601,11 +629,12 @@ export function PolicyEditor() {
   }, [loaded, query.data]);
 
   const reload = async () => (await query.refetch()).data;
+  const role = useSessionRole();
 
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-4 p-4 md:p-6">
-      {loaded !== undefined ? (
-        <Editor loaded={loaded} onReload={reload} />
+      {loaded !== undefined && role !== undefined ? (
+        <Editor loaded={loaded} onReload={reload} readOnly={role === "visitor"} />
       ) : query.isError ? (
         <div className={CARD}>
           <RegionError error={query.error} onRetry={() => void query.refetch()} />

@@ -5,6 +5,7 @@
  * US1-2, design `signin.html`): show/hide toggle, inline errors under the field, and a
  * rate-limit countdown that keeps the button disabled until it ends.
  */
+import { useQueryClient } from "@tanstack/react-query";
 import { CircleX, Eye, EyeOff, LoaderCircle, TriangleAlert } from "lucide-react";
 import { type FormEvent, useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, BffRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+import { SESSION_QUERY_KEY } from "./session-role";
 
 type Failure =
   | { readonly kind: "empty" }
@@ -51,6 +53,7 @@ const MESSAGES: Readonly<Record<"empty" | "wrong" | "other", string>> = {
 
 export function PassphraseForm({ onSignedIn }: { readonly onSignedIn: () => void }) {
   const id = useId();
+  const queryClient = useQueryClient();
   const [reveal, setReveal] = useState(false);
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<Failure | undefined>();
@@ -70,6 +73,8 @@ export function PassphraseForm({ onSignedIn }: { readonly onSignedIn: () => void
     setFailure(undefined);
     try {
       await api.signIn(passphrase);
+      // A visitor who signs in as operator gets the operator's screens at once (US10).
+      await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
       onSignedIn();
     } catch (error) {
       setFailure(failureFrom(error, Date.now()));
