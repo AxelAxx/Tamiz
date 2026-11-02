@@ -1,6 +1,11 @@
-import { NotBuilt } from "@/features/shell/not-built";
+import { Suspense } from "react";
+import { EvalResults } from "@/features/eval-results/eval-results";
 
-/** Placeholder: the screen is built in `T-008-07` from the design. */
+/** Eval results (spec 008 US6); the selected run lives in `?run=`. */
 export default function EvalsPage() {
-  return <NotBuilt task="T-008-07" />;
+  return (
+    <Suspense>
+      <EvalResults />
+    </Suspense>
+  );
 }

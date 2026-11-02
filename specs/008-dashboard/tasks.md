@@ -305,16 +305,16 @@ The gateway half (T034–T040) does not depend on G1 and landed first as backlog
 
 ### Tests first
 
-- [ ] T044 [P] [US6] `dash/test/evals-dir.test.ts`: reads `*.json` from a temporary folder,
+- [x] T044 [P] [US6] `dash/test/evals-dir.test.ts`: reads `*.json` from a temporary folder,
   parses with `EvalReportSchema`, lists invalid files with an issue summary, sorts by
   `run.startedAt` descending, groups by `run.policy` with "unknown policy" (US6-4, US6-5).
-- [ ] T045 [US6] `dash/e2e/evals.spec.ts` with fixtures in `dash/e2e/fixtures/evals/`
+- [x] T045 [US6] `dash/e2e/evals.spec.ts` with fixtures in `dash/e2e/fixtures/evals/`
   (passing, failing with more than 50 cases, error and skipped, invalid, and an empty
   folder): `US6-1` … `US6-6` as written in the spec.
 
 ### Implementation
 
-- [ ] T046 [US6] `dash/src/lib/server/evals.ts`, `dash/src/app/api/evals/route.ts`;
+- [x] T046 [US6] `dash/src/lib/server/evals.ts`, `dash/src/app/api/evals/route.ts`;
   `dash/src/features/eval-results/` (run header, eval cards, metrics with thresholds,
   failing cases, history, unreadable notice); `dash/src/app/(console)/evals/page.tsx`;
   `dash/data/evals/` snapshot of the CI report of run 41187796710. Gates; record; backlog

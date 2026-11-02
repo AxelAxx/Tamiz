@@ -21,7 +21,13 @@ import {
   SimulateResponseSchema,
 } from "@tamiz/contracts";
 import type { z } from "zod";
-import { type BffError, BffErrorSchema, OkSchema } from "./schemas";
+import {
+  type BffError,
+  BffErrorSchema,
+  type EvalsList,
+  EvalsListSchema,
+  OkSchema,
+} from "./schemas";
 
 export class BffRequestError extends Error {
   constructor(
@@ -79,6 +85,7 @@ export const api = {
   providers: (query: { windowMinutes?: number } = {}): Promise<ProvidersReportDto> =>
     request(withQuery("/api/providers", query), ProvidersReportSchema),
   policy: (): Promise<ActivePolicyDto> => request("/api/policy", ActivePolicySchema),
+  evals: (): Promise<EvalsList> => request("/api/evals", EvalsListSchema),
   simulate: (body: ChatCompletionRequest): Promise<SimulateResponse> =>
     request("/api/simulate", SimulateResponseSchema, { method: "POST", ...json(body) }),
 };

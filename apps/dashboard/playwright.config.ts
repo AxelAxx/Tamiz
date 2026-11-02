@@ -12,6 +12,7 @@ import {
   CONTROL_URL,
   DASHBOARD_PORT,
   DASHBOARD_URL,
+  EVALS_DIR,
   GATEWAY_PORT,
   GATEWAY_URL,
   PASSPHRASE,
@@ -56,6 +57,7 @@ export default defineConfig({
         TAMIZ_DASHBOARD_PASSPHRASE_HASH: hashPassphrase(PASSPHRASE),
         TAMIZ_DASHBOARD_SESSION_SECRET: SESSION_SECRET,
         TAMIZ_DASHBOARD_PUBLIC_URL: DASHBOARD_URL,
+        TAMIZ_DASHBOARD_EVALS_DIR: EVALS_DIR,
         // The rate-limit test sends its own X-Forwarded-For, so its lock-out stays apart
         // from the other tests' address.
         TAMIZ_DASHBOARD_TRUST_PROXY: "true",
