@@ -1,0 +1,16 @@
+# GitHub Codespaces demo (T-OPS-06). Layered on docker-compose.yml by the codespace's .env,
+# which .devcontainer/setup.sh writes:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.codespaces.yml
+#   TAMIZ_DASHBOARD_PUBLIC_URL=https://<codespace>-3100.<forwarding domain>
+#
+# The dashboard's public address is the forwarded port's, so its write requests pass the
+# origin check. The model is the small one of policies/codespaces.yaml.
+
+services:
+  dashboard:
+    environment:
+      TAMIZ_DASHBOARD_PUBLIC_URL: ${TAMIZ_DASHBOARD_PUBLIC_URL:?set by .devcontainer/setup.sh}
+
+  ollama-pull:
+    entrypoint: ["ollama", "pull", "qwen2.5:1.5b"]

@@ -1,6 +1,60 @@
-# Deploying the public demo
+# Deploying the demo
 
-How to run the public Tamiz demo (`T-OPS-02`). The layout:
+Two ways to show Tamiz running:
+
+- **Free: GitHub Codespaces** (`T-OPS-06`). Each visitor starts the full stack in their own
+  codespace. Nothing is hosted, nothing is paid by the repository owner.
+- **Hosted: a server and Vercel** (`T-OPS-02`). An always-on public demo, paid by whoever
+  deploys it.
+
+## Free demo: GitHub Codespaces
+
+The button in the README opens the repository in a codespace on the visitor's own account.
+GitHub's free Codespaces quota for personal accounts covers it: the 4-core machine it
+asks for uses 4 core-hours of the quota per hour.
+
+What the codespace does (`.devcontainer/`):
+
+1. **On creation**, `setup.sh`:
+   - installs pnpm;
+   - runs `pnpm compose:env` with a generated passphrase, and keeps the passphrase and the
+     two keys in `.devcontainer/credentials.txt` (git-ignored);
+   - points the gateway at `policies/codespaces.yaml`;
+   - starts the stack: the local stack of `docker-compose.yml`, with
+     `docker-compose.codespaces.yml` on top for the dashboard's forwarded address and
+     `qwen2.5:1.5b` instead of `llama3.1:8b`. This takes about 10 minutes (image builds and
+     the model download);
+   - writes `.env` last, so later `docker compose` commands use the overlay too.
+2. **On each later start**, `start.sh` runs `docker compose up -d --build`. Codespaces may
+   run it on creation while `setup.sh` is still running; without `.env` it does nothing.
+3. **On attach**, `welcome.sh` prints the dashboard's address and the credentials.
+
+The forwarded ports are private: only the codespace's owner, signed in to GitHub, reaches
+the dashboard (3100), the gateway (3000) and Jaeger (16686).
+
+Try it, in the codespace's terminal once `docker compose ps` shows the gateway healthy:
+
+```bash
+curl -s localhost:3000/v1/chat/completions \
+  -H "authorization: Bearer <client key>" -H "content-type: application/json" \
+  -d '{"model":"tamiz-auto","messages":[{"role":"user","content":"Resume el expediente de 12345678Z."}]}'
+```
+
+The answer comes from `ollama-qwen`, and the dashboard shows the request in live traffic
+and the audit log.
+
+Limits of this demo:
+
+- **It runs only while the codespace runs.** Codespaces stop after 30 minutes idle by
+  default. Delete the codespace when done: its disk (about 10 GB with the images) counts
+  against the storage quota.
+- **The model is small.** `qwen2.5:1.5b` answers in seconds on 4 cores, with the quality of
+  a 1.5B model. Routing, privacy and audit behave as in any other deployment.
+
+## Hosted demo: a server and Vercel
+
+How to run an always-on public Tamiz demo (`T-OPS-02`). It costs money: the server, and
+the Mistral credit its EU route uses. The layout:
 
 - **The dashboard** runs on Vercel, region `fra1` (Frankfurt).
 - **The gateway and everything it uses** run on a Hetzner Cloud server in Germany,

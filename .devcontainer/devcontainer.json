@@ -1,0 +1,25 @@
+// GitHub Codespaces demo (T-OPS-06, docs/deploy.md): the full local stack of
+// docker-compose.yml in the visitor's own codespace, on their own free quota. The first
+// start builds the images and pulls a small model (about 10 minutes); the welcome
+// terminal then prints the dashboard's address and the generated passphrase and keys.
+{
+  "name": "Tamiz demo",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    // `gh codespace ssh` and `gh codespace logs` need an SSH server in the container.
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  },
+  // The privacy service, Ollama and the dashboard build need more than the 2-core machine.
+  "hostRequirements": { "cpus": 4, "memory": "16gb" },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start.sh",
+  "postAttachCommand": "bash .devcontainer/welcome.sh",
+  "forwardPorts": [3100, 3000, 16686],
+  "portsAttributes": {
+    "3100": { "label": "Dashboard", "onAutoForward": "notify" },
+    "3000": { "label": "Gateway", "onAutoForward": "silent" },
+    "16686": { "label": "Jaeger", "onAutoForward": "silent" }
+  }
+}
