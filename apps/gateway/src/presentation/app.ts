@@ -13,6 +13,7 @@ import { MAX_BODY_BYTES } from "@tamiz/contracts";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import type { ClockPort } from "../application/ports/clock.port.js";
+import type { HealthProbe } from "../application/ports/health-probe.port.js";
 import type { LoggerPort } from "../application/ports/logger.port.js";
 import type { CostReportUseCase } from "../application/use-cases/cost-report.js";
 import type { GetActivePolicy } from "../application/use-cases/get-active-policy.js";
@@ -37,6 +38,8 @@ export interface AppDeps {
   readonly clock: ClockPort;
   readonly version: string;
   readonly startedAt: Date;
+  /** The dependencies `/health` reports on; none means plain liveness. */
+  readonly healthProbes?: ReadonlyArray<HealthProbe>;
   readonly logger: LoggerPort;
   readonly routeInference: RouteInference;
   readonly streamInference: StreamInference;
@@ -85,7 +88,12 @@ function presentHeaders(
  * order; the order is part of the behaviour.
  */
 function registerRoutes(app: GatewayApp, deps: AppDeps) {
-  const health = registerHealth(app, deps);
+  const health = registerHealth(app, {
+    clock: deps.clock,
+    version: deps.version,
+    startedAt: deps.startedAt,
+    ...(deps.healthProbes === undefined ? {} : { probes: deps.healthProbes }),
+  });
   const chat = registerChatCompletions(health, deps.routeInference, deps.streamInference);
   const simulate = registerSimulate(chat, deps.simulatePolicy);
   const audit = registerAdminAudit(simulate, deps.queryAuditLog);

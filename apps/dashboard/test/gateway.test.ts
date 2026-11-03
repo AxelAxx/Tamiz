@@ -112,3 +112,28 @@ describe("callGateway", () => {
     expect(BffErrorSchema.parse(body).error.type).toBe("contract");
   });
 });
+
+describe("a status whose body is the endpoint's own (code audit 2026-11-03, M12)", () => {
+  it("passes /health's 503 body on as data when the route allows it", async () => {
+    const degraded = {
+      status: "degraded",
+      version: "0.1.0",
+      uptimeMs: 12,
+      checks: [{ name: "privacy", status: "down", detail: "unreachable" }],
+    };
+    const response = await callGateway({
+      endpoint: "/health",
+      schema: HealthResponseSchema,
+      call: async () => answer(503, degraded),
+      log: () => {},
+      bodyOnStatus: [503],
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual(degraded);
+  });
+
+  it("without the option a 503 that is not an error envelope breaks the contract", async () => {
+    const { response } = await call(answer(503, HEALTH));
+    expect(response.status).toBe(502);
+  });
+});

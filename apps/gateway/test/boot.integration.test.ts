@@ -107,7 +107,8 @@ async function pollHealth(
     }
     try {
       const response = await fetch(`http://127.0.0.1:${port}/health`);
-      if (response.status === 200) return response;
+      // 503 is an answer too: the boot env's privacy service does not exist.
+      if (response.status === 200 || response.status === 503) return response;
     } catch (error) {
       lastError = error;
     }
@@ -161,7 +162,10 @@ describe("gateway process boot", () => {
 
       expect(response.headers.get("x-request-id")).toMatch(/^[A-Za-z0-9_-]{1,128}$/);
       const body = HealthResponseSchema.parse(await response.json());
-      expect(body.status).toBe("ok");
+      // Nothing answers at TAMIZ_PRIVACY_URL here: /health says so (code audit M12).
+      expect(response.status).toBe(503);
+      expect(body.status).toBe("degraded");
+      expect(body.checks).toEqual([{ name: "privacy", status: "down", detail: "unreachable" }]);
       expect(body.version).toMatch(/^\d+\.\d+\.\d+/);
       expect(body.uptimeMs).toBeGreaterThanOrEqual(0);
 
