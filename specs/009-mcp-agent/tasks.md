@@ -249,13 +249,18 @@ and T023 pass with scripted model answers; T030 records the real run.
   (`apps/gateway/src/infrastructure/persistence/`). Yesterday's cost on one route is about
   twice the day before's. The file uses fixed UUIDs and a fixed `request_hash` value of 64
   hex characters, and runs again cleanly (`on conflict do nothing`).
-- [ ] T030 [US5] Run quickstart §7 (US5-6, SC-004) against the real stack, with Ollama
+- [x] T030 [US5] Run quickstart §7 (US5-6, SC-004) against the real stack, with Ollama
   `llama3.1:8b`. Record in the task record:
   - the transcript and the run record;
   - the audit query showing one `pinned-local` entry on `ollama-llama` per request id.
 
   If the local model cannot follow the format within 6 steps, record that, and try
   `qwen2.5:3b` through a policy override. Do not raise the step limit silently.
+
+  Recorded in `docs/tasks/done/T-009-06-agent-demo-recording.md` (2026-11-03): every model
+  call was audited on `pinned-local` / `ollama-llama`. No run of `llama3.1:8b` or
+  `qwen2.5:3b`, with either protocol, gave a fully correct answer; that is backlog
+  `T-009-07`.
 - [x] T031 Polish:
   - the README status line (009);
   - `docs/architecture.md`: the MCP server and the agent in the system view, with the
