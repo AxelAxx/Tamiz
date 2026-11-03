@@ -502,8 +502,9 @@ Visitor access (addendum, backlog `T-OPS-03`):
 
 - **FR-025**: The dashboard MUST offer visitor sessions only when its configuration turns
   visitor access on; it is off by default, and a malformed setting refuses to start (FR-005).
-- **FR-026**: A session MUST carry a role, operator or visitor, held by the dashboard's
-  server; the cookie carries no role.
+- **FR-026**: A session MUST carry a role, operator or visitor, that the browser cannot
+  change; since `T-OPS-04` it travels in the signed session cookie (research R-03,
+  amendment).
 - **FR-027**: A visitor session MUST be able to use every read endpoint and the simulator,
   and MUST be refused with `403` on every other state-changing endpoint except sign-out.
 - **FR-028**: Visitor simulations and visitor session creation MUST each be limited to 10 per
