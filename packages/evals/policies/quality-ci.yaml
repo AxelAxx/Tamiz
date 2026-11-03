@@ -3,9 +3,12 @@
 # Same shape as apps/gateway/policies/local-only.yaml, with a small quantized model that
 # fits a CI runner. The quality eval asks for `tamiz-local`, as it does against the
 # default policy, so the same request reaches the cheapest local route in both.
+#
+# The agent eval (spec 009 agent-eval addendum) asks for `tamiz-agent`: the same gateway,
+# a larger local model that can follow the tool loop.
 
 id: quality-ci
-version: 1
+version: 2
 defaultTimeoutMs: 240000
 
 # CPU inference on a CI runner is slow and requests queue on one model: allow long
@@ -19,6 +22,12 @@ targets:
   - id: ollama-llama
     provider: ollama
     model: qwen2.5:1.5b
+    region: local
+    residency: local
+    pricing: { inputUsdPerMillion: 0, outputUsdPerMillion: 0 }
+  - id: ollama-agent
+    provider: ollama
+    model: qwen2.5:3b
     region: local
     residency: local
     pricing: { inputUsdPerMillion: 0, outputUsdPerMillion: 0 }
@@ -37,6 +46,10 @@ rules:
     when: { requestedModel: [tamiz-local] }
     residency: [local]
     route: [ollama-llama]
+  - id: pinned-agent
+    when: { requestedModel: [tamiz-agent] }
+    residency: [local]
+    route: [ollama-agent]
 
 default:
   route: [ollama-llama]

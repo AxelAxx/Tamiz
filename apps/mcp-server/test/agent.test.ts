@@ -190,9 +190,18 @@ describe("US5 the agent answers through Tamiz", () => {
       (m) => m.role === "user" && m.content.startsWith("Observation"),
     );
     expect(observations).toHaveLength(3);
-    expect(observations[1]?.content).toMatch(/^Observation \(get_cost_report\): \{/);
-    expect(observations[1]?.content).toContain('"costUsd":0.73');
-    expect(observations[2]?.content).toContain('"costUsd":0.31');
+    // 009 agent-eval FR-030: cost reports read as short text, and the second report by
+    // route adds the change per route, earlier day first, largest change first.
+    expect(observations[1]?.content).toMatch(
+      /^Observation \(get_cost_report\): Cost report from 2026-10-30 \(inclusive\)/,
+    );
+    expect(observations[1]?.content).toContain("- anthropic-sonnet: spent $0.7300 on 48 requests");
+    expect(observations[1]?.content).toContain("Not money spent");
+    expect(observations[1]?.content).not.toContain("Change per route");
+    expect(observations[2]?.content).toContain("- anthropic-sonnet: spent $0.3100 on 20 requests");
+    expect(observations[2]?.content).toContain(
+      "Change per route, 2026-10-29 → 2026-10-30, largest first:\n- anthropic-sonnet: $0.3100 → $0.7300 (+$0.4200)",
+    );
     expect(lastPrompt.filter((m) => m.role === "assistant").map((m) => m.content)).toEqual(
       SPEND_SCRIPT.slice(0, 3),
     );
@@ -332,7 +341,7 @@ describe("US5 the agent answers through Tamiz", () => {
     expect(run).toEqual({
       question: QUESTION,
       protocol: "text",
-      promptVersion: "system.v1",
+      promptVersion: "system.v3",
       model: "tamiz-local",
       today: "2026-10-31",
       steps: [
@@ -399,7 +408,7 @@ describe("US8 the agent with native tools", () => {
 
     expect(run).toMatchObject({
       protocol: "native",
-      promptVersion: "system.v2",
+      promptVersion: "system.v4",
       stopReason: "answered",
       answer: ANSWER,
       requestIds: ["req-1", "req-2", "req-3", "req-4"],
@@ -422,7 +431,7 @@ describe("US8 the agent with native tools", () => {
       "call_req-2_1",
       "call_req-3_1",
     ]);
-    expect(results[1]?.content).toContain('"costUsd":0.73');
+    expect(results[1]?.content).toContain("- anthropic-sonnet: spent $0.7300 on 48 requests");
     expect(
       last.filter((m) => m.role === "assistant").every((m) => m.tool_calls?.length === 1),
     ).toBe(true);

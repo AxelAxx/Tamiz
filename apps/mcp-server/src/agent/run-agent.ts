@@ -27,13 +27,14 @@ import {
 import { z } from "zod";
 import { extractAction } from "./action.js";
 import type { GatewayModel } from "./gateway-model.js";
+import { createObservationFormatter, type ObservationFormatter } from "./observation.js";
 
 export const TOOL_PROTOCOLS = ["native", "text"] as const;
 export type ToolProtocol = (typeof TOOL_PROTOCOLS)[number];
 export const DEFAULT_TOOL_PROTOCOL: ToolProtocol = "native";
 
 /** The prompt of each protocol: `text` renders the tool list, `native` declares the tools. */
-export const PROMPT_VERSIONS = { text: "system.v1", native: "system.v2" } as const;
+export const PROMPT_VERSIONS = { text: "system.v3", native: "system.v4" } as const;
 export type PromptVersion = (typeof PROMPT_VERSIONS)[ToolProtocol];
 export const PROMPT_VERSION = PROMPT_VERSIONS.text;
 const promptFile = (version: PromptVersion) =>
@@ -131,6 +132,7 @@ async function runText(
   const maxSteps = options.maxSteps ?? MAX_STEPS;
   const limit = options.observationLimit ?? OBSERVATION_LIMIT;
   const tools = options.mcp.toolsFromDefinitions(listed);
+  const format = createObservationFormatter();
   const names = listed.tools.map((tool) => tool.name);
   // The system prompt goes in `system`, which the provider sends as the first message.
   const system = systemPrompt(run.promptVersion, run.today, listed.tools);
@@ -179,7 +181,9 @@ async function runText(
       continue;
     }
 
-    const outcome = await callTool(() => execute(args, { toolCallId: `step-${step}`, messages }));
+    const outcome = await callTool(format, tool, () =>
+      execute(args, { toolCallId: `step-${step}`, messages }),
+    );
     run.steps.push({
       kind: "tool",
       tool,
@@ -217,6 +221,7 @@ async function runNative(
   const maxSteps = options.maxSteps ?? MAX_STEPS;
   const limit = options.observationLimit ?? OBSERVATION_LIMIT;
   const tools = options.mcp.toolsFromDefinitions(listed);
+  const format = createObservationFormatter();
   const names = listed.tools.map((listedTool) => listedTool.name);
   const declared = declaredTools(listed);
   const system = systemPrompt(run.promptVersion, run.today, listed.tools);
@@ -256,7 +261,7 @@ async function runNative(
         run.steps.push({ kind: "observation_error", reason, requestId });
         continue;
       }
-      const outcome = await callTool(() =>
+      const outcome = await callTool(format, call.toolName, () =>
         execute(call.input, { toolCallId: call.toolCallId, messages }),
       );
       run.steps.push({
@@ -282,6 +287,11 @@ async function runNative(
   return { ...run, answer: `I could not answer within ${maxSteps} steps` };
 }
 
+/** The UTC date `days` before `date` (`YYYY-MM-DD`): small models get date arithmetic wrong. */
+function daysBefore(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10);
+}
+
 function systemPrompt(
   version: PromptVersion,
   today: string,
@@ -295,10 +305,16 @@ function systemPrompt(
     .join("\n");
   return readFileSync(promptFile(version), "utf8")
     .replaceAll("{{today}}", today)
+    .replaceAll("{{yesterday}}", daysBefore(today, 1))
+    .replaceAll("{{dayBeforeYesterday}}", daysBefore(today, 2))
     .replaceAll("{{tools}}", rendered);
 }
 
-async function callTool(execute: () => PromiseLike<unknown> | unknown): Promise<ToolOutcome> {
+async function callTool(
+  format: ObservationFormatter,
+  tool: string,
+  execute: () => PromiseLike<unknown> | unknown,
+): Promise<ToolOutcome> {
   let raw: unknown;
   try {
     raw = await execute();
@@ -322,7 +338,7 @@ async function callTool(execute: () => PromiseLike<unknown> | unknown): Promise<
     return { ok: false, observation: text, errorCode: toolErrorCode(text) };
   }
   const value = result.data.structuredContent;
-  return { ok: true, observation: value === undefined ? text : JSON.stringify(value) };
+  return { ok: true, observation: value === undefined ? text : format(tool, value) };
 }
 
 function toolErrorCode(text: string): string {

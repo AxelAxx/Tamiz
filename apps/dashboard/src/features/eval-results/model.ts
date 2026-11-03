@@ -16,12 +16,15 @@ export const EVAL_LABEL: Readonly<Record<EvalResult["id"], string>> = {
   routing: "Routing",
   quality: "Quality",
   cost: "Cost",
+  agent: "Agent",
 };
 
 const NAMED: Readonly<Record<string, string>> = {
   route_accuracy: "Routing accuracy",
   task_type_accuracy: "Task-type accuracy",
   relative_score: "Relative quality",
+  answer_accuracy: "Answer accuracy",
+  model_calls_mean: "Model calls per question",
   "mean_score.routed": "Mean score, routed",
   "mean_score.comparison": "Mean score, frontier",
   judge_errors: "Judge errors",

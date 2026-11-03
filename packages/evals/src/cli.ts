@@ -14,6 +14,7 @@ import { parseArgs } from "node:util";
 import { EVAL_IDS, type EvalId, type EvalReport } from "@tamiz/contracts";
 import { createGatewayClient } from "./clients/gateway.js";
 import { loadConfig } from "./config.js";
+import { agentEval } from "./evals/agent.js";
 import { costEval } from "./evals/cost.js";
 import { detectionEval } from "./evals/detection.js";
 import { leakEval } from "./evals/leak.js";
@@ -40,6 +41,7 @@ export async function registry(packageRoot = PACKAGE_ROOT): Promise<ReadonlyArra
     register(routingEval),
     register(qualityEval({ prompt: { version: JUDGE_PROMPT, template }, baseline })),
     register(costEval),
+    register(agentEval),
   ];
 }
 

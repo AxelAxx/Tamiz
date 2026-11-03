@@ -14,7 +14,7 @@ describe("shipped policy files", () => {
     ["apps/gateway/policies/default.yaml", ["pinned-local", "pinned-frontier"]],
     ["apps/gateway/policies/local-only.yaml", []],
     ["apps/gateway/policies/demo-eu.yaml", ["pinned-local"]],
-    ["packages/evals/policies/quality-ci.yaml", ["pinned-local"]],
+    ["packages/evals/policies/quality-ci.yaml", ["pinned-local", "pinned-agent"]],
   ])("%s loads", async (file, rules) => {
     const loaded = await loadPolicyFile(path(file));
     if (!loaded.ok) throw new Error(JSON.stringify(loaded.error.issues));

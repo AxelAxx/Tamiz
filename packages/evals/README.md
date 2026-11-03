@@ -13,8 +13,9 @@ all-frontier baseline.
 
 ## Running
 
-The evals call the running services through their public HTTP contracts. They import no
-app code.
+The evals call the running services through their public HTTP contracts. The one
+exception is the agent eval, which runs the MCP agent itself
+(`@tamiz/mcp-server/agent/fixture-run`) and only sends its model calls over HTTP.
 
 ```bash
 export TAMIZ_EVAL_GATEWAY_URL=http://localhost:3000   # gateway with the policy under test
@@ -22,6 +23,7 @@ export TAMIZ_EVAL_API_KEY=<client key>
 export TAMIZ_EVAL_PRIVACY_URL=http://localhost:8001  # detection
 export TAMIZ_EVAL_JUDGE_URL=http://localhost:11434/v1 TAMIZ_EVAL_JUDGE_MODEL=qwen2.5:3b  # quality
 export TAMIZ_EVAL_QUALITY_GATEWAY_URL=http://localhost:3200  # optional: gateway with policies/quality-ci.yaml
+export TAMIZ_EVAL_AGENT_GATEWAY_URL=http://localhost:3200    # agent; TAMIZ_EVAL_AGENT_MODEL (tamiz-local), TAMIZ_EVAL_AGENT_PROTOCOL (native | text)
 pnpm evals                       # every implemented eval
 pnpm evals -- --only routing     # a selection
 pnpm evals -- --report-dir out   # default: packages/evals/reports/ (git-ignored)
@@ -50,6 +52,7 @@ Full contract: `specs/007-evals-gate/contracts/cli.md`.
 | detection | `pii-detection-es.v1.jsonl` via the privacy service's `POST /analyze` (160 sentences, 271 spans) | recall ≥ 0.95 structured, ≥ 0.80 names | `T-007-03` |
 | quality | `quality-es.v1.jsonl` (24 requests with references), answered on `tamiz-local`, graded by a blind judge (`prompts/judge.v1.md`) | `relative_score ≥ 0.95` against the frontier arm (`TAMIZ_EVAL_FRONTIER=on`) or the accepted baseline (`baselines/quality.json`) | `T-007-05` |
 | cost | `routing.v1.jsonl` via `POST /v1/simulate`, priced from `apps/gateway/policies/default.yaml` | reported: routed vs baseline target, saving | `T-007-05` |
+| agent | `agent-spend.v1.jsonl` (8 spend questions over synthetic two-day cost histories): the MCP agent, its tools on an in-process MCP server fed from the case, its model through the gateway | `answer_accuracy ≥ 0.60`: the cause named first and both daily totals, within 6 model calls | `T-009-07` |
 
 ## Datasets
 

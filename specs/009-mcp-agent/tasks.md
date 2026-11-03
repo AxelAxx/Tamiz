@@ -260,7 +260,8 @@ and T023 pass with scripted model answers; T030 records the real run.
   Recorded in `docs/tasks/done/T-009-06-agent-demo-recording.md` (2026-11-03): every model
   call was audited on `pinned-local` / `ollama-llama`. No run of `llama3.1:8b` or
   `qwen2.5:3b`, with either protocol, gave a fully correct answer; that is backlog
-  `T-009-07`.
+  `T-009-07`, which added the `agent` eval and brought the answer rate to 75–87.5 %
+  (`specs/009-mcp-agent/agent-eval/`).
 - [x] T031 Polish:
   - the README status line (009);
   - `docs/architecture.md`: the MCP server and the agent in the system view, with the

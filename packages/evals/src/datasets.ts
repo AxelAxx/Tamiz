@@ -81,10 +81,42 @@ export const QualityCaseSchema = z.strictObject({
   reference: z.string().min(1),
 });
 
+const UtcDate = z.iso.date();
+const Usd = z.number().min(0);
+
+/**
+ * An agent case (spec 009 agent-eval addendum, FR-026): a question about spend and the
+ * per-route cost of the two UTC days before `today`, from which the fixture answers every
+ * `get_cost_report` call. `expected.totals` are the two daily totals, oldest first.
+ */
+export const AgentCaseSchema = z.strictObject({
+  id: z.string().regex(/^agent-\d{3,4}$/),
+  question: z.string().min(1),
+  today: UtcDate,
+  days: z
+    .array(
+      z.strictObject({
+        date: UtcDate,
+        routes: z
+          .array(
+            z.strictObject({
+              route: z.string().min(1),
+              requests: z.int().min(0),
+              costUsd: Usd,
+            }),
+          )
+          .min(1),
+      }),
+    )
+    .length(2),
+  expected: z.strictObject({ route: z.string().min(1), totals: z.tuple([Usd, Usd]) }),
+});
+
 export type RoutingCase = z.infer<typeof RoutingCaseSchema>;
 export type LeakCase = z.infer<typeof LeakCaseSchema>;
 export type DetectionCase = z.infer<typeof DetectionCaseSchema>;
 export type QualityCase = z.infer<typeof QualityCaseSchema>;
+export type AgentCase = z.infer<typeof AgentCaseSchema>;
 
 export interface Dataset<C> {
   readonly file: string;

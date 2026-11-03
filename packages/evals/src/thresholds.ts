@@ -42,6 +42,8 @@ export const THRESHOLDS: ReadonlyArray<Threshold> = [
   { eval: "detection", metric: "recall.PERSON", comparison: "gte", bound: 0.8 },
   { eval: "routing", metric: "route_accuracy", comparison: "gte", bound: 0.95 },
   { eval: "quality", metric: "relative_score", comparison: "gte", bound: 0.95 },
+  // 009 agent-eval FR-028: the agent answers the spend question with cause and totals.
+  { eval: "agent", metric: "answer_accuracy", comparison: "gte", bound: 0.6 },
 ];
 
 export function meets(value: number, comparison: EvalComparison, bound: number): boolean {
