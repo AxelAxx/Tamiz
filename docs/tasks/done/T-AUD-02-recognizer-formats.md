@@ -87,8 +87,8 @@ The leak eval needs a gateway. CI's `evals` job runs it.
 
 ## Pending / follow-ups
 
-- The README results table is generated from the `evals-report` artifact of this PR's CI
-  run. It is regenerated in this same PR once that run is green.
+- The README results table was not regenerated in this PR: a push would have re-run the
+  19-minute `evals` job. `T-AUD-03` regenerates it, since it changes the agent figure.
 
 ## Pitfalls for the next session
 
