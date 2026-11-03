@@ -137,6 +137,53 @@ describe.skipIf(!docker)("PostgreSQL policy repository (Testcontainers)", () => 
     ]);
   });
 
+  it("T-OPS-05: a file edited without a version bump is reported once and the stored version stays", async () => {
+    const file = await filePolicy(3);
+    await boot(file);
+    const notices: unknown[] = [];
+    const onFileIgnored = (notice: unknown) => notices.push(notice);
+
+    // The same file again, and a dashboard save on top of it: nothing to report.
+    const same = await createPostgresPolicyRepository({
+      db: database.db,
+      clock: systemClock,
+      file,
+      onFileIgnored,
+    });
+    if (!same.ok) throw new Error(same.error.message);
+    expect(notices).toEqual([]);
+
+    // The file edited (its default chain reordered) but still at version 3.
+    const route = [...file.document.default.route].reverse();
+    const document = { ...file.document, default: { ...file.document.default, route } };
+    const policy = validatePolicy(document);
+    if (!policy.ok) throw new Error("the edited policy must validate");
+    const edited: PolicyVersionDraft = {
+      ...file,
+      policy: policy.value,
+      document,
+      contentHash: sha256(JSON.stringify(document)),
+    };
+    const repository = await createPostgresPolicyRepository({
+      db: database.db,
+      clock: systemClock,
+      file: edited,
+      onFileIgnored,
+    });
+    if (!repository.ok) throw new Error(repository.error.message);
+    expect(notices).toEqual([
+      {
+        policyId: file.policy.id,
+        fileVersion: 3,
+        fileContentHash: edited.contentHash,
+        storedContentHash: file.contentHash,
+        activeVersion: 3,
+      },
+    ]);
+    expect((await repository.value.getActiveVersion()).contentHash).toBe(file.contentHash);
+    expect((await rows()).map((row) => [row.version, row.source])).toEqual([[3, "file"]]);
+  });
+
   it("US5-5: two concurrent saves on the same base, from two gateways: exactly one wins", async () => {
     const file = await filePolicy(3);
     const gatewayA = await boot(file);

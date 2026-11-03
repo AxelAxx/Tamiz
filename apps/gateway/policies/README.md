@@ -53,3 +53,12 @@ The actions:
 A chain left empty by the filtering also blocks. Boot rejects `critical: allow` unless the
 level's residency is limited to `local` and `eu`. Until the gateway calls the privacy
 service (`T-005-04`), every request is treated as level `none`.
+
+## Editing a policy file when a database is configured
+
+With `DATABASE_URL`, the gateway stores every policy version (spec 008 R-10). At boot, the
+file is used only when its `version` is higher than the newest stored version of the same
+policy id; otherwise the stored version wins. So **raise `version` when you edit a file**.
+If the file differs from the stored version with the same number, the gateway logs a
+warning at boot ("routing policy file differs from the stored version…", `T-OPS-05`) with
+both content hashes, and keeps the stored version.
