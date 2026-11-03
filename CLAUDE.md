@@ -356,6 +356,7 @@ pnpm compose:env             # secrets for compose: apps/{gateway,dashboard}/.en
 docker compose up -d         # full local stack; the first start pulls llama3.1:8b (service ollama-pull) (T-OPS-01)
 docker build -f apps/gateway/Dockerfile -t tamiz-gateway .   # non-root gateway image
 COMPOSE_FILE=docker-compose.yml:docker-compose.demo.yml docker compose up -d   # public demo on a VPS: Caddy TLS, demo-eu policy (docs/deploy.md, T-OPS-02)
+# GitHub Codespaces: .devcontainer/ runs the stack with docker-compose.codespaces.yml and qwen2.5:1.5b (T-OPS-06)
 ```
 
 Vitest hides the output of passing tests in this agent environment; add
@@ -393,7 +394,10 @@ protected since `T-001-05`: required check `ci`, pull requests only, admins incl
 
 Decided on 2026-11-02: the public demo runs the gateway on a Hetzner Cloud server in
 Germany and the dashboard on Vercel (`fra1`); steps in `docs/deploy.md` (`T-OPS-02`).
-Anyone may explore the public demo as a read-only visitor
+Decided on 2026-11-03: Alex pays for no hosting, so the hosted demo is not deployed. The
+live demo is GitHub Codespaces (`T-OPS-06`, README button), on each visitor's own free
+quota; the hosted guide stays for anyone who wants to pay for one.
+Anyone may explore a hosted demo as a read-only visitor
 (`TAMIZ_DASHBOARD_VISITOR_ACCESS=true`, spec 008 US10, `T-OPS-03`); the passphrase stays
 private because it opens the policy editor.
 

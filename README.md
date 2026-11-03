@@ -37,7 +37,14 @@ Responses tell them what happened: `x-tamiz-route`, `x-tamiz-sensitivity`,
 
 ## Quick start
 
-Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
+**In the browser, nothing to install:** open the repository in GitHub Codespaces. The
+codespace runs the whole stack below with a small local model, on your own free
+Codespaces quota, and prints the dashboard's address and a generated passphrase
+([details](docs/deploy.md#free-demo-github-codespaces)).
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/AxelAxx/tamiz?quickstart=1)
+
+**On your machine:** Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
 Node.js 22 with pnpm for the one-off secrets step:
 
 ```bash
@@ -222,8 +229,9 @@ compliance product.
 - **One operator passphrase.** The dashboard has no users or roles. The privacy service
   has no authentication and must stay on an internal network, as the compose file keeps
   it.
-- **No public demo yet.** The deployment is ready ([`docs/deploy.md`](docs/deploy.md): Hetzner in Germany and Vercel in Frankfurt);
-  until it is online, run it locally.
+- **No always-on public demo.** The live demo is the Codespaces button above, which runs in
+  your own codespace. A hosted deployment (a server in Germany and Vercel in Frankfurt) is
+  documented in [`docs/deploy.md`](docs/deploy.md) for anyone who wants to pay for one.
 
 ## Project
 

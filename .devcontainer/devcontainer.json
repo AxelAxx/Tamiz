@@ -7,7 +7,9 @@
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" },
+    // `gh codespace ssh` and `gh codespace logs` need an SSH server in the container.
+    "ghcr.io/devcontainers/features/sshd:1": {}
   },
   // The privacy service, Ollama and the dashboard build need more than the 2-core machine.
   "hostRequirements": { "cpus": 4, "memory": "16gb" },
