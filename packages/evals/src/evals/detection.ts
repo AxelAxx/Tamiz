@@ -54,7 +54,7 @@ export function scoreDetection(
 export const detectionEval: Eval<DetectionCase, ReadonlyArray<Finding>, DetectionOutcome> = {
   id: "detection",
   dataset: {
-    file: "pii-detection-es.v1.jsonl",
+    file: "pii-detection-es.v2.jsonl",
     name: "pii-detection-es",
     schema: DetectionCaseSchema,
   },

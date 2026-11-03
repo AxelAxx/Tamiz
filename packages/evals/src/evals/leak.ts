@@ -83,7 +83,7 @@ export function scoreLeak(observation: LeakObservation): LeakOutcome {
 
 export const leakEval: Eval<LeakCase, LeakObservation, LeakOutcome> = {
   id: "leak",
-  dataset: { file: "pii-leak-es.v2.jsonl", name: "pii-leak-es", schema: LeakCaseSchema },
+  dataset: { file: "pii-leak-es.v3.jsonl", name: "pii-leak-es", schema: LeakCaseSchema },
   requires: ["TAMIZ_EVAL_GATEWAY_URL", "TAMIZ_EVAL_API_KEY"],
 
   prepare({ config, fetch }) {

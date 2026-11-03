@@ -21,7 +21,7 @@ import { seeded } from "../src/synthetic/random.js";
 
 const DATASETS = fileURLToPath(new URL("../datasets/", import.meta.url));
 const CORPUS = fileURLToPath(
-  new URL("../../../services/privacy/tests/corpus/pii-es.v1.jsonl", import.meta.url),
+  new URL("../../../services/privacy/tests/corpus/pii-es.v2.jsonl", import.meta.url),
 );
 const GATED = ["DNI", "NIE", "NSS", "IBAN", "CREDIT_CARD", "PERSON", "EMAIL", "PHONE"];
 
@@ -106,19 +106,19 @@ describe("generated datasets", () => {
   it("--check reports a changed file", async () => {
     const dir = await mkdtemp(join(tmpdir(), "tamiz-gen-"));
     expect(await generateDatasets(false, dir)).toEqual([]);
-    const file = join(dir, "pii-leak-es.v2.jsonl");
+    const file = join(dir, "pii-leak-es.v3.jsonl");
     await writeFile(file, `${await readFile(file, "utf8")}\n`, "utf8");
-    expect(await generateDatasets(true, dir)).toEqual(["pii-leak-es.v2.jsonl"]);
+    expect(await generateDatasets(true, dir)).toEqual(["pii-leak-es.v3.jsonl"]);
   });
 
   it("FR-009: sizes and coverage of the gated kinds", async () => {
     const leak = await loadDataset(
-      join(DATASETS, "pii-leak-es.v2.jsonl"),
+      join(DATASETS, "pii-leak-es.v3.jsonl"),
       "pii-leak-es",
       LeakCaseSchema,
     );
     const detection = await loadDataset(
-      join(DATASETS, "pii-detection-es.v1.jsonl"),
+      join(DATASETS, "pii-detection-es.v2.jsonl"),
       "pii-detection-es",
       DetectionCaseSchema,
     );
@@ -135,17 +135,17 @@ describe("generated datasets", () => {
       true,
     );
     expect(leak.header.synthetic).toBe(true);
-    expect(Object.keys(GENERATED)).toEqual(["pii-leak-es.v2.jsonl", "pii-detection-es.v1.jsonl"]);
+    expect(Object.keys(GENERATED)).toEqual(["pii-leak-es.v3.jsonl", "pii-detection-es.v2.jsonl"]);
   });
 
   it("009 tool-calling FR-021: tool cases cover results, arguments and both", async () => {
     const leak = await loadDataset(
-      join(DATASETS, "pii-leak-es.v2.jsonl"),
+      join(DATASETS, "pii-leak-es.v3.jsonl"),
       "pii-leak-es",
       LeakCaseSchema,
     );
     const tool = leak.cases.filter((c) => c.id.startsWith("pii-leak-tool-"));
-    expect(leak.header.version).toBe(2);
+    expect(leak.header.version).toBe(3);
     expect(tool.length).toBeGreaterThanOrEqual(40);
     for (const tag of ["tool-result", "tool-arguments", "tool-both"]) {
       expect(tool.filter((c) => c.tags.includes(tag)).length).toBeGreaterThanOrEqual(6);

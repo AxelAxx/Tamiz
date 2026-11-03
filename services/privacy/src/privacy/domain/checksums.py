@@ -7,7 +7,7 @@ character is not one. Every function is total: malformed input is `False`, never
 import re
 
 _SEPARATORS = re.compile(r"[\s.\-/]")
-_DNI = re.compile(r"\d{8}[A-Z]")
+_DNI = re.compile(r"\d{7,8}[A-Z]")
 _NIE = re.compile(r"[XYZ]\d{7}[A-Z]")
 _CIF = re.compile(r"[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]")
 
@@ -29,8 +29,9 @@ def _dni_letter(number: str) -> str:
 
 
 def is_valid_dni(candidate: str) -> bool:
+    """Eight digits and the letter; seven digits stand for a DNI with a leading zero."""
     value = compact(candidate)
-    return _DNI.fullmatch(value) is not None and _dni_letter(value[:8]) == value[8]
+    return _DNI.fullmatch(value) is not None and _dni_letter(value[:-1]) == value[-1]
 
 
 def is_valid_nie(candidate: str) -> bool:

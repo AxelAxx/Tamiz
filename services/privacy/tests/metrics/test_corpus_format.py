@@ -39,7 +39,7 @@ def test_us4_3_meta_declares_version_and_synthetic_origin() -> None:
     meta = load_meta()
 
     assert meta["type"] == "meta"
-    assert meta["version"] == "1"
+    assert meta["version"] == "2"
     assert meta["synthetic"] is True
     assert meta["generator"] == "scripts/generate_corpus.py"
 

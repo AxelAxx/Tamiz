@@ -1,12 +1,16 @@
 """Generate the synthetic Spanish PII corpus (spec 004 US4, FR-017; research R-14).
 
-    uv run python scripts/generate_corpus.py          # write tests/corpus/pii-es.v1.jsonl
+    uv run python scripts/generate_corpus.py          # write tests/corpus/pii-es.v2.jsonl
     uv run python scripts/generate_corpus.py --check  # exit 1 if the committed file differs
 
 Everything is synthetic: names come from Faker's `es_ES` lists, identifiers are computed
 here from random numbers (valid by construction, or deliberately invalid for the hard
 negatives), emails use the reserved `example.*` domains, and the sentences are templates.
 The output is deterministic for a given seed and the locked Faker version.
+
+Version 2 (code audit 2026-11-03) adds formats people write that version 1 never tried: a
+DNI without its leading zero or with spaces, landlines grouped 2-3-2-2, a phone right after
+`Tel.`, and an IBAN followed by an amount.
 """
 
 import argparse
@@ -20,9 +24,9 @@ from pathlib import Path
 
 from faker import Faker
 
-VERSION = "1"
+VERSION = "2"
 SEED = 20261030
-CREATED = "2026-10-30"
+CREATED = "2026-11-03"
 TARGET = Path(__file__).resolve().parent.parent / "tests" / "corpus" / f"pii-es.v{VERSION}.jsonl"
 
 CITIES = [
@@ -73,15 +77,20 @@ class Gen:
     fake: Faker
 
     def dni(self) -> str:
+        style = self.rng.randrange(6)
+        if style == 5:  # below 10,000,000, written without the leading zero
+            n = self.rng.randrange(10**6, 10**7)
+            return f"{n}{dni_letter(n)}"
         n = self.rng.randrange(10**8)
         digits, letter = f"{n:08d}", dni_letter(n)
-        style = self.rng.randrange(4)
         if style == 0:
             return f"{digits}{letter}"
         if style == 1:
             return f"{digits}-{letter}"
         if style == 2:
             return f"{digits[:2]}.{digits[2:5]}.{digits[5:]}-{letter}"
+        if style == 3:
+            return f"{digits[:2]} {digits[2:5]} {digits[5:]} {letter}"
         return f"{digits}{letter.lower()}"
 
     def nie(self) -> str:
@@ -122,7 +131,11 @@ class Gen:
         if first == "7":
             rest = str(self.rng.randint(1, 4)) + rest[1:]
         digits = first + rest
-        style = self.rng.randrange(5)
+        style = self.rng.randrange(7)
+        if style >= 5:  # a landline with a two-digit area code: 91 123 45 67
+            digits = self.rng.choice(["91", "93", "95", "96", "98"]) + digits[2:]
+            grouped = f"{digits[:2]} {digits[2:5]} {digits[5:7]} {digits[7:]}"
+            return grouped if style == 5 else f"+34 {grouped}"
         if style == 0:
             return digits
         if style == 1:
@@ -303,6 +316,21 @@ def generic_message(g: Gen) -> Case:
     )  # fmt: skip
 
 
+def fintech_refund(g: Gen) -> Case:
+    amount = g.rng.choice(["300", "1500", "45", "12"])
+    return (
+        Case(["fintech"]).t("Devolver a la cuenta ").e("IBAN", g.iban())
+        .t(f" {amount} euros antes del viernes.")
+    )  # fmt: skip
+
+
+def generic_phone_note(g: Gen) -> Case:
+    return (
+        Case(["generic"]).t("Nota: ").e("PERSON", g.person()).t(", Tel.").e("PHONE", g.phone())
+        .t(", llamar por la tarde.")
+    )  # fmt: skip
+
+
 def generic_identity(g: Gen) -> Case:
     return (
         Case(["generic"]).t("Documento: NIE ").e("NIE", g.nie())
@@ -314,7 +342,7 @@ def generic_identity(g: Gen) -> Case:
 POSITIVE: list[Template] = [
     clinic_admission, clinic_contact, clinic_social_security, hr_payroll, hr_foreign_worker,
     legal_contract, legal_notification, fintech_transfer, fintech_card, fintech_invoice,
-    generic_message, generic_identity,
+    generic_message, generic_identity, fintech_refund, generic_phone_note,
 ]  # fmt: skip
 
 NEGATIVE: list[tuple[str, Callable[[Gen], str]]] = [
@@ -342,7 +370,7 @@ NEGATIVE: list[tuple[str, Callable[[Gen], str]]] = [
     ])),
 ]  # fmt: skip
 
-POSITIVE_CASES = 264
+POSITIVE_CASES = 308
 NEGATIVE_CASES = 60
 
 

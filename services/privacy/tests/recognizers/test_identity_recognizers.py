@@ -19,6 +19,17 @@ def test_us2_1_valid_dni_with_or_without_separators(written: str) -> None:
     assert found(dni_recognizer(), text) == [("DNI", written, 1.0)]
 
 
+@pytest.mark.parametrize(
+    "written", ["1234567L", "1.234.567-L", "12 345 678 Z", "12 345 678Z", "1 234 567 L"]
+)
+def test_us2_1_dni_without_its_leading_zero_or_spaced(written: str) -> None:
+    # Audit 2026-11-03 M2: 01234567L is often written with seven digits, and digit
+    # groups are also separated by spaces.
+    text = f"El paciente con DNI {written} pide cita."
+
+    assert found(dni_recognizer(), text) == [("DNI", written, 1.0)]
+
+
 def test_us2_1_dni_at_the_start_and_end_of_the_text() -> None:
     assert found(dni_recognizer(), "12345678Z") == [("DNI", "12345678Z", 1.0)]
     assert found(dni_recognizer(), "DNI: 00000000T.") == [("DNI", "00000000T", 1.0)]
@@ -67,8 +78,11 @@ def test_us2_5_wrong_cif_control_is_rejected(written: str) -> None:
     assert found(cif_recognizer(), f"CIF {written}") == []
 
 
-def test_a_nie_is_not_also_a_dni_or_cif() -> None:
-    text = "NIE X1234567L"
+@pytest.mark.parametrize("written", ["X1234567L", "X 1234567 L", "x-1234567-l", "X.1234567.L"])
+def test_a_nie_is_not_also_a_dni_or_cif(written: str) -> None:
+    # An X NIE has the letter of the DNI 0 + its digits, so its seven digits alone would
+    # pass as a DNI written without the leading zero.
+    text = f"NIE {written}"
 
     assert found(dni_recognizer(), text) == []
     assert found(cif_recognizer(), text) == []

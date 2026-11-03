@@ -49,7 +49,7 @@ export const SURNAMES = [
   "Larrañaga",
   "Zabaleta",
   "Gorostiza",
-  "Cifuentes",
+  "Arrizabalaga",
   "Bermúdez",
   "Valcárcel",
   "Sotomayor",

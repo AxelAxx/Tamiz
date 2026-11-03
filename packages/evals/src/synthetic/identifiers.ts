@@ -82,6 +82,10 @@ export interface Identifiers {
   nss(): string;
   phone(): string;
   card(): string;
+  /** Formats people write that the first datasets never tried (code audit 2026-11-03). */
+  dniWithoutLeadingZero(): string;
+  dniSpaced(): string;
+  landline(): string;
 }
 
 export function identifiers(r: Random): Identifiers {
@@ -181,6 +185,20 @@ export function identifiers(r: Random): Identifiers {
       const number = luhnComplete(`${prefix}${r.digits(15 - prefix.length)}`);
       const sep = r.pick([" ", "-", ""]);
       return sep === "" ? number : (number.match(/.{4}/g)?.join(sep) ?? number);
+    },
+    dniWithoutLeadingZero() {
+      const n = r.between(1_000_000, 9_999_999);
+      return `${n}${dniLetter(n)}`;
+    },
+    dniSpaced() {
+      const n = r.int(100_000_000);
+      const d = String(n).padStart(8, "0");
+      return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)} ${dniLetter(n)}`;
+    },
+    landline() {
+      const digits = `${r.pick(["91", "93", "95", "96", "98"])}${r.digits(7)}`;
+      const grouped = `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
+      return r.int(2) === 0 ? grouped : `+34 ${grouped}`;
     },
   };
 }

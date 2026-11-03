@@ -14,7 +14,10 @@ _BEFORE = r"(?<![\w.\-/])"
 _AFTER = r"(?![\w\-/]|\.\w)"
 _SEP = r"[ .\-]?"
 
-DNI_REGEX = _BEFORE + r"\d{2}\.?\d{3}\.?\d{3}" + _SEP + r"[A-Z]" + _AFTER
+# One or two leading digits: a DNI below 10,000,000 is often written without its zero. The
+# seven digits of a spaced X NIE (`X 1234567 L`) would then pass too, hence the second
+# look-behind.
+DNI_REGEX = _BEFORE + r"(?<![XYZ] )\d{1,2}[ .]?\d{3}[ .]?\d{3}" + _SEP + r"[A-Z]" + _AFTER
 NIE_REGEX = _BEFORE + r"[XYZ]" + _SEP + r"\d{7}" + _SEP + r"[A-Z]" + _AFTER
 CIF_REGEX = _BEFORE + r"[ABCDEFGHJNPQRSUVW]" + _SEP + r"\d{7}" + _SEP + r"[0-9A-J]" + _AFTER
 
