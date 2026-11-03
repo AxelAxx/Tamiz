@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Printed in the codespace's first terminal (T-OPS-06): where the dashboard is, how to sign
 # in, and whether the stack is up yet.
-url="https://${CODESPACE_NAME}-3100.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}"
+# From `.env`, which setup.sh writes: an SSH session (`gh codespace ssh`) lacks the
+# Codespaces variables.
+url="$(sed -n 's/^TAMIZ_DASHBOARD_PUBLIC_URL=//p' .env 2>/dev/null)"
+url="${url:-"(not ready yet: setup.sh is still running)"}"
 cat <<TEXT
 
   Tamiz demo

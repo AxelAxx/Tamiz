@@ -20,11 +20,13 @@ What the codespace does (`.devcontainer/`):
    - runs `pnpm compose:env` with a generated passphrase, and keeps the passphrase and the
      two keys in `.devcontainer/credentials.txt` (git-ignored);
    - points the gateway at `policies/codespaces.yaml`;
-   - writes `.env`, which adds `docker-compose.codespaces.yml` to compose with the
-     dashboard's forwarded address.
-2. **On each start**, `docker compose up -d --build`: the local stack of `docker-compose.yml`
-   with `qwen2.5:1.5b` instead of `llama3.1:8b`. The first start takes about 10 minutes
-   (image builds and the model download).
+   - starts the stack: the local stack of `docker-compose.yml`, with
+     `docker-compose.codespaces.yml` on top for the dashboard's forwarded address and
+     `qwen2.5:1.5b` instead of `llama3.1:8b`. This takes about 10 minutes (image builds and
+     the model download);
+   - writes `.env` last, so later `docker compose` commands use the overlay too.
+2. **On each later start**, `start.sh` runs `docker compose up -d --build`. Codespaces may
+   run it on creation while `setup.sh` is still running; without `.env` it does nothing.
 3. **On attach**, `welcome.sh` prints the dashboard's address and the credentials.
 
 The forwarded ports are private: only the codespace's owner, signed in to GitHub, reaches
