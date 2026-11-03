@@ -136,7 +136,7 @@ All data is synthetic and versioned in `packages/evals/datasets/`.
 - **Cost**: the routing cases priced on the decided target and on the most expensive one.
 
 <!-- evals:start -->
-Last run: 2026-11-02, commit `10d17b3`, policy `default` v3 — overall **pass**.
+Last run: 2026-11-03, commit `cf8decd`, policy `default` v3 — overall **pass**.
 
 | Eval | Metric | Result | Threshold | |
 |---|---|---|---|---|
@@ -159,13 +159,14 @@ Last run: 2026-11-02, commit `10d17b3`, policy `default` v3 — overall **pass**
 | Detection | `recall.PERSON` | 89.09 % | ≥ 80.00 % | ✓ pass |
 | Detection | `recall.PHONE` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Routing | `route_accuracy` | 100.00 % | ≥ 95.00 % | ✓ pass |
-| Quality | `mean_score.routed` | 0.8750 | reported | reported |
-| Quality | `relative_score` | 100.00 % | ≥ 95.00 % | ✓ pass |
+| Quality | `mean_score.routed` | 0.9063 | reported | reported |
+| Quality | `relative_score` | 103.57 % | ≥ 95.00 % | ✓ pass |
 | Cost | `cost.routed_estimate` | $0.03759 | reported | reported |
 | Cost | `cost.baseline_estimate` | $0.29130 | reported | reported |
 | Cost | `saving` | 87.09 % | reported | reported |
+| Agent | `answer_accuracy` | 62.50 % | ≥ 60.00 % | ✓ pass |
 
-Datasets: pii-leak-es v2 (200), pii-detection-es v1 (160), routing v1 (44), quality-es v1 (24). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
+Datasets: pii-leak-es v2 (200), pii-detection-es v1 (160), routing v1 (44), quality-es v1 (24), agent-spend v1 (8). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
 <!-- evals:end -->
 
 Limitations: detection is statistical (spaCy for names), so the figures are a measured
