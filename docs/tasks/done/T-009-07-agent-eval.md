@@ -108,8 +108,8 @@ TAMIZ_EVAL_AGENT_GATEWAY_URL=http://localhost:3000 TAMIZ_EVAL_API_KEY=<demo> pnp
 TAMIZ_EVAL_AGENT_MODEL=tamiz-agent TAMIZ_EVAL_AGENT_PROTOCOL=text pnpm evals -- --only agent      # qwen, quality-ci.yaml mounted in the compose gateway
 ```
 
-Not verified here: the agent eval in the CI `evals` job (runner speed, its share of the
-job's 25-minute limit). The PR's run is the first.
+In the PR's CI run the agent eval passed at 75 %. The `evals` job grew from about 6.5 to
+18.5 minutes of its 25-minute limit, so a follow-up PR raised `timeout-minutes` to 40.
 
 ## Pending / follow-ups
 

@@ -171,7 +171,8 @@ jobs:
   evals:
     name: evals
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # About 18 minutes since the agent eval (T-009-07) on a GitHub runner; room for a slow one.
+    timeout-minutes: 40
     env:
       OLLAMA_IMAGE: ollama/ollama:0.40.5
       ANSWER_MODEL: qwen2.5:1.5b
