@@ -154,6 +154,42 @@ describe("streamInference", () => {
     ]);
   });
 
+  it("FR-024: a target that always fails after its first token opens its circuit (audit H3)", async () => {
+    const midStream = failure("network", { on: { ...examplePolicyTarget("mistral-small") } });
+    const { stream, clock, events } = setup(async (input) =>
+      input.target.id === "mistral-small"
+        ? started("Hola", { type: "error", error: midStream })
+        : started("Hi", { type: "finish", finishReason: "stop" }),
+    );
+
+    const served: string[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      const result = await clock.drive(stream(request()));
+      if (!result.ok) throw new Error("expected a stream");
+      served.push(result.value.target.id);
+      await collect(result.value.parts);
+    }
+
+    expect(events.events.filter((event) => event.type === "circuit.changed")).toEqual([
+      expect.objectContaining({ targetId: "mistral-small", from: "closed", to: "open" }),
+    ]);
+    expect(served.at(-1)).toBe("openai-mini");
+  });
+
+  it("a stream resets the target's failure count when it finishes, not at its first token", async () => {
+    const { stream, clock, circuitState } = setup(async () =>
+      started("Hola", { type: "finish", finishReason: "stop" }),
+    );
+    await circuitState.recordFailure(targetIdUnchecked("mistral-small"));
+
+    const result = await clock.drive(stream(request()));
+    if (!result.ok) throw new Error("expected a stream");
+    expect((await circuitState.snapshot(targetIdUnchecked("mistral-small"))).failures).toBe(1);
+    await collect(result.value.parts);
+
+    expect((await circuitState.snapshot(targetIdUnchecked("mistral-small"))).failures).toBe(0);
+  });
+
   it("US6-7: every target failing before a token returns a RoutingFailure", async () => {
     const { stream, clock } = setup(async (input) => err(failure("timeout", { on: input.target })));
 

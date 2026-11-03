@@ -102,7 +102,8 @@ export function percentile(values: ReadonlyArray<number>, p: number): number | n
 /**
  * Per target: every attempt that reached it in the window. The answering or failing target
  * counts once per entry (an error when the request failed); each abandoned target counts
- * as one failed attempt. Latency is over answered entries.
+ * as one failed attempt, unless it was skipped for an open circuit and never called
+ * (audit M5). Latency is over answered entries.
  */
 export function targetWindows(entries: ReadonlyArray<AuditEntry>): ReadonlyArray<TargetWindow> {
   const stats = new Map<string, { requests: number; errors: number; latencies: number[] }>();
@@ -122,6 +123,7 @@ export function targetWindows(entries: ReadonlyArray<AuditEntry>): ReadonlyArray
       if (entry.outcome === "answered") s.latencies.push(entry.latencyMs);
     }
     for (const abandoned of entry.abandoned) {
+      if (abandoned.reason === "circuit_open") continue;
       const s = at(abandoned.targetId);
       s.requests += 1;
       s.errors += 1;

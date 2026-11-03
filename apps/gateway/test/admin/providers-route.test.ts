@@ -119,4 +119,19 @@ describe("window helpers", () => {
     const { target: _target, ...blocked } = sampleEntry(1, { outcome: "blocked" });
     expect(targetWindows([blocked])).toEqual([]);
   });
+
+  it("a target skipped for an open circuit was never called and is not counted (audit M5)", () => {
+    const entry = sampleEntry(1, {
+      abandoned: [
+        { targetId: "ollama-llama", reason: "circuit_open" },
+        { targetId: "openai-mini", reason: "timeout" },
+      ],
+    });
+    const windows = targetWindows([entry]);
+    expect(windows.find((w) => w.targetId === "ollama-llama")).toBeUndefined();
+    expect(windows.find((w) => w.targetId === "openai-mini")).toMatchObject({
+      requests: 1,
+      errors: 1,
+    });
+  });
 });

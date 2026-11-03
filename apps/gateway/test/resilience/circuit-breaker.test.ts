@@ -66,6 +66,54 @@ describe("createCircuitBreaker", () => {
     ]);
   });
 
+  it("a call admitted while closed does not close a circuit that opened since (audit H4)", async () => {
+    const { breaker, events } = setup();
+    const late = await breaker.admit(target(), CONTEXT, LEASE);
+    for (let i = 0; i < 3; i += 1) {
+      const admission = await breaker.admit(target(), CONTEXT, LEASE);
+      await breaker.onResult(target(), CONTEXT, counted(), admission);
+    }
+
+    await breaker.onResult(target(), CONTEXT, SUCCESS, late);
+
+    expect(await breaker.admit(target(), CONTEXT, LEASE)).toEqual({
+      kind: "skip",
+      remainingMs: 30_000,
+    });
+    expect(events.events.map((e) => e.type === "circuit.changed" && `${e.from}>${e.to}`)).toEqual([
+      "closed>open",
+    ]);
+  });
+
+  it("a late failure of a call admitted while closed neither extends nor re-announces an open circuit", async () => {
+    const { breaker, events, clock } = setup();
+    const late = await breaker.admit(target(), CONTEXT, LEASE);
+    for (let i = 0; i < 3; i += 1) {
+      const admission = await breaker.admit(target(), CONTEXT, LEASE);
+      await breaker.onResult(target(), CONTEXT, counted(), admission);
+    }
+    clock.advance(10_000);
+
+    for (let i = 0; i < 3; i += 1) await breaker.onResult(target(), CONTEXT, counted(), late);
+
+    expect(await breaker.admit(target(), CONTEXT, LEASE)).toEqual({
+      kind: "skip",
+      remainingMs: 20_000,
+    });
+    expect(events.events).toHaveLength(1);
+  });
+
+  it("onResult says whether the outcome opened the circuit", async () => {
+    const { breaker } = setup();
+    const opened: boolean[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const admission = await breaker.admit(target(), CONTEXT, LEASE);
+      opened.push(await breaker.onResult(target(), CONTEXT, counted(), admission));
+    }
+
+    expect(opened).toEqual([false, false, true]);
+  });
+
   it("a success in between resets the consecutive count", async () => {
     const { breaker } = setup();
     const call = { kind: "call" } as const;
