@@ -167,9 +167,16 @@ after at most 6 model calls:
   reply is one JSON object, either `{"tool", "arguments"}` or `{"answer"}`; tool results
   and errors go back as `Observation …` messages. Use it for models without tool support.
 
+Cost reports reach the model as short text, not JSON: spent per row, the total, and the
+frontier baseline set apart as "not money spent". A second report grouped by route also
+lists each route's change against the first, largest first, so the model reads the
+subtraction instead of doing it (`src/agent/observation.ts`). How well a local model answers
+is measured by the `agent` eval (`packages/evals`, spec `specs/009-mcp-agent/agent-eval/`).
+
 The demo prints the answer and a run record with:
 
-- the protocol and the prompt version (`prompts/system.v2.md` native, `system.v1.md` text);
+- the protocol and the prompt version (`prompts/system.v4.md` native, `system.v3.md` text;
+  v1 and v2 are the versions before `T-009-07`);
 - the UTC date;
 - the tools called, with their arguments;
 - the gateway request id of every model call.

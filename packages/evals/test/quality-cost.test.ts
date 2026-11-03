@@ -232,6 +232,8 @@ describe("quality through the gateway and the judge (MSW)", () => {
     TAMIZ_EVAL_JUDGE_URL: JUDGE,
     TAMIZ_EVAL_JUDGE_MODEL: "qwen2.5:3b",
     TAMIZ_EVAL_FRONTIER: "off" as const,
+    TAMIZ_EVAL_AGENT_PROTOCOL: "native" as const,
+    TAMIZ_EVAL_AGENT_MODEL: "tamiz-local",
     TAMIZ_EVAL_CONCURRENCY: 4,
   };
 

@@ -194,6 +194,8 @@ describe("runEvals", () => {
           TAMIZ_EVAL_GATEWAY_URL: GATEWAY,
           TAMIZ_EVAL_API_KEY: "k",
           TAMIZ_EVAL_FRONTIER: "off",
+          TAMIZ_EVAL_AGENT_PROTOCOL: "native",
+          TAMIZ_EVAL_AGENT_MODEL: "tamiz-local",
           TAMIZ_EVAL_CONCURRENCY: 2,
         },
         fetch: globalThis.fetch,

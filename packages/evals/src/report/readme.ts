@@ -17,6 +17,7 @@ const LABEL: Record<string, string> = {
   routing: "Routing",
   quality: "Quality",
   cost: "Cost",
+  agent: "Agent",
 };
 
 /** Reported metrics worth a row next to the gated ones. */

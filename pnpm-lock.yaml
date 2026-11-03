@@ -301,6 +301,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.5
         version: 2.1.5(hono@4.13.13)
+      '@modelcontextprotocol/client':
+        specifier: 2.4.0
+        version: 2.4.0
       '@modelcontextprotocol/hono':
         specifier: 2.0.2
         version: 2.0.2(@modelcontextprotocol/server@2.4.0)(hono@4.13.13)
@@ -323,9 +326,6 @@ importers:
         specifier: ^4.6.7
         version: 4.6.7
     devDependencies:
-      '@modelcontextprotocol/client':
-        specifier: 2.4.0
-        version: 2.4.0
       '@tamiz/tsconfig':
         specifier: workspace:*
         version: link:../../packages/tsconfig
@@ -388,6 +388,9 @@ importers:
       '@tamiz/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@tamiz/mcp-server':
+        specifier: workspace:*
+        version: link:../../apps/mcp-server
       yaml:
         specifier: ^2.9.1
         version: 2.9.1

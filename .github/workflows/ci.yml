@@ -164,7 +164,9 @@ jobs:
   # Spec 007 FR-014 (T-007-06): the evals against the real services, with local models.
   # Leak, detection, routing and cost use the privacy service and a gateway on the default
   # policy (fake cloud keys: those evals only simulate). Quality answers through a second
-  # gateway on packages/evals/policies/quality-ci.yaml and is graded by a local judge.
+  # gateway on packages/evals/policies/quality-ci.yaml and is graded by a local judge. The
+  # agent eval (009 agent-eval addendum) runs the MCP agent through that second gateway,
+  # on its `tamiz-agent` rule (qwen2.5:3b, the judge model), with the text tool protocol.
   # Below a threshold the job fails (exit 1); a broken harness fails it too (exit 2).
   evals:
     name: evals
@@ -242,6 +244,9 @@ jobs:
           TAMIZ_EVAL_PRIVACY_URL: http://127.0.0.1:8001
           TAMIZ_EVAL_JUDGE_URL: http://127.0.0.1:11434/v1
           TAMIZ_EVAL_JUDGE_MODEL: ${{ env.JUDGE_MODEL }}
+          TAMIZ_EVAL_AGENT_GATEWAY_URL: http://127.0.0.1:3200
+          TAMIZ_EVAL_AGENT_MODEL: tamiz-agent
+          TAMIZ_EVAL_AGENT_PROTOCOL: text
           TAMIZ_EVAL_CONCURRENCY: "2"
         run: node packages/evals/dist/cli.js
 

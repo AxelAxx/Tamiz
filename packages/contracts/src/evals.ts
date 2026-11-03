@@ -8,7 +8,7 @@
  */
 import { z } from "zod";
 
-export const EVAL_IDS = ["leak", "detection", "routing", "quality", "cost"] as const;
+export const EVAL_IDS = ["leak", "detection", "routing", "quality", "cost", "agent"] as const;
 export const EvalIdSchema = z.enum(EVAL_IDS);
 
 /** At most this many failing cases are listed per eval; `failingCount` keeps the total. */
