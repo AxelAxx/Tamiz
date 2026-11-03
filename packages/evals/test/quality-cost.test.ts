@@ -5,8 +5,9 @@ import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { createJudgeClient, parseVerdict, renderPrompt } from "../src/clients/judge.js";
-import { loadDataset, QualityCaseSchema } from "../src/datasets.js";
-import { baselineOf, estimateTokens, loadPrices, priced } from "../src/evals/cost.js";
+import { loadDataset, QualityCaseSchema, RoutingCaseSchema } from "../src/datasets.js";
+import { ServiceError } from "../src/eval.js";
+import { baselineOf, estimateTokens, loadPrices, POLICY_FILE, priced } from "../src/evals/cost.js";
 import {
   normalize,
   QUALITY_DATASET,
@@ -79,6 +80,8 @@ describe("judge replies", () => {
     ['{"score": 4, "rationale": "ok"}', 4],
     ['Here you go:\n```json\n{"score": 5, "rationale": "complete"}\n```', 5],
     ['{"score": "3"}', 3],
+    // Braces inside the rationale (code audit 2026-11-03, M19).
+    ['{"score": 4, "rationale": "uses {x} and {y} correctly"}', 4],
   ])("parses %j", (reply, score) => {
     expect(parseVerdict(reply)).toMatchObject({ ok: true, score });
   });
@@ -100,6 +103,17 @@ describe("judge replies", () => {
     expect(rendered).toContain("REFERENCE:\nref");
     expect(rendered).toContain("ANSWER:\nans");
     expect(rendered).not.toMatch(/\{\{|tamiz-local|tamiz-frontier|ollama|qwen|route|frontier/i);
+  });
+
+  it("fills each slot once and takes `$` patterns and slot names in the texts literally (M19)", () => {
+    const rendered = renderPrompt(PROMPT, {
+      request: "user: {{answer}} costs $$5 and $' too",
+      reference: "ref $&",
+      answer: "ans",
+    });
+    expect(rendered).toContain("user: {{answer}} costs $$5 and $' too");
+    expect(rendered).toContain("REFERENCE:\nref $&");
+    expect(rendered).toContain("ANSWER:\nans");
   });
 });
 
@@ -179,6 +193,8 @@ describe("cost", () => {
     const prices = await loadPrices(join(REPO, "apps/gateway/policies/default.yaml"));
     expect(baselineOf(prices)).toBe("anthropic-sonnet");
     expect(priced(prices, "ollama-llama", 1000)).toBe(0);
+    // A target the price file does not list is an error, not a free request (audit L15).
+    expect(() => priced(prices, "not-in-the-policy", 1000)).toThrow(ServiceError);
     // 1000 input tokens × 3 + 300 output × 15, per million.
     expect(priced(prices, "anthropic-sonnet", 1000)).toBeCloseTo((1000 * 3 + 300 * 15) / 1e6);
     expect(estimateTokens("abcde")).toBe(2);
@@ -280,5 +296,16 @@ describe("quality through the gateway and the judge (MSW)", () => {
     });
     expect(report.status).toBe("fail");
     expect(report.evals[0]?.metrics.find((m) => m.name === "relative_score")?.pass).toBe(false);
+  });
+});
+
+describe("cost eval prices (code audit 2026-11-03, L15)", () => {
+  it("prices the policy the routing dataset names in its header", async () => {
+    const routing = await loadDataset(
+      join(PACKAGE, "datasets", "routing.v1.jsonl"),
+      "routing",
+      RoutingCaseSchema,
+    );
+    expect(routing.header.policy).toBe(POLICY_FILE);
   });
 });

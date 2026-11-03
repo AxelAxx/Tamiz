@@ -3,10 +3,11 @@
  * data-model section 5, research R-07). The API has no request-id filter, so the check
  * reads a narrow window that starts just before the request and matches the id here.
  */
-import { type AuditEntryDto, AuditPageSchema } from "@tamiz/contracts";
+import { AUDIT_PAGE_MAX, type AuditEntryDto, AuditPageSchema } from "@tamiz/contracts";
 
 const WINDOW_BEFORE_MS = 5_000;
-const PAGE_LIMIT = 200;
+/** The contract's own page cap, so a lower cap on the gateway never makes every page a 400. */
+const PAGE_LIMIT = AUDIT_PAGE_MAX;
 const MAX_PAGES = 5;
 const POLL_INTERVAL_MS = 250;
 
@@ -28,12 +29,12 @@ export interface AuditCheckInput {
 
 export type AuditCheckResult =
   | { readonly kind: "found"; readonly entry: AuditEntryDto }
-  | { readonly kind: "not_found" | "forbidden" | "unauthorized" | "malformed" };
+  | { readonly kind: "not_found" | "forbidden" | "unauthorized" | "malformed" | "unreachable" };
 
 type PageOutcome =
   | { readonly kind: "found"; readonly entry: AuditEntryDto }
   | { readonly kind: "missing" }
-  | { readonly kind: "forbidden" | "unauthorized" | "malformed" };
+  | { readonly kind: "forbidden" | "unauthorized" | "malformed" | "unreachable" };
 
 /**
  * Polls until the entry appears, the deadline passes, or the key is refused. The deadline
@@ -61,9 +62,16 @@ async function scanWindow(input: AuditCheckInput, deps: AuditCheckDeps): Promise
     url.searchParams.set("from", from);
     url.searchParams.set("limit", String(PAGE_LIMIT));
     if (cursor !== null) url.searchParams.set("cursor", cursor);
-    const response = await deps.fetch(url, {
-      headers: { authorization: `Bearer ${input.adminKey}` },
-    });
+    let response: Response;
+    try {
+      response = await deps.fetch(url, {
+        headers: { authorization: `Bearer ${input.adminKey}` },
+      });
+    } catch {
+      // The answer is already in hand: report `audit_error: unreachable`, never crash
+      // the run (code audit 2026-11-03, M20).
+      return { kind: "unreachable" };
+    }
     if (response.status === 401) return { kind: "unauthorized" };
     if (response.status === 403) return { kind: "forbidden" };
     const parsed = AuditPageSchema.safeParse(

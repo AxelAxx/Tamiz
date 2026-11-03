@@ -5,6 +5,7 @@
  * The prompt is a versioned file; the judge never learns which route produced the answer.
  * A reply that is not the requested JSON is retried once, then reported as unparseable.
  */
+import { firstJsonObject } from "@tamiz/mcp-server/agent/json-object";
 import { z } from "zod";
 import { ServiceError } from "../eval.js";
 
@@ -26,22 +27,27 @@ const VerdictSchema = z.object({
   rationale: z.string().default(""),
 });
 
+/**
+ * The versioned template with its three slots filled in one pass: a `$'` or a `{{answer}}`
+ * inside the request, the reference or the answer is text, never a pattern or a slot
+ * (code audit 2026-11-03, M19).
+ */
 export function renderPrompt(
   prompt: JudgePrompt,
   parts: { request: string; reference: string; answer: string },
 ): string {
-  return prompt.template
-    .replace("{{request}}", parts.request)
-    .replace("{{reference}}", parts.reference)
-    .replace("{{answer}}", parts.answer);
+  return prompt.template.replace(
+    /\{\{(request|reference|answer)\}\}/g,
+    (_, slot: "request" | "reference" | "answer") => parts[slot],
+  );
 }
 
-/** The first JSON object in the reply, as models sometimes wrap it in prose or fences. */
+/** The first balanced JSON object in the reply, as models wrap it in prose or fences. */
 export function parseVerdict(reply: string): Judgement {
-  const match = reply.match(/\{[\s\S]*?\}/);
-  if (match === null) return { ok: false };
+  const candidate = firstJsonObject(reply);
+  if (candidate === undefined) return { ok: false };
   try {
-    const verdict = VerdictSchema.safeParse(JSON.parse(match[0]));
+    const verdict = VerdictSchema.safeParse(JSON.parse(candidate));
     return verdict.success
       ? { ok: true, score: verdict.data.score, rationale: verdict.data.rationale }
       : { ok: false };
