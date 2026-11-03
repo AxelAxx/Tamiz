@@ -191,6 +191,7 @@ tamiz/
 │   ├── tamiz-project.md   Foundational document
 │   ├── architecture.md    Mermaid diagrams
 │   ├── adr/               ADR-NNNN-*.md (+ TEMPLATE.md)
+│   ├── audit/             Code audits (findings and fix tasks, T-AUD-*)
 │   ├── integrations/      Guides for applications calling Tamiz (citara.md)
 │   └── tasks/             BACKLOG.md, TEMPLATE.md, done/<TASK-ID>-<slug>.md
 ├── .specify/           Spec Kit memory (constitution), templates, scripts
