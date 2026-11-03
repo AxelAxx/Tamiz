@@ -14,11 +14,12 @@ import { parseArgs } from "node:util";
 import { EVAL_IDS, type EvalId, type EvalReport } from "@tamiz/contracts";
 import { createGatewayClient } from "./clients/gateway.js";
 import { loadConfig } from "./config.js";
+import { DatasetError } from "./datasets.js";
 import { agentEval } from "./evals/agent.js";
 import { costEval } from "./evals/cost.js";
 import { detectionEval } from "./evals/detection.js";
 import { leakEval } from "./evals/leak.js";
-import { type QualityBaseline, qualityEval } from "./evals/quality.js";
+import { QualityBaselineSchema, qualityEval } from "./evals/quality.js";
 import { routingEval } from "./evals/routing.js";
 import { formatThreshold, formatValue } from "./report/markdown.js";
 import { writeReports } from "./report/write.js";
@@ -32,9 +33,14 @@ const JUDGE_PROMPT = "judge.v1";
 /** Every eval, in report order. Quality reads its judge prompt and accepted baselines. */
 export async function registry(packageRoot = PACKAGE_ROOT): Promise<ReadonlyArray<RegisteredEval>> {
   const template = await readFile(resolve(packageRoot, "prompts", `${JUDGE_PROMPT}.md`), "utf8");
-  const baseline = JSON.parse(
-    await readFile(resolve(packageRoot, "baselines", "quality.json"), "utf8"),
-  ) as QualityBaseline;
+  const parsed = QualityBaselineSchema.safeParse(
+    JSON.parse(await readFile(resolve(packageRoot, "baselines", "quality.json"), "utf8")),
+  );
+  if (!parsed.success) {
+    const paths = parsed.error.issues.map((issue) => issue.path.join(".") || "(root)");
+    throw new DatasetError("baselines/quality.json", 0, `invalid at ${paths.join(", ")}`);
+  }
+  const baseline = parsed.data;
   return [
     register(leakEval),
     register(detectionEval),
@@ -70,7 +76,14 @@ export async function main(
   io: CliIo,
   evals?: ReadonlyArray<RegisteredEval>,
 ): Promise<number> {
-  const registered = evals ?? (await registry());
+  let registered: ReadonlyArray<RegisteredEval>;
+  try {
+    registered = evals ?? (await registry());
+  } catch (error) {
+    if (!(error instanceof DatasetError)) throw error;
+    io.out(`! ${error.message}`);
+    return 2;
+  }
   let values: { only?: string; "report-dir"?: string };
   try {
     ({ values } = parseArgs({
