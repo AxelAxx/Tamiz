@@ -5,7 +5,10 @@
  * `policy_versions` is append-only. Boot loads the newest stored version of the file's
  * policy id and uses it when its version is at least the file's; otherwise the file wins
  * and is recorded as a version (an operator who edits the file and raises its version
- * means it). A stored version is validated like the file before it is used.
+ * means it). A stored version is validated like the file before it is used. When the
+ * stored version with the file's number has other content, the file was edited without a
+ * version bump: `onFileIgnored` reports it (backlog `T-OPS-05`), and the stored one still
+ * wins.
  *
  * `replace` is one `INSERT … SELECT … WHERE max(version) = baseVersion ON CONFLICT DO
  * NOTHING`: of two saves on the same base, even from two gateways sharing the database,
@@ -14,7 +17,7 @@
  * the cache from the database, so a version saved through another gateway is picked up.
  */
 import { randomUUID } from "node:crypto";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { ClockPort } from "../../application/ports/clock.port.js";
 import type {
   PolicyRepositoryPort,
@@ -50,6 +53,28 @@ function fromRow(row: Row): Result<PolicyVersion, ConfigurationError> {
   });
 }
 
+/** The file differs from the stored version with its number, so the file is not used. */
+export interface IgnoredPolicyFile {
+  readonly policyId: string;
+  readonly fileVersion: number;
+  readonly fileContentHash: string;
+  readonly storedContentHash: string;
+  readonly activeVersion: number;
+}
+
+async function storedHashOf(
+  db: Database,
+  policyId: string,
+  version: number,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ contentHash: policyVersions.contentHash })
+    .from(policyVersions)
+    .where(and(eq(policyVersions.policyId, policyId), eq(policyVersions.version, version)))
+    .limit(1);
+  return row?.contentHash;
+}
+
 async function newest(db: Database, policyId: string): Promise<Row | undefined> {
   const [row] = await db
     .select()
@@ -65,6 +90,7 @@ export async function createPostgresPolicyRepository(deps: {
   readonly clock: ClockPort;
   /** The policy loaded from the file at boot. */
   readonly file: PolicyVersionDraft;
+  readonly onFileIgnored?: (notice: IgnoredPolicyFile) => void;
 }): Promise<Result<PolicyRepositoryPort, ConfigurationError>> {
   const { db, clock, file } = deps;
   const policyId = file.policy.id;
@@ -75,6 +101,16 @@ export async function createPostgresPolicyRepository(deps: {
     const loaded = fromRow(stored);
     if (!loaded.ok) return loaded;
     active = loaded.value;
+    const storedHash = await storedHashOf(db, policyId, file.policy.version);
+    if (storedHash !== undefined && storedHash !== file.contentHash) {
+      deps.onFileIgnored?.({
+        policyId,
+        fileVersion: file.policy.version,
+        fileContentHash: file.contentHash,
+        storedContentHash: storedHash,
+        activeVersion: stored.version,
+      });
+    }
   } else {
     await db
       .insert(policyVersions)

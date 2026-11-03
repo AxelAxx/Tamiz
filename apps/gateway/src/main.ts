@@ -142,6 +142,12 @@ if (database === undefined) {
         db: database.db,
         clock: systemClock,
         file: bootVersion,
+        // T-OPS-05: an edited file at a stored version number is not used; say so.
+        onFileIgnored: (notice) =>
+          logger.warn(
+            notice,
+            "routing policy file differs from the stored version with the same number and is ignored; raise its version to use it",
+          ),
       }),
     );
   } catch (error) {
