@@ -12,7 +12,9 @@
  * The gate is `relative_score = routed ÷ comparison ≥ 0.95`. More than 10 % unparseable
  * judgements make the eval an error. Answers and rationales never enter the report.
  */
+
 import type { EvalFailingCase } from "@tamiz/contracts";
+import { z } from "zod";
 import { type ChatMessage, createGatewayClient } from "../clients/gateway.js";
 import {
   createJudgeClient,
@@ -43,6 +45,22 @@ export interface QualityBaselineEntry {
 export interface QualityBaseline {
   readonly entries: ReadonlyArray<QualityBaselineEntry>;
 }
+
+/** `baselines/quality.json` is a reviewed file: validated, never cast (code audit L15). */
+export const QualityBaselineSchema = z.strictObject({
+  entries: z.array(
+    z.strictObject({
+      dataset: z.string().min(1),
+      datasetVersion: z.int().min(1),
+      judgePrompt: z.string().min(1),
+      answerModel: z.string().min(1),
+      judgeModel: z.string().min(1),
+      score: z.number().min(0).max(1),
+      acceptedAt: z.string().min(1),
+      source: z.string().min(1),
+    }),
+  ),
+}) satisfies z.ZodType<QualityBaseline>;
 
 interface Arm {
   readonly judgement: Judgement;

@@ -35,22 +35,37 @@ export interface RegisteredEval {
   execute(context: EvalContext, datasetsDir: string, concurrency: number): Promise<Executed>;
 }
 
-/** Runs `fn` over `items` with at most `limit` in flight, keeping the order. */
-async function pool<T, U>(
+/**
+ * Runs `fn` over `items` with at most `limit` in flight, keeping the order. The first
+ * failure stops every worker from taking another item, and the pool waits for the calls
+ * in flight before it rethrows, so a failed eval leaves nothing running into the next one
+ * (code audit 2026-11-03, M18).
+ */
+export async function pool<T, U>(
   items: ReadonlyArray<T>,
   limit: number,
   fn: (item: T) => Promise<U>,
 ): Promise<U[]> {
   const out: U[] = new Array(items.length);
   let next = 0;
+  let failed = false;
   const worker = async () => {
-    while (next < items.length) {
+    while (!failed && next < items.length) {
       const index = next;
       next += 1;
-      out[index] = await fn(items[index] as T);
+      try {
+        out[index] = await fn(items[index] as T);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
     }
   };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(limit, items.length) }, worker),
+  );
+  const rejected = settled.find((s): s is PromiseRejectedResult => s.status === "rejected");
+  if (rejected !== undefined) throw rejected.reason;
   return out;
 }
 

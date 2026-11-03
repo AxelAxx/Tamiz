@@ -437,6 +437,23 @@ describe("US8 the agent with native tools", () => {
     ).toBe(true);
   });
 
+  it("an empty reply is not an answer: the model is told and asked again (code audit L16)", async () => {
+    const harness = await setup({ cost: spendScenario });
+    harness.fake.script(["", ANSWER]);
+
+    const run = await runAgent({
+      question: QUESTION,
+      model: model(harness),
+      mcp: harness.mcp,
+      now: () => NOW,
+    });
+
+    expect(run).toMatchObject({ stopReason: "answered", answer: ANSWER });
+    expect(run.steps.map((s) => s.kind)).toEqual(["observation_error", "answer"]);
+    const second = chatRequests(harness.fake)[1]?.body as { messages: { content?: string }[] };
+    expect(second.messages.at(-1)?.content).toContain("the reply was empty");
+  });
+
   it("US8-2 runs two calls of one answer in order, both results before the next model call", async () => {
     const harness = await setup({ cost: spendScenario });
     harness.fake.script([

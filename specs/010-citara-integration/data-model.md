@@ -62,7 +62,7 @@ then the answer text after a blank line.
 | `attempts` | number of HTTP requests sent | always |
 | `model`, `finish_reason`, `usage` | completion body (usage chunk when streamed) | on success |
 | `audit` | the audit entry as one JSON line | audit check found it |
-| `audit_error` | `not_found` \| `forbidden` \| `unauthorized` | audit check failed |
+| `audit_error` | `not_found` \| `forbidden` \| `unauthorized` \| `malformed` \| `unreachable` | audit check failed (`unreachable` since the code audit of 2026-11-03) |
 
 Never printed: either key, the `authorization` header, the prompt.
 

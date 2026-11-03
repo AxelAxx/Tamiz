@@ -4,8 +4,10 @@
  * Each routing case is simulated; its input tokens are estimated with the gateway's rule
  * (characters ÷ 4, per message) and its output fixed at 300 tokens. Both are priced on the
  * first target of the decided chain and on the baseline target (the policy's most
- * expensive, as in feature 006). Prices come from the policy file named in the routing
- * dataset's header, since the simulation answer carries none.
+ * expensive, as in feature 006). Prices come from `POLICY_FILE`, the policy the routing
+ * dataset's header names (a test keeps the two equal), since the simulation answer carries
+ * none. A decided target missing from that file is an error, never a free request (code
+ * audit 2026-11-03, L15).
  */
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -13,7 +15,7 @@ import { parse as parseYaml } from "yaml";
 import { z } from "zod";
 import { createGatewayClient } from "../clients/gateway.js";
 import { type RoutingCase, RoutingCaseSchema } from "../datasets.js";
-import type { Eval } from "../eval.js";
+import { type Eval, ServiceError } from "../eval.js";
 
 export const ESTIMATED_OUTPUT_TOKENS = 300;
 
@@ -62,7 +64,9 @@ export function priced(
   outputTokens = ESTIMATED_OUTPUT_TOKENS,
 ): number {
   const p = prices.get(targetId);
-  return p === undefined ? 0 : (inputTokens * p.input + outputTokens * p.output) / 1_000_000;
+  // The gateway runs another policy than the one priced here: the figures would be wrong.
+  if (p === undefined) throw new ServiceError("gateway", "unpriced_target");
+  return (inputTokens * p.input + outputTokens * p.output) / 1_000_000;
 }
 
 export interface CostObservation {

@@ -97,6 +97,15 @@ describe("checkAudit (spec 010 data-model section 5, research R-07)", () => {
     expect(requests).toHaveLength(1);
   });
 
+  it("a connection that fails is reported as unreachable, not thrown (code audit M20)", async () => {
+    const { deps } = harness([
+      () => {
+        throw new TypeError("fetch failed");
+      },
+    ]);
+    expect((await checkAudit(INPUT, deps)).kind).toBe("unreachable");
+  });
+
   it("a malformed page is a failure, never a success", async () => {
     const { deps } = harness([() => Response.json({ entries: [{ requestId: "req-1" }] })]);
     expect((await checkAudit(INPUT, deps)).kind).toBe("malformed");

@@ -25,6 +25,7 @@ describe("executeChain", () => {
         target: US,
         value: "from us",
         abandoned: [{ targetId: "eu-primary", reason: "http_error" }],
+        admission: { kind: "call" },
       }),
     );
     expect(calls).toEqual(["eu-primary", "eu-primary", "us-second"]);
@@ -51,7 +52,9 @@ describe("executeChain", () => {
 
     const result = await clock.drive(run(decisionFor([EU, US]), { "eu-primary": [ok("from eu")] }));
 
-    expect(result).toEqual(ok({ target: EU, value: "from eu", abandoned: [] }));
+    expect(result).toEqual(
+      ok({ target: EU, value: "from eu", abandoned: [], admission: { kind: "call" } }),
+    );
   });
 
   it("US1-4: every target failing returns the last error, the last target and the earlier ones", async () => {
@@ -75,6 +78,38 @@ describe("executeChain", () => {
       { targetId: "eu-primary", reason: "http_error" },
       { targetId: "us-second", reason: "network" },
     ]);
+  });
+
+  it("an exhausted chain reports the last target tried, not a later one that was skipped (audit M4)", async () => {
+    const { run, clock, circuitState } = chainSetup();
+    await circuitState.open(US.id, 30_000 as never);
+
+    const result = await clock.drive(run(decisionFor([EU, US]), { "eu-primary": [fail503()] }));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatchObject({
+      kind: "exhausted",
+      target: EU,
+      error: { targetId: "eu-primary", cause: "http_error" },
+      abandoned: [{ targetId: "us-second", reason: "circuit_open" }],
+    });
+  });
+
+  it("retries stop once the request's own failures open the target's circuit (audit H4)", async () => {
+    const { run, clock, calls } = chainSetup({
+      resilience: {
+        maxAttempts: 4,
+        circuitBreaker: { failureThreshold: 2, cooldownMs: 30_000 as never },
+      },
+    });
+
+    const result = await clock.drive(
+      run(decisionFor([EU, US]), { "eu-primary": [fail503()], "us-second": [ok("from us")] }),
+    );
+
+    expect(calls).toEqual(["eu-primary", "eu-primary", "us-second"]);
+    expect(result.ok && result.value.target).toBe(US);
   });
 
   it("US2-1: the next target outside the allowed residencies is never called", async () => {
