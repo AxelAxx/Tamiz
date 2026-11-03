@@ -38,6 +38,7 @@ import {
   PRESET_LABELS,
   presetRange,
   type RangePreset,
+  rangeDays,
 } from "./cost-view";
 
 const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
@@ -337,8 +338,8 @@ export function CostAnalytics() {
   const report = cost.data;
   const empty = report !== undefined && report.rows.length === 0;
   const keyLabel = KEY_LABEL[groupBy].toLowerCase();
-  const rangeText =
-    range === undefined ? "" : `${range.from.slice(0, 10)} and ${range.to.slice(0, 10)}`;
+  const days = range === undefined ? undefined : rangeDays(range);
+  const rangeText = days === undefined ? "" : `${days.first} and ${days.last}`;
 
   return (
     <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-4 p-4 md:p-6">

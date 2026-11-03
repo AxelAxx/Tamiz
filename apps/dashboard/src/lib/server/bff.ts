@@ -17,7 +17,7 @@ import {
   withSession,
 } from "./handler";
 import { clientAddress, SESSION_TTL_MS } from "./session";
-import { SESSION_COOKIE } from "./session-cookie";
+import { SESSION_COOKIE, sessionCookieHeader } from "./session-cookie";
 
 const session = withSession(SESSION_COOKIE, (cookie) => serverContext().sessions.isValid(cookie));
 const operator = withRole(
@@ -56,11 +56,7 @@ export const simulateWrite = (handler: RouteHandler): RouteHandler =>
 export const publicWrite = (handler: RouteHandler): RouteHandler =>
   compose(withNoStore, origin)(handler);
 
-const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
-
-/** The `Set-Cookie` value of a session cookie; `Secure` except on a local address. */
+/** The `Set-Cookie` value of a session cookie for this deployment's public origin. */
 export function sessionCookie(value: string, maxAgeSeconds = SESSION_TTL_MS / 1000): string {
-  const { hostname } = new URL(serverContext().env.publicOrigin);
-  const secure = LOCAL_HOSTS.has(hostname) ? "" : "; Secure";
-  return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}${secure}`;
+  return sessionCookieHeader(value, serverContext().env.publicOrigin, maxAgeSeconds);
 }

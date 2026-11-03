@@ -1,8 +1,8 @@
 import { Clock } from "lucide-react";
 import { LogoMark } from "@/features/shell/logo";
+import { VisitorEntry } from "@/features/shell/visitor-entry";
 import { serverContext } from "@/lib/server/context";
 import { SignInForm } from "./sign-in-form";
-import { VisitorEntry } from "./visitor-entry";
 
 /**
  * The sign-in page, outside the console shell (design `signin.html`). `?session=expired` is

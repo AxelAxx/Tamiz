@@ -10,6 +10,21 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const SESSION_COOKIE = "tamiz_session";
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
+/**
+ * The `Set-Cookie` value of a session cookie: never readable by scripts, never sent
+ * cross-site, and `Secure` except on a local address. `maxAgeSeconds` 0 clears it.
+ */
+export function sessionCookieHeader(
+  value: string,
+  publicOrigin: string,
+  maxAgeSeconds: number,
+): string {
+  const secure = LOCAL_HOSTS.has(new URL(publicOrigin).hostname) ? "" : "; Secure";
+  return `${SESSION_COOKIE}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}${secure}`;
+}
+
 export type SessionRole = "operator" | "visitor";
 
 export interface SessionClaims {

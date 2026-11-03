@@ -4,7 +4,9 @@
  * Polls return entries by `startedAt` from an overlap window, so the same entry arrives
  * many times and a long request can arrive after a later-started short one. Entries are
  * kept in a map by id; the view is the newest `LIVE_MAX` by `startedAt`, then `id`. While
- * paused, new ids wait in a pending set and the rows stay still; resuming merges them.
+ * paused, entries that would enter the view wait in a pending set and the rows stay still;
+ * resuming merges them. An entry older than every row of a full view never enters it, so
+ * it neither waits as "new" nor needs fetching (code audit 2026-11-03, M13, M14).
  */
 import type { AuditEntryDto } from "@tamiz/contracts";
 
@@ -51,13 +53,21 @@ function newestTime(current: number | undefined, entries: ReadonlyArray<AuditEnt
   }, current);
 }
 
+/** Whether `entry` would join the view: not shown yet, and newer than a full view's last row. */
+export function wouldEnter(state: LiveState, entry: AuditEntryDto): boolean {
+  if (state.shown.has(entry.id)) return false;
+  if (state.shown.size < LIVE_MAX) return true;
+  const oldest = newest(state.shown.values()).at(-1);
+  return oldest === undefined || compareNewestFirst(entry, oldest) < 0;
+}
+
 /** Folds one poll's entries in; already shown ids are ignored. */
 export function merge(state: LiveState, incoming: ReadonlyArray<AuditEntryDto>): LiveState {
   const newestStartedAt = newestTime(state.newestStartedAt, incoming);
   const unseen = incoming.filter((entry) => !state.shown.has(entry.id));
   if (state.paused) {
     const pending = new Map(state.pending);
-    for (const entry of unseen) pending.set(entry.id, entry);
+    for (const entry of unseen) if (wouldEnter(state, entry)) pending.set(entry.id, entry);
     return { ...state, pending, newestStartedAt };
   }
   const view = newest([...state.shown.values(), ...unseen]);
