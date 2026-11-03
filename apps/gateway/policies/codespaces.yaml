@@ -1,0 +1,42 @@
+# Policy of the GitHub Codespaces demo (T-OPS-06): the full stack in the visitor's own
+# codespace, with a small local model (`qwen2.5:1.5b`) that a 4-core machine answers in
+# seconds. Nothing leaves the codespace. The privacy levels decide as in demo-eu.yaml:
+# names, emails and phones are anonymized, critical identifiers stay local, and the
+# simulator and the audit log show each decision.
+
+id: codespaces
+version: 1
+defaultTimeoutMs: 60000
+
+resilience:
+  requestDeadlineMs: 90000
+  maxAttempts: 1
+  backoff: { baseDelayMs: 250, maxDelayMs: 2000 }
+  circuitBreaker: { failureThreshold: 5, cooldownMs: 30000 }
+
+privacy:
+  onDetectorError: restrict_to_local   # fail closed
+  localRoute: [ollama-qwen]
+  levels:
+    none:     { action: allow }
+    low:      { action: allow }
+    high:     { action: anonymize, residency: [local] }
+    critical: { action: restrict_to_local }
+
+targets:
+  - id: ollama-qwen
+    provider: ollama
+    model: qwen2.5:1.5b
+    region: local
+    residency: local
+    pricing: { inputUsdPerMillion: 0, outputUsdPerMillion: 0 }
+
+rules:
+  - id: pinned-local
+    when: { requestedModel: [tamiz-local] }
+    residency: [local]
+    route: [ollama-qwen]
+
+default:
+  residency: [local]
+  route: [ollama-qwen]

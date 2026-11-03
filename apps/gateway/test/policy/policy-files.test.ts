@@ -14,6 +14,7 @@ describe("shipped policy files", () => {
     ["apps/gateway/policies/default.yaml", ["pinned-local", "pinned-frontier"]],
     ["apps/gateway/policies/local-only.yaml", []],
     ["apps/gateway/policies/demo-eu.yaml", ["pinned-local"]],
+    ["apps/gateway/policies/codespaces.yaml", ["pinned-local"]],
     ["packages/evals/policies/quality-ci.yaml", ["pinned-local", "pinned-agent"]],
   ])("%s loads", async (file, rules) => {
     const loaded = await loadPolicyFile(path(file));
@@ -35,5 +36,12 @@ describe("shipped policy files", () => {
     if (!loaded.ok) throw new Error("demo policy must load");
     expect(loaded.value.targets.map((t) => t.residency).sort()).toEqual(["eu", "local"]);
     expect(loaded.value.default.residency).toEqual(["eu", "local"]);
+  });
+
+  it("the Codespaces policy (T-OPS-06) has only local targets", async () => {
+    const loaded = await loadPolicyFile(path("apps/gateway/policies/codespaces.yaml"));
+    if (!loaded.ok) throw new Error("Codespaces policy must load");
+    expect(loaded.value.targets.map((t) => t.residency)).toEqual(["local"]);
+    expect(loaded.value.default.residency).toEqual(["local"]);
   });
 });
