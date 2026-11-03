@@ -5,14 +5,16 @@ import { type AgentCase, AgentCaseSchema } from "../src/datasets.js";
 import {
   type AgentObservation,
   agentEval,
+  BASELINE,
   fixtureCostReport,
   scoreAgent,
 } from "../src/evals/agent.js";
+import { THRESHOLDS } from "../src/thresholds.js";
 
 // Spec 009 agent-eval addendum FR-026 … FR-029: the fixture, the scorer and the summary are
 // pure; the agent itself is covered by apps/mcp-server/test/agent.test.ts.
 
-const DATASET = resolve(import.meta.dirname, "../datasets/agent-spend.v1.jsonl");
+const DATASET = resolve(import.meta.dirname, "../datasets/agent-spend.v2.jsonl");
 
 async function cases(): Promise<AgentCase[]> {
   const lines = (await readFile(DATASET, "utf8")).split("\n").filter((l) => l.trim() !== "");
@@ -38,6 +40,35 @@ describe("agent dataset", () => {
       const routes = after?.routes.map((r) => r.route) ?? [];
       const biggest = [...routes].sort((a, b) => change(b) - change(a))[0];
       expect(biggest, c.id).toBe(c.expected.route);
+    }
+  });
+});
+
+describe("agent dataset cannot be passed by a fixed answer (code audit 2026-11-03, H2)", () => {
+  it("the fixture's baseline is not a route of any case", async () => {
+    for (const c of await cases()) {
+      const routes = c.days.flatMap((day) => day.routes.map((r) => r.route));
+      expect(routes, c.id).not.toContain(BASELINE.targetId);
+    }
+  });
+
+  it("naming the same route every time, with both totals copied, stays below the gate", async () => {
+    const all = await cases();
+    const routes = new Set(all.flatMap((c) => c.days.flatMap((d) => d.routes.map((r) => r.route))));
+    const gate = THRESHOLDS.find(
+      (t) => t.eval === "agent" && t.metric === "answer_accuracy",
+    )?.bound;
+    if (gate === undefined) throw new Error("the agent eval has a gate");
+    for (const route of routes) {
+      const results = all.map((c) => {
+        const [before, after] = c.expected.totals;
+        const answer = `${route} changed most. Total spent: $${before} → $${after}.`;
+        return { c, result: scoreAgent(c, observed(answer)) };
+      });
+      const accuracy = agentEval
+        .summarize(results)
+        .metrics.find((m) => m.name === "answer_accuracy");
+      expect(accuracy?.value, route).toBeLessThan(gate);
     }
   });
 });

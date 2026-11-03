@@ -52,7 +52,7 @@ Full contract: `specs/007-evals-gate/contracts/cli.md`.
 | detection | `pii-detection-es.v2.jsonl` via the privacy service's `POST /analyze` (160 sentences, 258 spans; v2 adds IBANs followed by an amount, seven-digit and spaced DNIs, 2-3-2-2 landlines and `Tel.`) | recall ≥ 0.95 structured, ≥ 0.80 names | `T-007-03` |
 | quality | `quality-es.v1.jsonl` (24 requests with references), answered on `tamiz-local`, graded by a blind judge (`prompts/judge.v1.md`) | `relative_score ≥ 0.95` against the frontier arm (`TAMIZ_EVAL_FRONTIER=on`) or the accepted baseline (`baselines/quality.json`) | `T-007-05` |
 | cost | `routing.v1.jsonl` via `POST /v1/simulate`, priced from `apps/gateway/policies/default.yaml` | reported: routed vs baseline target, saving | `T-007-05` |
-| agent | `agent-spend.v1.jsonl` (8 spend questions over synthetic two-day cost histories): the MCP agent, its tools on an in-process MCP server fed from the case, its model through the gateway | `answer_accuracy ≥ 0.60`: the cause named first and both daily totals, within 6 model calls | `T-009-07` |
+| agent | `agent-spend.v2.jsonl` (15 spend questions over synthetic two-day cost histories, five per cause, so naming one route every time scores 1/3): the MCP agent, its tools on an in-process MCP server fed from the case, its model through the gateway | `answer_accuracy ≥ 0.60`: the cause named first and both daily totals, within 6 model calls | `T-009-07` |
 
 ## Datasets
 
