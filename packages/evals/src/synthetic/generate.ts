@@ -213,6 +213,34 @@ const DETECTION: ReadonlyArray<DetectionTemplate> = [
     text: new Text().t("Tarjeta ").e("CREDIT_CARD", g.id.card()).t(" bloqueada por seguridad."),
     tags: ["fintech"],
   }),
+  // v2 (code audit 2026-11-03): formats people write that v1 never tried.
+  (g) => ({
+    text: new Text()
+      .t("Abonar en ")
+      .e("IBAN", g.id.iban())
+      .t(` ${g.r.pick(["300", "1500", "45", "12"])} euros el lunes.`),
+    tags: ["fintech", "amount-after"],
+  }),
+  (g) => ({
+    text: new Text().t("Titular con DNI ").e("DNI", g.id.dniWithoutLeadingZero()).t(", sin cita."),
+    tags: ["generic", "dni-seven-digits"],
+  }),
+  (g) => ({
+    text: new Text().t("Documento ").e("DNI", g.id.dniSpaced()).t(" escaneado."),
+    tags: ["generic", "dni-spaced"],
+  }),
+  (g) => ({
+    text: new Text().t("Llamar a la consulta al ").e("PHONE", g.id.landline()).t(" por la mañana."),
+    tags: ["clinic", "landline"],
+  }),
+  (g) => ({
+    text: new Text()
+      .t("Tel.")
+      .e("PHONE", g.id.phone())
+      .t(", preguntar por ")
+      .e("PERSON", person(g.r)),
+    tags: ["clinic", "abbreviation"],
+  }),
 ];
 
 /** Look-alikes with broken control characters or the wrong shape: nothing to find. */
@@ -681,11 +709,14 @@ function toolCase(index: number, made: ReturnType<ToolTemplate>): string {
   });
 }
 
-/** v1's cases, unchanged (same seeds), then the tool cases from their own seed. */
+/**
+ * v1's cases (same seeds), then the tool cases from their own seed. v3 only replaces a
+ * surname that the privacy corpus also uses (code audit 2026-11-03).
+ */
 export function generateLeak(seed = SEED): string {
   const g = { r: seeded(seed), id: identifiers(seeded(seed + 1)) };
   const lines = [
-    header("pii-leak-es", { version: 2, policy: "apps/gateway/policies/default.yaml" }),
+    header("pii-leak-es", { version: 3, policy: "apps/gateway/policies/default.yaml" }),
   ];
   for (let i = 0; i < LEAK_CASES; i += 1) {
     const template = LEAK[i % LEAK.length];
@@ -714,7 +745,7 @@ export function generateLeak(seed = SEED): string {
 
 export function generateDetection(seed = SEED): string {
   const g = { r: seeded(seed + 2), id: identifiers(seeded(seed + 3)) };
-  const lines = [header("pii-detection-es")];
+  const lines = [header("pii-detection-es", { version: 2 })];
   const total = DETECTION_CASES + DETECTION_NEGATIVES;
   for (let i = 0; i < total; i += 1) {
     // Every eighth case is a negative, so they spread over the file.
@@ -736,6 +767,6 @@ export function generateDetection(seed = SEED): string {
 }
 
 export const GENERATED = {
-  "pii-leak-es.v2.jsonl": generateLeak,
-  "pii-detection-es.v1.jsonl": generateDetection,
+  "pii-leak-es.v3.jsonl": generateLeak,
+  "pii-detection-es.v2.jsonl": generateDetection,
 } as const;

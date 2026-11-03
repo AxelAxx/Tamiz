@@ -38,7 +38,10 @@ def test_compact_removes_separators_and_upper_cases(raw: str, expected: str) -> 
         ("12345678z", True),
         ("12.345.678-Z", True),
         ("12345678A", False),
+        ("1234567L", True),  # 01234567L without its leading zero
+        ("1.234.567-L", True),
         ("1234567Z", False),
+        ("123456L", False),
         ("123456789Z", False),
         ("ABCDEFGHZ", False),
         ("", False),
@@ -85,6 +88,13 @@ def test_us2_5_cif_control(candidate: str, valid: bool) -> None:
 @given(st.text(DIGITS, min_size=8, max_size=8), st.sampled_from(LETTERS))
 def test_dni_agrees_with_stdnum(number: str, letter: str) -> None:
     assert is_valid_dni(number + letter) == dni.is_valid(number + letter)
+
+
+@given(st.text(DIGITS, min_size=7, max_size=7), st.sampled_from(LETTERS))
+def test_seven_digit_dni_agrees_with_stdnum_on_the_zero_padded_number(
+    number: str, letter: str
+) -> None:
+    assert is_valid_dni(number + letter) == dni.is_valid("0" + number + letter)
 
 
 @given(st.sampled_from("XYZ"), st.text(DIGITS, min_size=7, max_size=7), st.sampled_from(LETTERS))

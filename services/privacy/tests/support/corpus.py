@@ -7,7 +7,7 @@ from pathlib import Path
 
 from privacy.domain.entity_kind import EntityKind
 
-CORPUS = Path(__file__).resolve().parents[1] / "corpus" / "pii-es.v1.jsonl"
+CORPUS = Path(__file__).resolve().parents[1] / "corpus" / "pii-es.v2.jsonl"
 
 
 @dataclass(frozen=True, slots=True)

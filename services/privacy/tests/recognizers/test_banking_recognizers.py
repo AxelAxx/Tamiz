@@ -29,6 +29,20 @@ def test_us2_6_iban_followed_by_a_word_still_matches() -> None:
 
 
 @pytest.mark.parametrize(
+    ("text", "iban"),
+    [
+        ("IBAN ES91 2100 0418 4502 0005 1332 300 euros", "ES91 2100 0418 4502 0005 1332"),
+        ("IBAN ES91 2100 0418 4502 0005 1332 1500 euros", "ES91 2100 0418 4502 0005 1332"),
+        ("Cuenta ES9121000418450200051332 12 euros", "ES9121000418450200051332"),
+        ("Account GB82 WEST 1234 5698 7654 32 100 GBP", "GB82 WEST 1234 5698 7654 32"),
+    ],
+)
+def test_iban_followed_by_an_amount_still_matches(text: str, iban: str) -> None:
+    # Audit 2026-11-03 H1: a greedy candidate took the amount in and failed the checksum.
+    assert found(iban_recognizer(), text) == [("IBAN", iban, 1.0)]
+
+
+@pytest.mark.parametrize(
     "written",
     [
         "ES91 2100 0418 4502 0005 1333",  # one wrong digit
@@ -71,6 +85,9 @@ def test_us2_7_wrong_nss_control_or_province_is_rejected(written: str) -> None:
         "0034 612 345 678",
         "912 345 678",
         "712345678",
+        "91 123 45 67",
+        "+34 93 123 45 67",
+        "93-123-45-67",
     ],
 )
 def test_us2_8_spanish_phone_formats(written: str) -> None:
@@ -80,9 +97,22 @@ def test_us2_8_spanish_phone_formats(written: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("text", "phone"),
+    [
+        ("Tel.612345678", "612345678"),
+        ("Tlf.612 345 678, por la tarde", "612 345 678"),
+    ],
+)
+def test_us2_8_phone_after_an_abbreviation_with_a_dot(text: str, phone: str) -> None:
+    assert found(phone_recognizer(), text) == [("PHONE", phone, PHONE_BASE_SCORE)]
+
+
+@pytest.mark.parametrize(
     "text",
     [
         "Pedido 512345678 recibido.",
+        "Lote 4.612345678 de fábrica.",
+        "Referencia 12 345 67 89.",
         "Referencia 6123456789 del lote.",
         "Código 61234567.",
         "Número francés +33 612 345 678.",

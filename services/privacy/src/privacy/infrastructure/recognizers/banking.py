@@ -5,6 +5,11 @@ After the first group (which may hold a bank code in letters, as in GB or NL) on
 groups follow, so a word right after the IBAN is never swallowed into the candidate. IBANs
 with letters later in the BBAN (some FR, IT accounts) are therefore not found: an accepted
 miss, measured by the corpus.
+
+A number may follow the IBAN (`… 1332 300 euros`), and one greedy pattern would take it in,
+fail the checksum and lose the IBAN: Presidio never retries a shorter match. So there is
+one pattern per length, from one to six groups of four, with or without a short last group.
+At most one of them passes the checksum, because each country has a single IBAN length.
 """
 
 from presidio_analyzer import Pattern
@@ -12,13 +17,19 @@ from presidio_analyzer import Pattern
 from privacy.domain.checksums import is_valid_iban
 from privacy.infrastructure.recognizers.validated import ValidatedPatternRecognizer
 
-IBAN_REGEX = r"(?<!\w)[A-Z]{2}\d{2} ?[A-Z0-9]{4}(?: ?\d{4}){1,6}(?: ?\d{1,3})?(?!\w)"
+_HEAD = r"(?<!\w)[A-Z]{2}\d{2} ?[A-Z0-9]{4}"
+_TAIL = r"(?: ?\d{1,3})"
+IBAN_REGEXES = [
+    _HEAD + r"(?: ?\d{4}){" + str(groups) + "}" + tail + r"(?!\w)"
+    for groups in range(1, 7)
+    for tail in ("", _TAIL)
+]
 
 
 def iban_recognizer() -> ValidatedPatternRecognizer:
     return ValidatedPatternRecognizer(
         "IBAN",
-        [Pattern("iban", IBAN_REGEX, 0.5)],
+        [Pattern(f"iban_{i}", regex, 0.5) for i, regex in enumerate(IBAN_REGEXES)],
         is_valid_iban,
         context=["iban", "cuenta", "transferencia", "domiciliación", "banco"],
     )
