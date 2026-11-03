@@ -14,7 +14,7 @@
   // The privacy service, Ollama and the dashboard build need more than the 2-core machine.
   "hostRequirements": { "cpus": 4, "memory": "16gb" },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "docker compose up -d --build",
+  "postStartCommand": "bash .devcontainer/start.sh",
   "postAttachCommand": "bash .devcontainer/welcome.sh",
   "forwardPorts": [3100, 3000, 16686],
   "portsAttributes": {

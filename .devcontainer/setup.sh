@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs once, when the codespace is created (T-OPS-06). Writes the compose secrets with a
 # generated passphrase, points the gateway at the small-model policy, and tells compose to
-# use the Codespaces overlay with the dashboard's forwarded address.
+# use the Codespaces overlay with the dashboard's forwarded address, then starts the stack.
 set -euo pipefail
 
 npm install --global --no-fund --no-audit pnpm@10.34.7
@@ -18,7 +18,11 @@ if [ ! -f apps/gateway/.env.docker ]; then
   chmod 600 .devcontainer/credentials.txt
 fi
 
-cat > .env <<ENV
+# `.env` is written last: start.sh, which Codespaces may run while this script still runs,
+# starts the stack only once it exists.
+cat > .devcontainer/compose.env <<ENV
 COMPOSE_FILE=docker-compose.yml:docker-compose.codespaces.yml
 TAMIZ_DASHBOARD_PUBLIC_URL=https://${CODESPACE_NAME}-3100.${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN}
 ENV
+docker compose --env-file .devcontainer/compose.env up -d --build
+mv .devcontainer/compose.env .env
