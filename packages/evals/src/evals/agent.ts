@@ -1,13 +1,18 @@
 /**
  * Agent eval (spec 009 agent-eval addendum, FR-026 … FR-029).
  *
- * Each case of `agent-spend.v1.jsonl` runs the real agent: its model through the gateway,
+ * Each case of `agent-spend.v2.jsonl` runs the real agent: its model through the gateway,
  * its tools over an in-process MCP server whose admin data comes from the case
  * (`runAgentOnFixture`). A case passes when the run answers within the step limit and the
  * answer:
  * - names the expected route before any other route of the case (so "X changed most" with
  *   a wrong X fails, even if the right route is mentioned later);
  * - contains both daily totals, each within half a cent (`$0.84` matches 0.842).
+ *
+ * The baseline the fixture reports is not a route of any case: every observation names it,
+ * so a real route there would count as named by any answer that repeats the observation.
+ * Each route is the cause of a third of the cases, so naming one route every time stays
+ * below the gate (code audit 2026-11-03, H2).
  *
  * The gate is `answer_accuracy`. Answers never enter the report: a failing case shows only
  * which checks failed, the route named first and the number of model calls.
@@ -18,11 +23,15 @@ import { runAgentOnFixture } from "@tamiz/mcp-server/agent/fixture-run";
 import { type AgentCase, AgentCaseSchema } from "../datasets.js";
 import { type Eval, ServiceError } from "../eval.js";
 
-export const AGENT_DATASET = { name: "agent-spend", version: 1 } as const;
+export const AGENT_DATASET = { name: "agent-spend", version: 2 } as const;
 /** Half a cent: an answer may round to cents. */
 const AMOUNT_TOLERANCE = 0.005;
-/** The baseline the fixture reports: the frontier target's price, for every row. */
-const BASELINE = { targetId: "anthropic-sonnet", inputUsdPerMillion: 3, outputUsdPerMillion: 15 };
+/** The baseline the fixture reports: a frontier price, under an id no case uses as a route. */
+export const BASELINE = {
+  targetId: "frontier-baseline",
+  inputUsdPerMillion: 3,
+  outputUsdPerMillion: 15,
+};
 const INPUT_TOKENS_PER_REQUEST = 4_000;
 const OUTPUT_TOKENS_PER_REQUEST = 1_000;
 
@@ -141,7 +150,7 @@ function reasonOf(c: AgentCase, outcome: AgentOutcome): string {
 
 export const agentEval: Eval<AgentCase, AgentObservation, AgentOutcome> = {
   id: "agent",
-  dataset: { file: "agent-spend.v1.jsonl", name: AGENT_DATASET.name, schema: AgentCaseSchema },
+  dataset: { file: "agent-spend.v2.jsonl", name: AGENT_DATASET.name, schema: AgentCaseSchema },
   requires: ["TAMIZ_EVAL_AGENT_GATEWAY_URL", "TAMIZ_EVAL_API_KEY"],
 
   prepare({ config, fetch }) {
