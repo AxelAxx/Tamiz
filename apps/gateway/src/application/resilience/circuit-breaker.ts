@@ -11,8 +11,12 @@
  * - a failed trial reopens it at once, and an `aborted` trial counts as failed (spec
  *   edge case);
  * - other failures (credential or request rejected, malformed body) say nothing about
- *   the provider's health and change nothing.
- * Every transition is a `circuit.changed` event.
+ *   the provider's health and change nothing;
+ * - the outcome of a `call` admitted while the circuit was closed is dropped when the
+ *   circuit is no longer closed: another request opened it meanwhile, and a late success
+ *   must not close it silently, nor a late failure extend its cool-down (audit H4).
+ * Every transition is a `circuit.changed` event. `onResult` answers whether this outcome
+ * opened the circuit, so a caller stops retrying a target it has just opened.
  */
 import type { ProviderError } from "../../domain/errors.js";
 import { type CircuitState, remainingCooldownMs, stateAt } from "../../domain/model/circuit.js";
@@ -49,12 +53,13 @@ export type Admission =
 export interface CircuitBreaker {
   /** `leaseMs` bounds how long a trial may hold the half-open slot (the attempt timeout). */
   admit(target: ModelTarget, context: BreakerContext, leaseMs: Milliseconds): Promise<Admission>;
+  /** `true` when this outcome opened the circuit. */
   onResult(
     target: ModelTarget,
     context: BreakerContext,
     result: Result<unknown, ProviderError>,
     admission: Admission,
-  ): Promise<void>;
+  ): Promise<boolean>;
 }
 
 function counts(error: ProviderError, admission: Admission): boolean {
@@ -82,6 +87,11 @@ export function createCircuitBreaker(deps: BreakerDeps): CircuitBreaker {
     });
   }
 
+  async function isClosed(target: ModelTarget): Promise<boolean> {
+    const snapshot = await state.snapshot(target.id);
+    return stateAt(snapshot, clock.now().getTime(), settings.cooldownMs) === "closed";
+  }
+
   return {
     async admit(target, _context, leaseMs) {
       const snapshot = await state.snapshot(target.id);
@@ -102,23 +112,24 @@ export function createCircuitBreaker(deps: BreakerDeps): CircuitBreaker {
     },
 
     async onResult(target, context, result, admission) {
-      if (admission.kind === "skip") return;
+      if (admission.kind === "skip") return false;
+      if (admission.kind === "call" && !(await isClosed(target))) return false;
       if (result.ok) {
         await state.recordSuccess(target.id);
         if (admission.kind === "trial") changed(target, context, "half_open", "closed");
-        return;
+        return false;
       }
-      if (!counts(result.error, admission)) return;
+      if (!counts(result.error, admission)) return false;
       if (admission.kind === "trial") {
         await state.open(target.id, settings.cooldownMs);
         changed(target, context, "half_open", "open");
-        return;
+        return true;
       }
       const failures = await state.recordFailure(target.id);
-      if (failures >= settings.failureThreshold) {
-        await state.open(target.id, settings.cooldownMs);
-        changed(target, context, "closed", "open");
-      }
+      if (failures < settings.failureThreshold) return false;
+      await state.open(target.id, settings.cooldownMs);
+      changed(target, context, "closed", "open");
+      return true;
     },
   };
 }

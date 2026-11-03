@@ -32,7 +32,7 @@ import type { RoutingPolicy } from "../../domain/model/routing-policy.js";
 import type { Usd } from "../../domain/model/units.js";
 import { err, ok, type Result } from "../../domain/result.js";
 import type { FinishReason, StartedStream } from "../ports/llm-provider.port.js";
-import { createCircuitBreaker } from "../resilience/circuit-breaker.js";
+import { type Admission, createCircuitBreaker } from "../resilience/circuit-breaker.js";
 import { executeChain } from "../resilience/execute-chain.js";
 import type { ProtectedRequest } from "./protect-request.js";
 import {
@@ -93,11 +93,15 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
     ...(deps.tracer === undefined ? {} : { tracer: deps.tracer }),
   });
 
-  /** Passes the parts through, prices the finish, records a mid-stream failure. */
+  /**
+   * Passes the parts through and prices the finish. The stream's circuit outcome is
+   * recorded here, at its end: a success at `finish`, a mid-stream failure at `error`.
+   */
   async function* routedParts(
     request: InferenceRequest,
     policy: RoutingPolicy,
     target: ModelTarget,
+    admission: Admission,
     started: StartedStream,
     sent: ProtectedRequest,
     restorer: StreamRestorer,
@@ -142,6 +146,12 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
         }
         case "finish": {
           yield* flushAll();
+          await breakerFor(policy).onResult(
+            target,
+            { requestId: request.requestId },
+            ok(undefined),
+            admission,
+          );
           const toolCalls: ReadonlyArray<ToolCall> = calls.filter((call) => call !== undefined);
           const usage = resolveUsage(
             {
@@ -165,7 +175,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
           yield* flushAll();
           // A client that went away is not a provider failure.
           if (part.error.cause !== "aborted")
-            await recordFailure(request, policy, target, part.error);
+            await recordFailure(request, policy, target, admission, part.error);
           yield part;
           return;
         }
@@ -173,10 +183,20 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
     }
   }
 
+  function breakerFor(policy: RoutingPolicy) {
+    return createCircuitBreaker({
+      state: deps.circuitState,
+      clock: deps.clock,
+      events: deps.events,
+      settings: policy.resilience.circuitBreaker,
+    });
+  }
+
   async function recordFailure(
     request: InferenceRequest,
     policy: RoutingPolicy,
     target: ModelTarget,
+    admission: Admission,
     error: ProviderError,
   ): Promise<void> {
     deps.events.emit({
@@ -188,13 +208,12 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
       at: deps.clock.now().toISOString(),
       reason: error.cause,
     });
-    const breaker = createCircuitBreaker({
-      state: deps.circuitState,
-      clock: deps.clock,
-      events: deps.events,
-      settings: policy.resilience.circuitBreaker,
-    });
-    await breaker.onResult(target, { requestId: request.requestId }, err(error), { kind: "call" });
+    await breakerFor(policy).onResult(
+      target,
+      { requestId: request.requestId },
+      err(error),
+      admission,
+    );
   }
 
   return async (request, signal) => {
@@ -209,6 +228,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
         resilience: policy.resilience,
         timeoutFor: (target) => effectiveTimeoutMs(decision, target, policy),
         ...(signal === undefined ? {} : { signal }),
+        deferSuccess: true,
       },
       (target, attemptSignal, timeoutMs) =>
         deps.providers.resolve(target.provider).stream({
@@ -227,7 +247,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
     );
     if (!served.ok) return err({ decision, failure: served.error });
 
-    const { target, value: started, abandoned } = served.value;
+    const { target, value: started, abandoned, admission } = served.value;
     const restorer = sent.streamRestorer();
     return ok({
       decision,
@@ -235,7 +255,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
       abandoned,
       modelName: started.modelName,
       first: restorer.push(started.first),
-      parts: routedParts(request, policy, target, started, sent, restorer),
+      parts: routedParts(request, policy, target, admission, started, sent, restorer),
       createdAt: deps.clock.now(),
       ...(sent.noticeVersion === undefined ? {} : { noticeVersion: sent.noticeVersion }),
     });

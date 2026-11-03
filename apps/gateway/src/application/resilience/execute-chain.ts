@@ -9,7 +9,11 @@
  * 3. Circuit breaker: an open circuit skips the target (`circuit_open`); a half-open one
  *    admits a single trial attempt.
  * 4. Attempts: `withRetry(withTimeout(attempt))`, each attempt bounded by the target's
- *    effective timeout and the time left; each result updates the circuit.
+ *    effective timeout and the time left; each result updates the circuit, and a failure
+ *    that opens it ends the retries on that target.
+ *    With `deferSuccess` (streams) a successful attempt leaves the circuit alone: the
+ *    caller records the outcome with `Served.admission` once the stream ends, so a target
+ *    that always fails after its first token still opens its circuit (FR-024).
  * 5. On a final failure the chain advances; an `aborted` result (deadline or outer
  *    signal) stops it.
  *
@@ -60,6 +64,8 @@ export interface ChainRequest {
   readonly timeoutFor: (target: ModelTarget) => Milliseconds;
   /** Aborts the execution (client disconnect, `T-003-05`). */
   readonly signal?: AbortSignal;
+  /** The caller records a successful attempt's circuit outcome itself (streams). */
+  readonly deferSuccess?: boolean;
 }
 
 /** One provider call against one target, bounded by `timeoutMs`; the signal ends it. */
@@ -74,11 +80,14 @@ export interface Served<T> {
   readonly value: T;
   /** Targets left before the answering one, in order. */
   readonly abandoned: ReadonlyArray<Abandoned>;
+  /** How the answering target was admitted, for a deferred circuit outcome. */
+  readonly admission: Admission;
 }
 
 /**
- * Why the chain produced no answer. `target` is the last target reached (tried, skipped,
- * blocked or not started for the deadline); `abandoned` lists the ones before it.
+ * Why the chain produced no answer. `target` is the target the failure is about: the one
+ * blocked or not started for the deadline, the last one tried when every target failed,
+ * or the last one skipped when none was tried. `abandoned` lists the other visited ones.
  */
 export type ChainFailure =
   | {
@@ -145,7 +154,7 @@ export function executeChain<T>(deps: ExecuteChainDeps) {
     const remainingMs = () => deadline.getTime() - clock.now().getTime();
 
     const visited: Abandoned[] = [];
-    let lastFailure: ProviderError | undefined;
+    let lastFailure: { readonly target: ModelTarget; readonly error: ProviderError } | undefined;
     const skippedRemaining: number[] = [];
 
     for (const target of decision.chain) {
@@ -228,36 +237,41 @@ export function executeChain<T>(deps: ExecuteChainDeps) {
                   reason: outcome.error.cause,
                 },
           );
-          await breaker.onResult(target, context, outcome, admission);
+          if (outcome.ok && request.deferSuccess === true) return outcome;
+          const opened = await breaker.onResult(target, context, outcome, admission);
+          // A target this request has just opened gets no more attempts (audit H4).
+          if (!outcome.ok && opened) return err({ ...outcome.error, retryable: false });
           return outcome;
         },
       );
 
-      if (result.ok) return ok({ target, value: result.value, abandoned: visited });
+      if (result.ok) return ok({ target, value: result.value, abandoned: visited, admission });
       const { cause } = result.error;
       if (cause === "aborted") {
         return err({ kind: "deadline", target, error: result.error, abandoned: visited });
       }
       events.emit({ ...base(target), type: "fallback", reason: cause });
       visited.push({ targetId: target.id, reason: cause });
-      lastFailure = result.error;
+      lastFailure = { target, error: result.error };
     }
 
-    // The chain ended: the last visited target is the one reported; the others were abandoned.
+    if (lastFailure !== undefined) {
+      // The last target tried is reported; every other visited one was abandoned (audit M4).
+      // A chain never lists a target twice (policy validation), so the id is enough.
+      const reported = lastFailure.target;
+      const abandoned = visited.filter((v) => v.targetId !== reported.id);
+      return err({ kind: "exhausted", target: reported, error: lastFailure.error, abandoned });
+    }
     const target = decision.chain.at(-1);
     if (target === undefined) {
       throw new Error(`Policy ${decision.policyId} produced an empty chain; was it validated?`);
     }
-    const abandoned = visited.slice(0, -1);
-    if (lastFailure === undefined) {
-      const shortest = Math.min(...skippedRemaining);
-      return err({
-        kind: "unavailable",
-        target,
-        error: providerUnavailableError(Math.max(MIN_RETRY_AFTER_MS, shortest) as Milliseconds),
-        abandoned,
-      });
-    }
-    return err({ kind: "exhausted", target, error: lastFailure, abandoned });
+    const shortest = Math.min(...skippedRemaining);
+    return err({
+      kind: "unavailable",
+      target,
+      error: providerUnavailableError(Math.max(MIN_RETRY_AFTER_MS, shortest) as Milliseconds),
+      abandoned: visited.slice(0, -1),
+    });
   };
 }
