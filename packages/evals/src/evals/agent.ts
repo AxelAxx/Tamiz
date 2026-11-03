@@ -147,21 +147,19 @@ export const agentEval: Eval<AgentCase, AgentObservation, AgentOutcome> = {
   prepare({ config, fetch }) {
     return {
       async observe(c) {
-        let run: Awaited<ReturnType<typeof runAgentOnFixture>>;
-        try {
-          run = await runAgentOnFixture({
-            question: c.question,
-            now: new Date(`${c.today}T09:00:00Z`),
-            costReport: (query) => fixtureCostReport(c, query),
-            gatewayUrl: config.TAMIZ_EVAL_AGENT_GATEWAY_URL ?? "",
-            apiKey: config.TAMIZ_EVAL_API_KEY ?? "",
-            protocol: config.TAMIZ_EVAL_AGENT_PROTOCOL,
-            model: config.TAMIZ_EVAL_AGENT_MODEL,
-            fetch,
-          });
-        } catch {
-          throw new ServiceError("gateway", "unavailable");
-        }
+        // Gateway failures come back as `stopReason: "gateway_error"`. Anything thrown here
+        // is the harness's own (a prompt file, the in-process MCP server): an internal error,
+        // not "gateway unavailable" (code audit 2026-11-03, L16).
+        const run = await runAgentOnFixture({
+          question: c.question,
+          now: new Date(`${c.today}T09:00:00Z`),
+          costReport: (query) => fixtureCostReport(c, query),
+          gatewayUrl: config.TAMIZ_EVAL_AGENT_GATEWAY_URL ?? "",
+          apiKey: config.TAMIZ_EVAL_API_KEY ?? "",
+          protocol: config.TAMIZ_EVAL_AGENT_PROTOCOL,
+          model: config.TAMIZ_EVAL_AGENT_MODEL,
+          fetch,
+        });
         // A gateway that refuses every call (down, wrong key) is a broken harness, not a
         // wrong answer.
         if (run.stopReason === "gateway_error" && run.requestIds.length <= 1) {
