@@ -116,6 +116,17 @@ describe("routeInference", () => {
     expect(provider.calls).toHaveLength(1);
   });
 
+  it("a client that went away stops the chain: no target is called (code audit 2026-11-03, M9)", async () => {
+    const { route, clock, provider } = setup(() => ok(COMPLETION));
+    const client = new AbortController();
+    client.abort();
+
+    const result = await clock.drive(route(request("Hola"), client.signal));
+
+    expect(result.ok).toBe(false);
+    expect(provider.calls).toHaveLength(0);
+  });
+
   it("US7-4: estimates usage from the messages and the text when the provider reports none", async () => {
     const { route } = setup(() =>
       ok({ text: "Una respuesta de treinta y dos c.", finishReason: "stop", modelName: "m" }),

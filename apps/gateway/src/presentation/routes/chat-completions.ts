@@ -151,6 +151,8 @@ export function registerChatCompletions<S extends Schema, B extends string>(
   app: OpenAPIHono<ChatEnv, S, B>,
   routeInference: RouteInference,
   streamInference: StreamInference,
+  /** Told when streaming throws after the headers went out (`app.onError` cannot answer then). */
+  onStreamError: (requestId: string, error: unknown) => void = () => {},
 ) {
   return app.openapi(chatCompletionsRoute, async (c) => {
     const requestId = c.get("requestId");
@@ -165,27 +167,36 @@ export function registerChatCompletions<S extends Schema, B extends string>(
       setPrivacyHeaders(c, routed.decision, routed.noticeVersion);
       const chunks = chunkMapper(routed, requestId);
       // The documented 200 is JSON; the event stream is the same status with another type.
-      return streamSSE(c, async (sse) => {
-        const send = (data: unknown) => sse.writeSSE({ data: JSON.stringify(data) });
-        await send(chunks.first());
-        for await (const part of routed.parts) {
-          if (part.type === "delta") {
-            await send(chunks.delta(part.text));
-          } else if (part.type === "tool-call-start" || part.type === "tool-call-delta") {
-            await send(chunks.toolCall(part));
-          } else if (part.type === "finish") {
-            for (const chunk of chunks.finish(part)) await send(chunk);
-            await sse.writeSSE({ data: "[DONE]" });
-            return;
-          } else {
-            await send(chunks.error(part.error));
-            return;
+      return streamSSE(
+        c,
+        async (sse) => {
+          const send = (data: unknown) => sse.writeSSE({ data: JSON.stringify(data) });
+          await send(chunks.first());
+          for await (const part of routed.parts) {
+            if (part.type === "delta") {
+              await send(chunks.delta(part.text));
+            } else if (part.type === "tool-call-start" || part.type === "tool-call-delta") {
+              await send(chunks.toolCall(part));
+            } else if (part.type === "finish") {
+              for (const chunk of chunks.finish(part)) await send(chunk);
+              await sse.writeSSE({ data: "[DONE]" });
+              return;
+            } else {
+              await send(chunks.error(part.error));
+              return;
+            }
           }
-        }
-      }) as never;
+        },
+        async (error, sse) => {
+          // The client gets one error event instead of a cut stream, and the failure is
+          // logged, never printed by Hono's default handler (code audit 2026-11-03, M6).
+          onStreamError(requestId, error);
+          await sse.writeSSE({ data: JSON.stringify(chunks.internal()) });
+        },
+      ) as never;
     }
 
-    const result = await routeInference(request);
+    const result = await routeInference(request, c.req.raw.signal);
     if (!result.ok) return failed(c, requestId, result.error);
     const { decision, target, abandoned, noticeVersion } = result.value;
     setRoutingHeaders(c, decision, target.id, abandoned);

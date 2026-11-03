@@ -86,7 +86,17 @@ function presentHeaders(
  */
 function registerRoutes(app: GatewayApp, deps: AppDeps) {
   const health = registerHealth(app, deps);
-  const chat = registerChatCompletions(health, deps.routeInference, deps.streamInference);
+  const chat = registerChatCompletions(
+    health,
+    deps.routeInference,
+    deps.streamInference,
+    (requestId, error) =>
+      // The error's name only: a message could quote model output.
+      deps.logger.error(
+        { requestId, error: error instanceof Error ? error.name : "unknown" },
+        "stream failed",
+      ),
+  );
   const simulate = registerSimulate(chat, deps.simulatePolicy);
   const audit = registerAdminAudit(simulate, deps.queryAuditLog);
   const cost = registerAdminCost(audit, deps.costReport);

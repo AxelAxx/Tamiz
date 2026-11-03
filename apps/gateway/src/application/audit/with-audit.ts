@@ -132,9 +132,9 @@ function recorder(deps: AuditDeps) {
 
 export function withAudit(route: RouteInference, deps: AuditDeps): RouteInference {
   const record = recorder(deps);
-  return async (request) => {
+  return async (request, signal) => {
     const startedAt = deps.clock.now();
-    const result = await route(request);
+    const result = await route(request, signal);
     const audited: AuditResult = result.ok
       ? {
           kind: "answered",
