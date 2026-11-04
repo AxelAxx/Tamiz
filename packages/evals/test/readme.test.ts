@@ -58,4 +58,12 @@ describe("README table", () => {
     ).toBe(2);
     expect(lines.at(-1)).toContain("expected one");
   });
+
+  it("accepts the `--` that pnpm forwards before the options", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "tamiz-readme-"));
+    const readme = join(dir, "README.md");
+    await writeFile(readme, README, "utf8");
+    expect(await updateReadme(["--", "--report", EXAMPLE, "--readme", readme], () => {})).toBe(0);
+    expect(await readFile(readme, "utf8")).toContain("`route_accuracy`");
+  });
 });
