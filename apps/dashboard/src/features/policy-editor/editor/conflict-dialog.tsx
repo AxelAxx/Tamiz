@@ -10,8 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const _CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
-
 export function ConflictDialog({
   open,
   onCopy,
@@ -49,5 +47,3 @@ export function ConflictDialog({
     </Dialog>
   );
 }
-
-/** Asks before leaving the page, or following a link inside it, with unsaved changes. */

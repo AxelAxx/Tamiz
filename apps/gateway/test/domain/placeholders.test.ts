@@ -90,6 +90,27 @@ describe("anonymizeTexts across messages", () => {
       ],
     );
     expect(result.texts).toEqual(["<PERSON_1>"]);
+    // The out-of-range span would leave a value in clear: the result says so.
+    expect(result.unsafe).toBe(true);
+  });
+
+  it("a span contained in an earlier one is harmless; one reaching past it is unsafe", () => {
+    const contained = anonymizeTexts(
+      ["Ana Ruiz, 612 345 678"],
+      [
+        { textIndex: 0, kind: "PERSON", start: 0, end: 8, score: 0.85 },
+        { textIndex: 0, kind: "LOCATION", start: 4, end: 8, score: 0.85 },
+      ],
+    );
+    expect(contained.unsafe).toBe(false);
+    const reaching = anonymizeTexts(
+      ["Ana Ruiz, 612 345 678"],
+      [
+        { textIndex: 0, kind: "PERSON", start: 0, end: 8, score: 0.85 },
+        { textIndex: 0, kind: "PHONE", start: 4, end: 21, score: 0.6 },
+      ],
+    );
+    expect(reaching.unsafe).toBe(true);
   });
 });
 

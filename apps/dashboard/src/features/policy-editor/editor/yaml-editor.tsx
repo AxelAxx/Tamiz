@@ -14,7 +14,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { yaml } from "@codemirror/lang-yaml";
 import { HighlightStyle, indentUnit, syntaxHighlighting } from "@codemirror/language";
 import { type Diagnostic, lintGutter, setDiagnostics } from "@codemirror/lint";
-import { EditorSelection, EditorState } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, type Extension } from "@codemirror/state";
 import {
   drawSelection,
   EditorView,
@@ -92,6 +92,13 @@ function toDiagnostics(state: EditorState, issues: ReadonlyArray<EditorIssue>): 
     });
 }
 
+function accessExtensions(readOnly: boolean): Extension {
+  return [
+    EditorState.readOnly.of(readOnly),
+    EditorView.contentAttributes.of(readOnly ? { "aria-readonly": "true" } : {}),
+  ];
+}
+
 export function YamlEditor({
   document,
   issues,
@@ -116,6 +123,9 @@ export function YamlEditor({
   const view = useRef<EditorView | null>(null);
   const callbacks = useRef({ onChange, onSave });
   callbacks.current = { onChange, onSave };
+  // Read-only is reconfigured, not fixed at creation: a visitor who signs in as operator
+  // from the expired dialog gets an editable editor in place.
+  const access = useRef(new Compartment());
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: created once; text changes go through `revision`
   useEffect(() => {
@@ -133,7 +143,7 @@ export function YamlEditor({
           history(),
           indentUnit.of("  "),
           EditorState.tabSize.of(2),
-          EditorState.readOnly.of(readOnly),
+          access.current.of(accessExtensions(readOnly)),
           keymap.of([
             {
               key: "Mod-s",
@@ -155,7 +165,6 @@ export function YamlEditor({
             "aria-label": label,
             ...(describedBy === undefined ? {} : { "aria-describedby": describedBy }),
             "data-testid": "policy-yaml",
-            ...(readOnly ? { "aria-readonly": "true" } : {}),
             // Explicit, so checkers see a focusable element inside the scroll region.
             tabindex: "0",
           }),
@@ -171,6 +180,10 @@ export function YamlEditor({
       view.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    view.current?.dispatch({ effects: access.current.reconfigure(accessExtensions(readOnly)) });
+  }, [readOnly]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: only a new revision replaces the text
   useEffect(() => {

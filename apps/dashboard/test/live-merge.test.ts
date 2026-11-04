@@ -11,6 +11,7 @@ import {
   since,
   wouldEnter,
 } from "@/features/live-traffic/model";
+import { backoffMs } from "@/features/live-traffic/use-live-traffic";
 
 // Spec 008 US2-1, US2-4, US2-5, research R-05 (tasks.md T022).
 
@@ -139,5 +140,13 @@ describe("since (the overlap window)", () => {
     let state = merge(INITIAL, [entry(2, 40)]);
     state = merge(state, [entry(1, 5)]);
     expect(since(state, T0)).toBe(new Date(T0 + 40_000 - OVERLAP_MS).toISOString());
+  });
+});
+
+describe("poll backoff (second code audit, 2026-11-04)", () => {
+  it("is 2 s while polls succeed, then 2, 4, 8, 16 and at most 30 s after failures", () => {
+    expect([0, 1, 2, 3, 4, 5, 9].map(backoffMs)).toEqual([
+      2_000, 2_000, 4_000, 8_000, 16_000, 30_000, 30_000,
+    ]);
   });
 });

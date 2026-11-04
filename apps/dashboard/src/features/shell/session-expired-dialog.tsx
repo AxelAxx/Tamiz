@@ -4,7 +4,7 @@
  * Shown over the current screen when the dashboard's session ends while it is open (spec
  * 008 US1, design `shell.html` "session-expired dialog"): signing in again here keeps
  * whatever the screen holds, such as an unsaved policy draft. A visitor, who has no
- * passphrase, is offered a new visitor session as well (code audit 2026-11-03, M16).
+ * passphrase, is offered a new visitor session as well.
  */
 import { useQueryClient } from "@tanstack/react-query";
 import { Clock } from "lucide-react";

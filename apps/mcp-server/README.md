@@ -47,7 +47,7 @@ When the gateway fails, the tool result has `isError: true`, and its text is
 | `TAMIZ_MCP_SIMULATE_MODEL` | `auto` | The model `simulate_routing` sends when none is given. |
 | `TAMIZ_MCP_TRANSPORT` | `stdio` | `stdio` or `http`. The `--transport` flag wins. |
 | `TAMIZ_MCP_HTTP_HOST` | `127.0.0.1` | The HTTP bind address. |
-| `TAMIZ_MCP_HTTP_PORT` | `3100` | The HTTP port. |
+| `TAMIZ_MCP_HTTP_PORT` | `3101` | The HTTP port (the dashboard has 3100). |
 | `TAMIZ_MCP_ALLOWED_HOSTS` | — | Comma-separated host names for `Host` and `Origin` validation. Required when the bind address is not local. |
 | `LOG_LEVEL` | `info` | pino levels. Logs are JSON lines, always on stderr. |
 
@@ -90,7 +90,7 @@ claude mcp add tamiz -e TAMIZ_MCP_GATEWAY_URL=http://localhost:3000 -e TAMIZ_MCP
 `pnpm --filter @tamiz/mcp-server start:http`). Each user sends their own key:
 
 ```bash
-claude mcp add --transport http tamiz http://127.0.0.1:3100/mcp --header "Authorization: Bearer tamiz_admin_key_here"
+claude mcp add --transport http tamiz http://127.0.0.1:3101/mcp --header "Authorization: Bearer tamiz_admin_key_here"
 ```
 
 <!-- mcp-config:end -->
@@ -105,7 +105,7 @@ permission before it calls `get_provider_health`.
 ## HTTP transport
 
 ```bash
-pnpm --filter @tamiz/mcp-server start:http      # POST http://127.0.0.1:3100/mcp
+pnpm --filter @tamiz/mcp-server start:http      # POST http://127.0.0.1:3101/mcp
 ```
 
 - **Stateless.** There is no `Mcp-Session-Id`, and `GET` and `DELETE` answer `405`.
@@ -153,7 +153,7 @@ TAMIZ_AGENT_API_KEY=<client key> TAMIZ_AGENT_MCP_KEY=<admin key>   pnpm --filter
 | `TAMIZ_AGENT_API_KEY` | — | Required: a client key for the model calls. |
 | `TAMIZ_AGENT_MODEL` | `tamiz-local` | The requested model. |
 | `TAMIZ_AGENT_TOOL_PROTOCOL` | `native` | `native` tool calls, or `text` for models without tool support. |
-| `TAMIZ_AGENT_MCP_URL` | `http://127.0.0.1:3100/mcp` | The server's HTTP transport. |
+| `TAMIZ_AGENT_MCP_URL` | `http://127.0.0.1:3101/mcp` | The server's HTTP transport. |
 | `TAMIZ_AGENT_MCP_KEY` | — | Required: an admin key, sent as the bearer to the MCP server. |
 
 **Tool protocol.** Two protocols, chosen by `TAMIZ_AGENT_TOOL_PROTOCOL`; in both a run stops

@@ -39,7 +39,7 @@ export interface RegisteredEval {
  * Runs `fn` over `items` with at most `limit` in flight, keeping the order. The first
  * failure stops every worker from taking another item, and the pool waits for the calls
  * in flight before it rethrows, so a failed eval leaves nothing running into the next one
- * (code audit 2026-11-03, M18).
+ *.
  */
 export async function pool<T, U>(
   items: ReadonlyArray<T>,

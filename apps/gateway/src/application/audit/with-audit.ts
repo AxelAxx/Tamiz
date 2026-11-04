@@ -86,6 +86,9 @@ export function failureResult(routing: RoutingFailure): AuditResult {
         abandoned: failure.abandoned,
         errorType: "provider_timeout",
       };
+    case "cancelled":
+      // As a stream the client leaves: not a failure of the target.
+      return { kind: "cancelled", target: failure.target, abandoned: failure.abandoned };
     case "exhausted":
       return {
         kind: "failed",
@@ -107,7 +110,7 @@ function recorder(deps: AuditDeps) {
   ): Promise<void> => {
     try {
       // The baseline of the policy that decided: after a replace, the active one may be a
-      // newer version, whose prices this request never saw (code audit 2026-11-03, L6).
+      // newer version, whose prices this request never saw.
       const policy = await deps.policies.getActive();
       const baseline =
         policy.version === decision.policyVersion ? baselineTarget(policy.targets) : undefined;

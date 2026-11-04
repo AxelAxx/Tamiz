@@ -4,13 +4,13 @@
 #   docker compose up -d         # healthy in about a minute; the first start also pulls the model
 #   docker compose logs -f ollama-pull   # model download progress (llama3.1:8b, about 5 GB)
 #
-# Published on the host: gateway http://localhost:3000, dashboard http://localhost:3100,
-# Jaeger UI http://localhost:16686; Postgres and Valkey also publish their ports for a
-# gateway run on the host. The privacy service and Ollama stay on the compose network.
+# Published on this machine only (127.0.0.1): gateway http://localhost:3000, dashboard
+# http://localhost:3100, Jaeger UI http://localhost:16686, Postgres 5432 and Valkey 6379.
+# The privacy service and Ollama stay on the compose network.
 #
-# Single services still work for running the gateway on the host (pnpm --filter
-# @tamiz/gateway dev): `docker compose up valkey privacy postgres jaeger`, with the
-# variables of .env.example.
+# To run the gateway on the host instead (pnpm --filter @tamiz/gateway dev), add the dev
+# overlay, which also publishes the privacy service (8001) and Ollama (11434) on 127.0.0.1:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d privacy ollama postgres valkey jaeger
 
 services:
   # The routing gateway (specs 002-006). Secrets and the policy file come from
@@ -20,7 +20,7 @@ services:
       context: .
       dockerfile: apps/gateway/Dockerfile
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
       - path: apps/gateway/.env.docker
         format: raw
@@ -51,7 +51,7 @@ services:
       context: .
       dockerfile: apps/dashboard/Dockerfile
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     env_file:
       - path: apps/dashboard/.env.docker
         format: raw
@@ -115,7 +115,7 @@ services:
   valkey:
     image: valkey/valkey:8
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -131,7 +131,7 @@ services:
       POSTGRES_PASSWORD: tamiz
       POSTGRES_DB: tamiz
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -145,8 +145,8 @@ services:
   jaeger:
     image: jaegertracing/jaeger:2.22.0
     ports:
-      - "16686:16686"
-      - "4318:4318"
+      - "127.0.0.1:16686:16686"
+      - "127.0.0.1:4318:4318"
     restart: unless-stopped
 
 volumes:

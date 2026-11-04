@@ -16,7 +16,7 @@
  * memory for `getActive()` (read per request). The cache is refreshed from the database at
  * most every `refreshEveryMs` (5 s) by `getActive()`, and at once by `getActiveVersion()`
  * and by a conflict, so a version saved through another gateway is in use within seconds
- * (code audit 2026-11-03, M11). A failed refresh keeps the cached policy.
+ *. A failed refresh keeps the cached policy.
  */
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";

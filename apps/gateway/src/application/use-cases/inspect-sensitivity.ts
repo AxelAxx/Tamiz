@@ -57,7 +57,7 @@ export function inspectSensitivity(deps: InspectSensitivityDeps): InspectSensiti
     const timer = new AbortController();
     const onClientAbort = () => call.abort();
     signal?.addEventListener("abort", onClientAbort, { once: true });
-    // A past abort fires no event: a client already gone gets no privacy call (audit L9).
+    // A past abort fires no event: a client already gone gets no privacy call.
     if (signal?.aborted === true) call.abort();
     const expired = deps.clock.sleep(deps.timeoutMs, timer.signal).then(
       () => TIMED_OUT,
@@ -72,7 +72,8 @@ export function inspectSensitivity(deps: InspectSensitivityDeps): InspectSensiti
       if (inspection.status === "ok") {
         deps.cache.set(key, inspection);
         emitInspected(deps, requestId, inspection, false);
-      } else {
+      } else if (signal?.aborted !== true) {
+        // A client that went away is not a failing privacy service.
         deps.events.emit({
           type: "privacy.detector_failed",
           requestId,

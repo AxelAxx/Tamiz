@@ -233,7 +233,7 @@ async function runNative(
     if (reply.toolCalls.length === 0) {
       const answer = reply.text.trim();
       if (answer === "") {
-        // No tool call and no text is not an answer, as in the text protocol (audit L16).
+        // No tool call and no text is not an answer, as in the text protocol.
         run.steps.push({ kind: "observation_error", reason: "format", requestId });
         messages.push(...reply.response.messages, {
           role: "user",
@@ -348,7 +348,7 @@ function toolErrorCode(text: string): string {
 }
 
 /**
- * One model call through the gateway, for both protocols (code audit 2026-11-03, L16): its
+ * One model call through the gateway, for both protocols: its
  * request id joins the run, and a failure ends the run as `gateway_error`.
  */
 async function callModel<
@@ -375,8 +375,7 @@ async function callModel<
 /**
  * The gateway's error, or what kept the call from reaching it. An error that is neither
  * an API answer nor a failed connection is the agent's own (an unexpected reply shape, a
- * bug), and saying `gateway_unreachable` for it would send debugging the wrong way (code
- * audit 2026-11-03, L16).
+ * bug), and saying `gateway_unreachable` for it would send debugging the wrong way.
  */
 function toGatewayError(error: unknown): { type: string; requestId?: string } {
   if (!APICallError.isInstance(error)) {

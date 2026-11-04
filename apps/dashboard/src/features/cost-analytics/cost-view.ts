@@ -73,7 +73,7 @@ export function presetRange(preset: RangePreset, now: Date): CostRange {
 
 /**
  * The first and last UTC day a range covers, both inclusive. A range ending at midnight
- * (a custom one) ends the day before; a preset ends now, today (code audit 2026-11-03, L13).
+ * (a custom one) ends the day before; a preset ends now, today.
  */
 export function rangeDays(range: CostRange): { readonly first: string; readonly last: string } {
   const to = Date.parse(range.to);

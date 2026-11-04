@@ -1,7 +1,7 @@
 /**
  * The text of the first `{ … }` whose braces balance outside JSON strings. Models wrap
  * JSON in prose or fences; the agent's text protocol and the evals' judge both read it
- * this way (code audit 2026-11-03, M19).
+ * this way.
  */
 export function firstJsonObject(text: string): string | undefined {
   const start = text.indexOf("{");

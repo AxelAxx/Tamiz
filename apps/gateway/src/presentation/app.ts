@@ -139,7 +139,7 @@ export function createApp(deps: AppDeps): GatewayApp {
     const elapsedMs = Math.max(0, deps.clock.now().getTime() - started);
     // An event stream returns here when its headers go out: the time is to the headers,
     // and the status cannot tell a later failure. Its audit entry has the full latency
-    // and outcome (code audit 2026-11-03, L7).
+    // and outcome.
     const streamed = c.res.headers.get("content-type")?.startsWith("text/event-stream") === true;
     deps.logger.info(
       {

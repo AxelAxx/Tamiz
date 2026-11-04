@@ -30,7 +30,7 @@ const VerdictSchema = z.object({
 /**
  * The versioned template with its three slots filled in one pass: a `$'` or a `{{answer}}`
  * inside the request, the reference or the answer is text, never a pattern or a slot
- * (code audit 2026-11-03, M19).
+ *.
  */
 export function renderPrompt(
   prompt: JudgePrompt,

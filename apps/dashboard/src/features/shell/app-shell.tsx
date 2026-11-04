@@ -102,7 +102,7 @@ function OperatorMenu() {
       await api.signOut();
     } catch (error) {
       // 401: the session had already ended. Anything else left the cookie valid, so the
-      // browser must not look signed out (code audit 2026-11-03, M15).
+      // browser must not look signed out.
       if (!(error instanceof BffRequestError && error.status === 401)) {
         toast.error("Sign-out failed: this browser is still signed in. Try again.");
         return;

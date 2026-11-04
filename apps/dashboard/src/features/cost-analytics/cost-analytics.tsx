@@ -326,9 +326,12 @@ export function CostAnalytics() {
   const [custom, setCustom] = useState<CostRange | undefined>();
   const [groupBy, setGroupBy] = useState<GroupBy>("day");
   // The preset is resolved once per choice, so polling the same range does not move it.
+  // Clicking the chosen preset again resolves it again: a screen left open overnight then
+  // includes today.
+  const [resolvedAt, setResolvedAt] = useState(() => Date.now());
   const range = useMemo(
-    () => (preset === undefined ? custom : presetRange(preset, new Date())),
-    [preset, custom],
+    () => (preset === undefined ? custom : presetRange(preset, new Date(resolvedAt))),
+    [preset, custom, resolvedAt],
   );
   const cost = useQuery({
     queryKey: ["cost", range, groupBy],
@@ -359,6 +362,8 @@ export function CostAnalytics() {
               aria-labelledby="cost-range-l"
               value={preset ?? ""}
               onValueChange={(value) => {
+                setResolvedAt(Date.now());
+                // "" is a click on the chosen preset: keep it, with the range refreshed.
                 if (value === "") return;
                 setPreset(value as RangePreset);
                 setCustom(undefined);

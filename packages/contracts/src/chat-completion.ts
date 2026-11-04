@@ -100,7 +100,7 @@ export function isJsonObjectText(text: string): boolean {
 }
 
 /**
- * Bounds the schema states itself (code audit 2026-11-03, L18), so every reader of the
+ * Bounds the schema states itself, so every reader of the
  * contract (the gateway, the dashboard, the MCP server) gets them, not only the gateway's
  * 1 MiB body cap.
  */

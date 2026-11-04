@@ -303,7 +303,7 @@ describe("executeChain", () => {
     expect(calls).toEqual(["eu-primary", "us-second"]);
   });
 
-  it("an outer abort stops the chain without trying further targets", async () => {
+  it("an outer abort stops the chain as cancelled, without trying further targets", async () => {
     const { run, clock, calls } = chainSetup();
     const controller = new AbortController();
 
@@ -317,6 +317,6 @@ describe("executeChain", () => {
     const result = await clock.drive(pending);
 
     expect(calls).toEqual(["eu-primary"]);
-    expect(!result.ok && result.error.kind).toBe("deadline");
+    expect(!result.ok && result.error.kind).toBe("cancelled");
   });
 });

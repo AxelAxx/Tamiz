@@ -189,7 +189,7 @@ export function registerChatCompletions<S extends Schema, B extends string>(
         },
         async (error, sse) => {
           // The client gets one error event instead of a cut stream, and the failure is
-          // logged, never printed by Hono's default handler (code audit 2026-11-03, M6).
+          // logged, never printed by Hono's default handler.
           onStreamError(requestId, error);
           await sse.writeSSE({ data: JSON.stringify(chunks.internal()) });
         },

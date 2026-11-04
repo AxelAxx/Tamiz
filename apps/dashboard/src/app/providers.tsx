@@ -1,8 +1,9 @@
 "use client";
 
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { ThemeProvider } from "next-themes";
-import { createContext, type ReactNode, useContext, useState } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BffRequestError } from "@/lib/api-client";
@@ -55,6 +56,12 @@ export function useSessionExpiry(): SessionExpiry {
 export function Providers({ children }: { readonly children: ReactNode }) {
   const [expired, setExpired] = useState(false);
   const [client] = useState(() => createQueryClient(() => setExpired(true)));
+  // A poll that ends in 401 just after sign-out must not greet the next sign-in with the
+  // "session ended" dialog: reaching the sign-in page clears it.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (pathname === "/sign-in") setExpired(false);
+  }, [pathname]);
   const expiry: SessionExpiry = {
     expired,
     signedInAgain: () => {

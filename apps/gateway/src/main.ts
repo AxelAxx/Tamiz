@@ -13,7 +13,7 @@
  * 4. the audit log, then the use cases wrapped by tracing and audit;
  * 5. the app, `serve()`, one startup line with address, version and policy.
  * Each step that chooses between adapters is a function below, so the top level reads as
- * the wiring (code audit 2026-11-03, L2).
+ * the wiring.
  */
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { serve } from "@hono/node-server";
@@ -326,7 +326,7 @@ function buildAudit(
 /**
  * Stops accepting connections and waits for the open requests, at most `SHUTDOWN_GRACE_MS`
  * (under compose's 10 s before SIGKILL), so their audit entries are queued before the last
- * flush (code audit 2026-11-03, M10). Then runs `closers` in order and exits. A request
+ * flush. Then runs `closers` in order and exits. A request
  * still running after the grace loses its entry, which the writer reports as
  * `audit.dropped`.
  */
@@ -347,7 +347,8 @@ function registerShutdown(
         }),
       ]);
       clearTimeout(grace);
-      for (const close of closers) await close();
+      // One closer failing must not leave the others open.
+      for (const close of closers) await Promise.resolve(close()).catch(() => undefined);
     })().finally(() => process.exit(0));
   };
   process.once("SIGINT", shutdown);

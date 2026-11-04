@@ -1,5 +1,5 @@
 /**
- * The dependency probes of `/health` (code audit 2026-11-03, M12). Each is bounded by
+ * The dependency probes of `/health`. Each is bounded by
  * `timeoutMs` and reports a fixed detail, never the address or the error message.
  */
 import { sql } from "drizzle-orm";
@@ -29,7 +29,9 @@ export function privacyServiceProbe(
     name: "privacy",
     async check() {
       try {
-        const response = await fetchImpl(new URL("/health", baseUrl), {
+        // Relative to the base, so a path prefix in TAMIZ_PRIVACY_URL is kept.
+        const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+        const response = await fetchImpl(new URL("health", base), {
           signal: AbortSignal.timeout(timeoutMs),
         });
         await response.body?.cancel();

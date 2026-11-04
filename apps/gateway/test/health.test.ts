@@ -135,6 +135,16 @@ describe("GET /health with dependency probes (code audit 2026-11-03, M12)", () =
     expect(await refused.check()).toEqual({ status: "down", detail: "unreachable" });
   });
 
+  it("the privacy probe keeps a path prefix of the base URL", async () => {
+    const asked: string[] = [];
+    const probe = privacyServiceProbe("http://gateway.internal/privacy", async (input) => {
+      asked.push(String(input));
+      return new Response("{}", { status: 200 });
+    });
+    await probe.check();
+    expect(asked).toEqual(["http://gateway.internal/privacy/health"]);
+  });
+
   it("the circuit-state probe is degraded while the in-memory fallback answers", async () => {
     expect(await circuitStoreProbe({ isShared: () => true }).check()).toEqual({ status: "ok" });
     expect(await circuitStoreProbe({ isShared: () => false }).check()).toEqual({

@@ -2,7 +2,7 @@
  * `GET /health` (spec FR-017, data-model section 4).
  *
  * Without probes (tests, the E2E harness) it is plain liveness: `ok`, no `checks`. With
- * probes it reports each dependency (code audit 2026-11-03, M12): any check that is not
+ * probes it reports each dependency: any check that is not
  * `ok` makes the status `degraded`, and a `down` one answers 503, so a container health
  * check or a load balancer stops sending requests that would fail. The body is validated
  * against the contract before it is sent, so a drift between the handler and

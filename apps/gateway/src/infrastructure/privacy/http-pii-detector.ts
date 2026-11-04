@@ -61,7 +61,7 @@ export function createHttpPiiDetector(options: HttpPiiDetectorOptions): PiiDetec
         return failed(signal.aborted ? "timeout" : "unavailable");
       }
       if (!response.ok) {
-        // An unread body holds its pooled connection; release it (code audit 2026-11-03, L10).
+        // An unread body holds its pooled connection; release it.
         void response.body?.cancel().catch(() => undefined);
         return failed(response.status >= 500 ? "unavailable" : "contract");
       }
@@ -84,10 +84,15 @@ export function createHttpPiiDetector(options: HttpPiiDetectorOptions): PiiDetec
       }
 
       const entities: DetectedEntity[] = [];
+      let previousEnd = 0;
       for (const finding of parsed.data.findings) {
         const start = utf16[finding.start];
         const end = utf16[finding.end];
         if (start === undefined || end === undefined || end <= start) return failed("contract");
+        // The service resolves overlaps and sorts its findings. If it ever did not, part of
+        // a value could stay in clear, so that answer fails closed.
+        if (start < previousEnd) return failed("contract");
+        previousEnd = end;
         let textIndex = 0;
         while (textIndex + 1 < starts.length && (starts[textIndex + 1] ?? 0) <= start) {
           textIndex += 1;

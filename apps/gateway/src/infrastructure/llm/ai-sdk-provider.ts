@@ -230,6 +230,8 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
           case "tool-input-start":
           case "tool-call":
             if (!declared(input, part.toolName, part)) {
+              // Our decision, not upstream's end: the provider's call is still open.
+              call.cancel();
               yield end({ type: "error", error: undeclaredToolError(input, options.provider) });
               return;
             }
@@ -300,6 +302,7 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
             case "tool-call": {
               // Before the first token: a failed attempt, so the chain can fall back.
               if (!declared(input, part.toolName, part)) {
+                call.cancel();
                 call.dispose();
                 return err(undeclaredToolError(input, options.provider));
               }
@@ -373,8 +376,7 @@ function malformedError(input: ProviderCompletionInput, provider: ProviderName):
 /**
  * A call to a tool the request did not declare, or one the SDK marks `invalid` (its name
  * or input did not parse), is the model's mistake: a malformed response the chain can fall
- * back on, never a tool call that would break the response contract later (code audit
- * 2026-11-03, M6).
+ * back on, never a tool call that would break the response contract later.
  */
 function declared(input: ProviderCompletionInput, toolName: string, part?: object): boolean {
   if (part !== undefined && "invalid" in part && part.invalid === true) return false;

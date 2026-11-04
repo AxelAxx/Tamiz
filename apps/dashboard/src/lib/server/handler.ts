@@ -46,7 +46,13 @@ export function readCookie(request: Request, name: string): string | undefined {
   if (header === null) return undefined;
   for (const part of header.split(";")) {
     const [key, ...value] = part.trim().split("=");
-    if (key === name) return decodeURIComponent(value.join("="));
+    if (key !== name) continue;
+    // A malformed escape is a bad cookie, so the request gets the BFF's 401, not a 500.
+    try {
+      return decodeURIComponent(value.join("="));
+    } catch {
+      return undefined;
+    }
   }
   return undefined;
 }

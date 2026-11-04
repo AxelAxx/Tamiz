@@ -88,6 +88,17 @@ export function describeError(error: unknown): {
         ...(requestId !== undefined && { requestId }),
       };
     }
+    case "rate_limited":
+      return { title: "Too many requests", text: body.message };
+    case "forbidden_role":
+      return { title: "Not available to visitors", text: body.message };
+    case "forbidden_origin":
+      return {
+        title: "Request refused",
+        text: "This page's address does not match TAMIZ_DASHBOARD_PUBLIC_URL.",
+      };
+    case "invalid_request":
+      return { title: "Request refused", text: body.message };
     default:
       return { title: "Something went wrong", text: "The request failed. Try again." };
   }

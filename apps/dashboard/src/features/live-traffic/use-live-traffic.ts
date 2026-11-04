@@ -78,16 +78,21 @@ async function fetchSince(state: LiveState, now: number): Promise<AuditEntryDto[
   return entries;
 }
 
+/** 2 s while polls succeed; after the nth failure in a row 2, 4, 8, 16, then 30 s. */
 export function backoffMs(failures: number): number {
-  return failures === 0 ? POLL_MS : Math.min(POLL_MS * 2 ** failures, MAX_BACKOFF_MS);
+  return failures === 0 ? POLL_MS : Math.min(POLL_MS * 2 ** (failures - 1), MAX_BACKOFF_MS);
 }
 
 export type LiveStatus = "connecting" | "live" | "paused" | "retrying" | "error";
 
 export function useLiveTraffic() {
   const [state, dispatch] = useReducer(reduce, INITIAL);
+  // Updated after commit, not during render: a discarded render must not move the next
+  // poll's window.
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   // Consecutive failed polls; TanStack resets its own count at every fetch.
   const failures = useRef(0);
@@ -108,6 +113,8 @@ export function useLiveTraffic() {
     // Every poll is new data; never serve it from the cache of a previous visit.
     gcTime: 0,
   });
+
+  const { refetch } = poll;
 
   const lastMerged = useRef(0);
   const [successAt, setSuccessAt] = useState<number | undefined>();
@@ -185,6 +192,6 @@ export function useLiveTraffic() {
     announcement,
     pause: useCallback(() => dispatch({ type: "pause" }), []),
     resume: useCallback(() => dispatch({ type: "resume" }), []),
-    retry: useCallback(() => void poll.refetch(), [poll]),
+    retry: useCallback(() => void refetch(), [refetch]),
   };
 }

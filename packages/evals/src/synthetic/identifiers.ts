@@ -82,7 +82,7 @@ export interface Identifiers {
   nss(): string;
   phone(): string;
   card(): string;
-  /** Formats people write that the first datasets never tried (code audit 2026-11-03). */
+  /** Formats people write that the first datasets never tried. */
   dniWithoutLeadingZero(): string;
   dniSpaced(): string;
   landline(): string;

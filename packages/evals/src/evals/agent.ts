@@ -12,7 +12,7 @@
  * The baseline the fixture reports is not a route of any case: every observation names it,
  * so a real route there would count as named by any answer that repeats the observation.
  * Each route is the cause of a third of the cases, so naming one route every time stays
- * below the gate (code audit 2026-11-03, H2).
+ * below the gate.
  *
  * The gate is `answer_accuracy`. Answers never enter the report: a failing case shows only
  * which checks failed, the route named first and the number of model calls.
@@ -158,7 +158,7 @@ export const agentEval: Eval<AgentCase, AgentObservation, AgentOutcome> = {
       async observe(c) {
         // Gateway failures come back as `stopReason: "gateway_error"`. Anything thrown here
         // is the harness's own (a prompt file, the in-process MCP server): an internal error,
-        // not "gateway unavailable" (code audit 2026-11-03, L16).
+        // not "gateway unavailable".
         const run = await runAgentOnFixture({
           question: c.question,
           now: new Date(`${c.today}T09:00:00Z`),

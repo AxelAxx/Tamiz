@@ -255,6 +255,10 @@ For the operator:
   budget until it is rotated. The spending limit on the Mistral key is the backstop.
 - **The sign-in rate limit and the visitor limits are per serverless instance on
   Vercel**, so they are weaker than on a single server.
+- **Without `TAMIZ_DASHBOARD_TRUST_PROXY=true` every client shares one limit bucket.** Five
+  wrong passphrases from anyone then lock everyone out for a minute, and ten visitor
+  sessions from anyone use up visitor access. Behind Vercel or Caddy, set it: both write
+  the client address themselves.
 - **Sign-out on Vercel ends the session in that browser, not everywhere.** Sessions are
   signed cookies (`T-OPS-04`), so any instance accepts them, and the dashboard needs no
   shared store. Sign-out clears the cookie, but a copy of it made before then is refused

@@ -49,7 +49,7 @@ describe("compose env files", () => {
     expect(gateway.get("TAMIZ_POLICY_FILE")).toBe("policies/local-only.yaml");
   });
 
-  it("is a valid dashboard configuration once compose adds the addresses", () => {
+  it("is a valid dashboard configuration once compose adds the addresses", async () => {
     const result = parseEnv({
       ...Object.fromEntries(dashboard),
       TAMIZ_GATEWAY_URL: "http://gateway:3000",
@@ -57,7 +57,7 @@ describe("compose env files", () => {
     });
     expect(result.ok).toBe(true);
     expect(
-      verifyPassphrase(PASSPHRASE, dashboard.get("TAMIZ_DASHBOARD_PASSPHRASE_HASH") ?? ""),
+      await verifyPassphrase(PASSPHRASE, dashboard.get("TAMIZ_DASHBOARD_PASSPHRASE_HASH") ?? ""),
     ).toBe(true);
   });
 

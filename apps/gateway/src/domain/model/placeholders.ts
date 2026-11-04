@@ -69,9 +69,14 @@ export function anonymizeTexts(
     let cursor = 0;
     for (const entity of ordered) {
       if (entity.textIndex !== index) continue;
-      if (entity.start < cursor || entity.end > text.length || entity.end <= entity.start) {
+      if (entity.end <= entity.start) continue;
+      // A span past the text, or one reaching beyond an earlier span, would leave part of a
+      // value in clear: the result is unsafe, and the request is not sent.
+      if (entity.end > text.length || (entity.start < cursor && entity.end > cursor)) {
+        unsafe = true;
         continue;
       }
+      if (entity.start < cursor) continue;
       const placement = jsonTexts.has(index)
         ? placeJsonSpan(text, entity.start, entity.end)
         : "in_string";

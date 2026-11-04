@@ -7,7 +7,7 @@
  * Values are read once at boot through {@link loadConfig}; the resulting object is frozen
  * and injected. The one exception is OpenTelemetry: its SDK reads its own `OTEL_*`
  * variables, so the two endpoints are validated here, at boot, and otherwise left to it
- * (code audit 2026-11-03, L8). An invalid environment yields a
+ *. An invalid environment yields a
  * `ConfigurationError` listing each offending variable with the expected format and never
  * the value, so secrets cannot leak through the boot message.
  */

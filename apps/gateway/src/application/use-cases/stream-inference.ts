@@ -182,7 +182,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
       }
     }
     // The provider's stream ended with neither `finish` nor `error`: the client still gets
-    // what was held and one final part, and the circuit hears of it (code audit M7).
+    // what was held and one final part, and the circuit hears of it.
     yield* flushAll();
     const ended = providerError({
       targetId: target.id,

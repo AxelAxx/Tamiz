@@ -15,7 +15,7 @@ export const GET = read(async (request) => {
   const cookie = readCookie(request, SESSION_COOKIE) ?? "";
   const role = serverContext().sessions.roleOf(cookie);
   // `read` checked the session; it can still expire in between. Never assume the
-  // more privileged role (code audit 2026-11-03, L12).
+  // more privileged role.
   if (role === undefined) return bffError(401, "unauthenticated", "Session expired");
   return Response.json({ role });
 });
@@ -27,10 +27,12 @@ export const POST = publicWrite(async (request) => {
   if (!check.allowed) {
     return rateLimited(check.retryAfterSeconds, "Too many failed attempts; try again later");
   }
+  // Counted before the first `await`: concurrent attempts each see the ones before them,
+  // so a burst cannot pass the check together. A success clears it.
+  signIn.recordFailure(address);
   const body = await readJson(request, SignInRequestSchema);
   if (!body.ok) return body.response;
-  if (!verifyPassphrase(body.value.passphrase, env.passphraseHash)) {
-    signIn.recordFailure(address);
+  if (!(await verifyPassphrase(body.value.passphrase, env.passphraseHash))) {
     return bffError(401, "unauthenticated", "Wrong passphrase");
   }
   signIn.recordSuccess(address);

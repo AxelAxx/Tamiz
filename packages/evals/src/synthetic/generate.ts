@@ -213,7 +213,7 @@ const DETECTION: ReadonlyArray<DetectionTemplate> = [
     text: new Text().t("Tarjeta ").e("CREDIT_CARD", g.id.card()).t(" bloqueada por seguridad."),
     tags: ["fintech"],
   }),
-  // v2 (code audit 2026-11-03): formats people write that v1 never tried.
+  // v2: formats people write that v1 never tried.
   (g) => ({
     text: new Text()
       .t("Abonar en ")
@@ -747,7 +747,7 @@ function toolCase(index: number, made: ReturnType<ToolTemplate>): string {
 
 /**
  * v1's cases (same seeds), then the tool cases from their own seed. v3 only replaces a
- * surname that the privacy corpus also uses (code audit 2026-11-03).
+ * surname that the privacy corpus also uses.
  */
 export function generateLeak(seed = SEED): string {
   const g = { r: seeded(seed), id: identifiers(seeded(seed + 1)) };

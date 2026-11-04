@@ -6,8 +6,7 @@
  * first target of the decided chain and on the baseline target (the policy's most
  * expensive, as in feature 006). Prices come from `POLICY_FILE`, the policy the routing
  * dataset's header names (a test keeps the two equal), since the simulation answer carries
- * none. A decided target missing from that file is an error, never a free request (code
- * audit 2026-11-03, L15).
+ * none. A decided target missing from that file is an error, never a free request.
  */
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";

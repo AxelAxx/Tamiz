@@ -4,9 +4,8 @@
  * `append` only queues: a request never waits for the database. Every `intervalMs`
  * (through the clock port) the queue is written in batches of up to `batchSize`. A batch
  * that fails twice goes back to the head of the queue and waits for the next interval, so
- * a short database outage loses nothing while the queue has room (code audit 2026-11-03,
- * L10); a full queue drops its oldest entry. `close` flushes what is left; what still
- * cannot be written then is dropped, and so is anything appended after `close` (M10).
+ * a short database outage loses nothing while the queue has room; a full queue drops its oldest entry. `close` flushes what is left; what still
+ * cannot be written then is dropped, and so is anything appended after `close`.
  * Every loss is an `audit.dropped` routing event and a `warn` line with the error code,
  * never silent.
  */
