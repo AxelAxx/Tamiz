@@ -190,6 +190,23 @@ describe("streamInference", () => {
     expect((await circuitState.snapshot(targetIdUnchecked("mistral-small"))).failures).toBe(0);
   });
 
+  it("a provider stream that ends without finish or error ends with an error part (audit M7)", async () => {
+    const { stream, clock, events } = setup(async () =>
+      started("Hola", { type: "delta", text: " a" }),
+    );
+
+    const result = await clock.drive(stream(request()));
+    if (!result.ok) throw new Error("expected a stream");
+    const out = await collect(result.value.parts);
+
+    expect(out[0]).toEqual({ type: "delta", text: " a" });
+    expect(out.at(-1)).toMatchObject({ type: "error", error: { cause: "malformed_response" } });
+    // Malformed is not a health failure, so the circuit is untouched; the failure is an event.
+    expect(events.events.filter((event) => event.type === "stream.failed")).toEqual([
+      expect.objectContaining({ targetId: "mistral-small", reason: "malformed_response" }),
+    ]);
+  });
+
   it("US6-7: every target failing before a token returns a RoutingFailure", async () => {
     const { stream, clock } = setup(async (input) => err(failure("timeout", { on: input.target })));
 

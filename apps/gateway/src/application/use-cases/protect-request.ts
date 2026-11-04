@@ -107,6 +107,11 @@ export function protectRequest(
     inspection.entities,
     jsonTexts,
   );
+  // `notAnonymizableReason` routes such requests away before this point; if a value was
+  // still left in place, nothing is sent rather than sending it in clear (audit M8).
+  if (anonymized.unsafe) {
+    throw new Error("Anonymization left a detected value in place; the request is not sent");
+  }
   const mapping = anonymized.mapping;
   const notice = usesTools(request) ? notices.tools : notices.plain;
   return {

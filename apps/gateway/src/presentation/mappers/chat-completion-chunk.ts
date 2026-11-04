@@ -23,7 +23,7 @@ import type {
   RoutedStreamPart,
 } from "../../application/use-cases/stream-inference.js";
 import type { ProviderError } from "../../domain/errors.js";
-import { domainErrorToEnvelope } from "./error-envelope.js";
+import { domainErrorToEnvelope, toErrorEnvelope } from "./error-envelope.js";
 
 export function chunkMapper(routed: RoutedStream, requestId: string) {
   const base = {
@@ -91,5 +91,10 @@ export function chunkMapper(routed: RoutedStream, requestId: string) {
     ],
     error: (error: ProviderError): StreamErrorEvent =>
       StreamErrorEventSchema.parse({ error: domainErrorToEnvelope(error, requestId).error }),
+    /** A failure of the gateway itself while streaming: a fixed message, no detail. */
+    internal: (): StreamErrorEvent =>
+      StreamErrorEventSchema.parse({
+        error: toErrorEnvelope("internal", "Internal server error", requestId).error,
+      }),
   };
 }

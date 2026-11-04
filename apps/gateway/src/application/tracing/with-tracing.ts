@@ -78,11 +78,11 @@ function toolAttributes(
 }
 
 export function withTracing(route: RouteInference, tracer: TracerPort): RouteInference {
-  return async (request) => {
+  return async (request, signal) => {
     const span = tracer.startRequest();
     span.set({ "tamiz.request_id": request.requestId, "tamiz.streamed": false });
     try {
-      const result = await span.run(() => route(request));
+      const result = await span.run(() => route(request, signal));
       if (result.ok) {
         const { decision, target, abandoned, usage, cost } = result.value;
         recordDecision(span, decision);

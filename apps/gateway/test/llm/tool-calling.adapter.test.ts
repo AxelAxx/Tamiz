@@ -385,6 +385,33 @@ describe.each(PROVIDERS)("$provider adapter with tools", (config) => {
     expect(parts.at(-1)).toMatchObject({ type: "finish", finishReason: "tool_calls" });
   });
 
+  // Code audit 2026-11-03, M6: the model calls `get_patient`, which this request does not
+  // declare. That is a malformed answer the chain can fall back on, never a tool call.
+  const undeclared = () =>
+    input(config, { tools: [{ name: "other_tool", parameters: PARAMETERS }] });
+
+  it("a call to a tool the request did not declare is a malformed response", async () => {
+    answer(config, () =>
+      HttpResponse.json(config.toolCallAnswer([{ id: "callU0001", args: '{"patientId":"1"}' }])),
+    );
+
+    const result = await config.createAdapter().complete(undeclared());
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toMatchObject({ cause: "malformed_response", retryable: false });
+  });
+
+  it("a stream that starts with an undeclared tool call fails before its first token", async () => {
+    answer(config, () => sse(config.toolCallStream("callU0002", ['{"patientId":"1"}'])));
+
+    const started = await config.createAdapter().stream(undeclared());
+
+    expect(started.ok).toBe(false);
+    if (started.ok) return;
+    expect(started.error).toMatchObject({ cause: "malformed_response" });
+  });
+
   it("US5-2: a provider that rejects tools is a non-retryable provider error", async () => {
     answer(config, () =>
       HttpResponse.json({ error: { message: "tools are not supported" } }, { status: 400 }),
