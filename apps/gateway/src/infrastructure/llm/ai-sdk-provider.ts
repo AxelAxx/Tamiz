@@ -228,8 +228,14 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
             if (part.text !== "") yield { type: "delta", text: part.text };
             break;
           case "tool-input-start":
-          case "tool-input-delta":
           case "tool-call":
+            if (!declared(input, part.toolName, part)) {
+              yield end({ type: "error", error: undeclaredToolError(input, options.provider) });
+              return;
+            }
+            yield* toolParts(part, tools);
+            break;
+          case "tool-input-delta":
             yield* toolParts(part, tools);
             break;
           case "finish":
@@ -292,6 +298,11 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
               });
             case "tool-input-start":
             case "tool-call": {
+              // Before the first token: a failed attempt, so the chain can fall back.
+              if (!declared(input, part.toolName, part)) {
+                call.dispose();
+                return err(undeclaredToolError(input, options.provider));
+              }
               // The stream starts with a tool call: that is its first token (FR-017).
               const pending = toolParts(part, tools);
               call.arm();
@@ -357,6 +368,28 @@ function toFinishPart(
 
 function malformedError(input: ProviderCompletionInput, provider: ProviderName): ProviderError {
   return toProviderError(input.target, provider, malformedResponse());
+}
+
+/**
+ * A call to a tool the request did not declare, or one the SDK marks `invalid` (its name
+ * or input did not parse), is the model's mistake: a malformed response the chain can fall
+ * back on, never a tool call that would break the response contract later (code audit
+ * 2026-11-03, M6).
+ */
+function declared(input: ProviderCompletionInput, toolName: string, part?: object): boolean {
+  if (part !== undefined && "invalid" in part && part.invalid === true) return false;
+  return (input.tools ?? []).some((definition) => definition.name === toolName);
+}
+
+function undeclaredToolError(
+  input: ProviderCompletionInput,
+  provider: ProviderName,
+): ProviderError {
+  return toProviderError(input.target, provider, {
+    cause: "malformed_response",
+    retryable: false,
+    message: "the model called a tool the request did not declare",
+  });
 }
 
 function toModelMessage(message: Message): ModelMessage {
@@ -426,6 +459,7 @@ interface SdkToolCall {
   readonly toolCallId: string;
   readonly toolName: string;
   readonly input: unknown;
+  readonly invalid?: boolean | undefined;
 }
 
 function toToolCalls(calls: ReadonlyArray<SdkToolCall>): ReadonlyArray<ToolCall> {
@@ -461,6 +495,9 @@ function toCompletion(
         message: "provider reported a failed generation",
       }),
     );
+  }
+  if (result.toolCalls.some((call) => !declared(input, call.toolName, call))) {
+    return err(undeclaredToolError(input, provider));
   }
   const { inputTokens, outputTokens } = result.usage;
   const toolCalls = toToolCalls(result.toolCalls);

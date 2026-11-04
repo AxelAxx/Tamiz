@@ -21,7 +21,7 @@
  * text is flushed before a call starts, and every call's held arguments are flushed in index
  * order before the finish or the error part.
  */
-import type { ProviderError } from "../../domain/errors.js";
+import { type ProviderError, providerError } from "../../domain/errors.js";
 import { computeCost, type Usage } from "../../domain/model/cost.js";
 import type { Abandoned } from "../../domain/model/fallback.js";
 import type { InferenceRequest, ToolCall } from "../../domain/model/inference-request.js";
@@ -181,6 +181,18 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
         }
       }
     }
+    // The provider's stream ended with neither `finish` nor `error`: the client still gets
+    // what was held and one final part, and the circuit hears of it (code audit M7).
+    yield* flushAll();
+    const ended = providerError({
+      targetId: target.id,
+      provider: target.provider,
+      cause: "malformed_response",
+      retryable: false,
+      message: "the stream ended without a finish",
+    });
+    await recordFailure(request, policy, target, admission, ended);
+    yield { type: "error", error: ended };
   }
 
   function breakerFor(policy: RoutingPolicy) {

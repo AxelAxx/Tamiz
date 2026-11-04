@@ -104,8 +104,10 @@ export function blocked(decision: BlockDecision): RoutingFailure {
   return { decision, failure: { kind: "blocked", error } };
 }
 
+/** `signal` is the client's: a client that goes away stops retries and fallbacks (audit M9). */
 export type RouteInference = (
   request: InferenceRequest,
+  signal?: AbortSignal,
 ) => Promise<Result<RoutedCompletion, RoutingFailure>>;
 
 /** The matched rule's timeout, else the target's, else the policy default (US6-6). */
@@ -213,8 +215,8 @@ export function routeInference(deps: RouteInferenceDeps): RouteInference {
     ...(deps.tracer === undefined ? {} : { tracer: deps.tracer }),
   });
 
-  return async (request) => {
-    const { policy, inspection, decision } = await decideWithPrivacy(deps, request);
+  return async (request, clientSignal) => {
+    const { policy, inspection, decision } = await decideWithPrivacy(deps, request, clientSignal);
     if (decision.kind === "block") return err(blocked(decision));
     const sent = protectForProvider(deps, request, decision, inspection);
 
@@ -224,6 +226,7 @@ export function routeInference(deps: RouteInferenceDeps): RouteInference {
         decision,
         resilience: policy.resilience,
         timeoutFor: (target) => effectiveTimeoutMs(decision, target, policy),
+        ...(clientSignal === undefined ? {} : { signal: clientSignal }),
       },
       (target, signal, timeoutMs) =>
         deps.providers.resolve(target.provider).complete({
