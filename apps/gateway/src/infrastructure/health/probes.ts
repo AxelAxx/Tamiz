@@ -29,7 +29,9 @@ export function privacyServiceProbe(
     name: "privacy",
     async check() {
       try {
-        const response = await fetchImpl(new URL("/health", baseUrl), {
+        // Relative to the base, so a path prefix in TAMIZ_PRIVACY_URL is kept.
+        const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+        const response = await fetchImpl(new URL("health", base), {
           signal: AbortSignal.timeout(timeoutMs),
         });
         await response.body?.cancel();

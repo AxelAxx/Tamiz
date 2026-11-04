@@ -347,7 +347,8 @@ function registerShutdown(
         }),
       ]);
       clearTimeout(grace);
-      for (const close of closers) await close();
+      // One closer failing must not leave the others open.
+      for (const close of closers) await Promise.resolve(close()).catch(() => undefined);
     })().finally(() => process.exit(0));
   };
   process.once("SIGINT", shutdown);

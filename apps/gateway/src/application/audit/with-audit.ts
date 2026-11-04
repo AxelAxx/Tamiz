@@ -86,6 +86,9 @@ export function failureResult(routing: RoutingFailure): AuditResult {
         abandoned: failure.abandoned,
         errorType: "provider_timeout",
       };
+    case "cancelled":
+      // As a stream the client leaves: not a failure of the target (code audit 2026-11-04).
+      return { kind: "cancelled", target: failure.target, abandoned: failure.abandoned };
     case "exhausted":
       return {
         kind: "failed",

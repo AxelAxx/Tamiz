@@ -124,6 +124,16 @@ describe("inspectSensitivity", () => {
     expect(port.calls).toHaveLength(2);
   });
 
+  it("a client that went away is not reported as a failing privacy service (code audit 2026-11-04)", async () => {
+    const client = new AbortController();
+    client.abort();
+    const { inspect, events } = setup(() => ({ status: "failed", reason: "timeout" }));
+
+    await inspect({ requestId: REQUEST_ID, messages: MESSAGES, signal: client.signal });
+
+    expect(events.all.filter((event) => event.type === "privacy.detector_failed")).toEqual([]);
+  });
+
   it("a client already gone gets an aborted detector call (code audit 2026-11-03, L9)", async () => {
     const client = new AbortController();
     client.abort();

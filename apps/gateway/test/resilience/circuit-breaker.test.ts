@@ -188,15 +188,18 @@ describe("createCircuitBreaker", () => {
     expect(events.events.at(-1)).toMatchObject({ from: "half_open", to: "open" });
   });
 
-  it("a trial that ends because the request deadline aborted it counts as a failure (edge case)", async () => {
-    const { breaker, clock } = setup();
+  it("a trial the client abandoned leaves the circuit half-open (code audit 2026-11-04, G1)", async () => {
+    const { breaker, clock, events } = setup();
     await open(breaker);
     clock.advance(30_000);
     const trial = await breaker.admit(target(), CONTEXT, LEASE);
+    const before = events.events.length;
 
-    await breaker.onResult(target(), CONTEXT, err(failure("aborted")), trial);
+    expect(await breaker.onResult(target(), CONTEXT, err(failure("aborted")), trial)).toBe(false);
 
-    expect((await breaker.admit(target(), CONTEXT, LEASE)).kind).toBe("skip");
+    expect(events.events).toHaveLength(before);
+    clock.advance(LEASE);
+    expect((await breaker.admit(target(), CONTEXT, LEASE)).kind).toBe("trial");
   });
 
   it("US4-5: one target's circuit does not affect another's", async () => {

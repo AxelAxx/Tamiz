@@ -72,7 +72,8 @@ export function inspectSensitivity(deps: InspectSensitivityDeps): InspectSensiti
       if (inspection.status === "ok") {
         deps.cache.set(key, inspection);
         emitInspected(deps, requestId, inspection, false);
-      } else {
+      } else if (signal?.aborted !== true) {
+        // A client that went away is not a failing privacy service (code audit 2026-11-04).
         deps.events.emit({
           type: "privacy.detector_failed",
           requestId,

@@ -113,6 +113,13 @@ export type ChainFailure =
       readonly target: ModelTarget;
       readonly error: ProviderError;
       readonly abandoned: ReadonlyArray<Abandoned>;
+    }
+  | {
+      /** The client went away: no provider failed, so nothing is counted against one. */
+      readonly kind: "cancelled";
+      readonly target: ModelTarget;
+      readonly error: ProviderError;
+      readonly abandoned: ReadonlyArray<Abandoned>;
     };
 
 function deadlineError(target: ModelTarget): ProviderError {
@@ -248,7 +255,8 @@ export function executeChain<T>(deps: ExecuteChainDeps) {
       if (result.ok) return ok({ target, value: result.value, abandoned: visited, admission });
       const { cause } = result.error;
       if (cause === "aborted") {
-        return err({ kind: "deadline", target, error: result.error, abandoned: visited });
+        const kind = request.signal?.aborted === true ? "cancelled" : "deadline";
+        return err({ kind, target, error: result.error, abandoned: visited });
       }
       events.emit({ ...base(target), type: "fallback", reason: cause });
       visited.push({ targetId: target.id, reason: cause });

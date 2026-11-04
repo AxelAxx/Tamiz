@@ -230,6 +230,8 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
           case "tool-input-start":
           case "tool-call":
             if (!declared(input, part.toolName, part)) {
+              // Our decision, not upstream's end: the provider's call is still open.
+              call.cancel();
               yield end({ type: "error", error: undeclaredToolError(input, options.provider) });
               return;
             }
@@ -300,6 +302,7 @@ export function createAiSdkProvider(options: AiSdkProviderOptions): LlmProviderP
             case "tool-call": {
               // Before the first token: a failed attempt, so the chain can fall back.
               if (!declared(input, part.toolName, part)) {
+                call.cancel();
                 call.dispose();
                 return err(undeclaredToolError(input, options.provider));
               }

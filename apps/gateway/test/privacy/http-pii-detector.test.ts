@@ -58,6 +58,21 @@ describe("createHttpPiiDetector", () => {
     });
   });
 
+  it("overlapping or unsorted findings break the contract and fail closed (code audit 2026-11-04)", async () => {
+    const text = "Ana Ruiz, ana@example.com";
+    server.use(
+      answer([
+        { kind: "PERSON", start: 0, end: 12, score: 0.85 },
+        { kind: "EMAIL", start: 10, end: 25, score: 1 },
+      ]),
+    );
+
+    expect(await detector.inspect([text], signal())).toMatchObject({
+      status: "failed",
+      reason: "contract",
+    });
+  });
+
   it("converts code points to UTF-16 indices (an emoji before a finding)", async () => {
     const messages = ["Hola 👋🏽 soy Lucía, lucia@example.com"];
     const text = messages[0] ?? "";
