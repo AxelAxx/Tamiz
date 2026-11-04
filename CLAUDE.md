@@ -344,6 +344,7 @@ docker compose up postgres   # audit log + API keys for DATABASE_URL (T-006-03)
 docker compose up jaeger     # traces: OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318, UI :16686 (T-006-05)
 pnpm --filter @tamiz/gateway db:generate   # new migration from the Drizzle schema (commit drizzle/)
 pnpm --filter @tamiz/gateway api-key:add <client> [--admin]   # key stored hashed in the database
+pnpm --filter @tamiz/gateway api-key:revoke <key | --hash <hex>>   # refuses a stored key from then on
 pnpm --filter @tamiz/mcp-server start:http   # MCP server on http://127.0.0.1:3100/mcp (bearer = Tamiz key); stdio: node apps/mcp-server/dist/main.js
 npx @modelcontextprotocol/inspector node apps/mcp-server/dist/main.js   # try the MCP tools by hand (TAMIZ_MCP_GATEWAY_URL/KEY in its env panel)
 pnpm --filter @tamiz/mcp-server agent:demo -- "why did spend rise yesterday?"   # agent: TAMIZ_AGENT_API_KEY (client) + TAMIZ_AGENT_MCP_KEY (admin), server on start:http; TAMIZ_AGENT_TOOL_PROTOCOL=native (default) | text

@@ -245,6 +245,8 @@ For the operator:
 | Traces | `ssh -L 16686:127.0.0.1:16686 root@<server>`, then http://localhost:16686 |
 | Logs | `docker compose logs -f gateway` (never prompt content: constitution V) |
 | Rotate a key | `pnpm --filter @tamiz/gateway generate-api-key <client>` locally, replace the hash in `apps/gateway/.env.docker` on the server, `docker compose up -d gateway` |
+| Revoke a stored key | From a checkout that reaches the database: `DATABASE_URL=… pnpm --filter @tamiz/gateway api-key:revoke <key>` (keys added with `api-key:add`; the row stays, marked revoked). Keys in `TAMIZ_API_KEYS` are removed from that variable instead |
+| Health | `curl -s https://gateway.example.com/health`: `checks` names each dependency; 503 when the privacy service or the database is down |
 | Reset the policy | `docker compose down -v` drops the policy versions and the audit log, along with the other volumes (demo data only) |
 
 ## Limitations of the demo

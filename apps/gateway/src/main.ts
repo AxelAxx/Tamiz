@@ -42,6 +42,11 @@ import { createRedisCircuitState } from "./infrastructure/cache/redis-circuit-st
 import { systemClock } from "./infrastructure/clock/system-clock.js";
 import { loadConfig } from "./infrastructure/config/env.js";
 import { checkProviderSettings } from "./infrastructure/config/provider-settings.js";
+import {
+  circuitStoreProbe,
+  databaseProbe,
+  privacyServiceProbe,
+} from "./infrastructure/health/probes.js";
 import { createProviderRegistry } from "./infrastructure/llm/provider-registry.js";
 import { createLogger } from "./infrastructure/logging/logger.js";
 import { createPostgresApiKeyRepository } from "./infrastructure/persistence/api-key-repository.js";
@@ -229,6 +234,11 @@ const app = createApp({
   clock: systemClock,
   version: config.version,
   startedAt,
+  healthProbes: [
+    privacyServiceProbe(config.privacy.url),
+    ...(database === undefined ? [] : [databaseProbe(database)]),
+    ...(redisState === undefined ? [] : [circuitStoreProbe(redisState)]),
+  ],
   logger,
   routeInference: route,
   streamInference: stream,
@@ -268,10 +278,26 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
   );
 });
 
-/** Closes the server, flushes the audit writer, closes the connections, then exits. */
+/**
+ * Stops accepting connections and waits for the open requests, at most `SHUTDOWN_GRACE_MS`
+ * (under compose's 10 s before SIGKILL), so their audit entries are queued before the last
+ * flush (code audit 2026-11-03, M10). Then flushes the audit writer, closes the
+ * connections and exits. A request still running after the grace loses its entry, which
+ * the writer reports as `audit.dropped`.
+ */
+const SHUTDOWN_GRACE_MS = 8_000;
 function shutdown(): void {
-  server.close();
+  const drained = new Promise<void>((resolve) => server.close(() => resolve()));
+  if ("closeIdleConnections" in server) server.closeIdleConnections();
   void (async () => {
+    let grace: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      drained,
+      new Promise<void>((resolve) => {
+        grace = setTimeout(resolve, SHUTDOWN_GRACE_MS);
+      }),
+    ]);
+    clearTimeout(grace);
     await auditWriter?.close();
     await database?.close();
     await redisState?.close();

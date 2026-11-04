@@ -60,8 +60,11 @@ export function createHttpPiiDetector(options: HttpPiiDetectorOptions): PiiDetec
       } catch {
         return failed(signal.aborted ? "timeout" : "unavailable");
       }
-      if (response.status >= 500) return failed("unavailable");
-      if (!response.ok) return failed("contract");
+      if (!response.ok) {
+        // An unread body holds its pooled connection; release it (code audit 2026-11-03, L10).
+        void response.body?.cancel().catch(() => undefined);
+        return failed(response.status >= 500 ? "unavailable" : "contract");
+      }
 
       let body: unknown;
       try {
