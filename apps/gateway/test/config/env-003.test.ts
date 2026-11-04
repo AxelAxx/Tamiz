@@ -34,3 +34,19 @@ describe("loadConfig, feature 003 settings", () => {
     expect(JSON.stringify(result.error)).not.toContain("SECRET");
   });
 });
+
+describe("loadConfig, OpenTelemetry endpoints (code audit 2026-11-03, L8)", () => {
+  it("accepts an http(s) collector URL and refuses a malformed one at boot", () => {
+    expect(loadConfig({ ...BASE, OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4318" }).ok).toBe(
+      true,
+    );
+    const bad = loadConfig({ ...BASE, OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "jaeger-SECRET:4318" });
+
+    expect(bad.ok).toBe(false);
+    if (bad.ok) return;
+    expect(bad.error.issues.map((issue) => issue.path)).toEqual([
+      "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+    ]);
+    expect(JSON.stringify(bad.error)).not.toContain("SECRET");
+  });
+});
