@@ -96,5 +96,6 @@ def test_validation_errors_apply_to_anonymize_too() -> None:
     response = client().post("/anonymize", json={"text": "hola", "keep": "Lucía"})
 
     assert response.status_code == 400
-    assert response.json()["error"]["field"] == "keep"
+    # An unknown key names its parent, never the key itself (code audit L19).
+    assert response.json()["error"]["field"] == "body"
     assert "Lucía" not in response.text

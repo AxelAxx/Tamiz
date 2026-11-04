@@ -7,7 +7,14 @@
 import { z } from "zod";
 import { AuditEntrySchema, AuditOutcomeSchema } from "./audit.js";
 import { PrivacyEntityKindSchema } from "./privacy-service.js";
-import { PrivacyActionSchema, ProviderNameSchema, ResidencySchema } from "./routing-policy.js";
+import {
+  InspectedSensitivitySchema,
+  PrivacyActionSchema,
+  ProviderNameSchema,
+  ResidencySchema,
+  RuleIdSchema,
+  TargetIdSchema,
+} from "./routing-policy.js";
 
 export const AUDIT_PAGE_DEFAULT = 50;
 export const AUDIT_PAGE_MAX = 200;
@@ -15,9 +22,9 @@ export const AUDIT_PAGE_MAX = 200;
 export const AuditQuerySchema = z.strictObject({
   from: z.iso.datetime().optional(),
   to: z.iso.datetime().optional(),
-  route: z.string().min(1).optional(),
-  rule: z.string().min(1).optional(),
-  sensitivity: z.enum(["unknown", "none", "low", "high", "critical"]).optional(),
+  route: TargetIdSchema.optional(),
+  rule: RuleIdSchema.optional(),
+  sensitivity: InspectedSensitivitySchema.optional(),
   action: PrivacyActionSchema.optional(),
   entity: PrivacyEntityKindSchema.optional(),
   outcome: AuditOutcomeSchema.optional(),
@@ -35,19 +42,24 @@ export type AuditQueryDto = z.infer<typeof AuditQuerySchema>;
 export type AuditPageDto = z.infer<typeof AuditPageSchema>;
 
 /** `GET /v1/admin/cost` (spec 006 FR-012). Days are UTC. */
-export const CostQuerySchema = z.strictObject({
-  from: z.iso.datetime(),
-  to: z.iso.datetime(),
-  groupBy: z.enum(["day", "route", "model"]).default("day"),
-});
+export const CostQuerySchema = z
+  .strictObject({
+    from: z.iso.datetime(),
+    to: z.iso.datetime(),
+    groupBy: z.enum(["day", "route", "model"]).default("day"),
+  })
+  .refine((query) => Date.parse(query.from) < Date.parse(query.to), {
+    path: ["to"],
+    message: "expected a time after from",
+  });
 
 export const CostRowSchema = z.strictObject({
   key: z.string(),
   requests: z.int().min(0),
   inputTokens: z.int().min(0),
   outputTokens: z.int().min(0),
-  costUsd: z.number().min(0),
-  baselineCostUsd: z.number().min(0),
+  costUsd: z.number().finite().min(0),
+  baselineCostUsd: z.number().finite().min(0),
 });
 
 export const CostReportSchema = z.strictObject({

@@ -99,14 +99,23 @@ export function isJsonObjectText(text: string): boolean {
   }
 }
 
+/**
+ * Bounds the schema states itself (code audit 2026-11-03, L18), so every reader of the
+ * contract (the gateway, the dashboard, the MCP server) gets them, not only the gateway's
+ * 1 MiB body cap.
+ */
+export const MODEL_NAME_MAX = 200;
+export const CHAT_MESSAGES_MAX = 1_024;
+export const MAX_TOKENS_MAX = 1_000_000;
+
 export const ChatCompletionRequestSchema = z
   .strictObject({
-    model: z.string().min(1),
-    messages: z.array(ChatMessageSchema).min(1),
+    model: z.string().min(1).max(MODEL_NAME_MAX),
+    messages: z.array(ChatMessageSchema).min(1).max(CHAT_MESSAGES_MAX),
     tools: z.array(ToolDefinitionSchema).min(1).max(MAX_TOOLS).optional(),
     tool_choice: ToolChoiceSchema.optional(),
     temperature: z.number().min(0).max(2).optional(),
-    max_tokens: z.number().int().positive().optional(),
+    max_tokens: z.number().int().positive().max(MAX_TOKENS_MAX).optional(),
     /** `true` answers with server-sent chat completion chunks (spec 003 FR-021). */
     stream: z.boolean().optional(),
     /** Accepted for compatibility; Tamiz always sends the usage chunk (spec 003 R-10). */

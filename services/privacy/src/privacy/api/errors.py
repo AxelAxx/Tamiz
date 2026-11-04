@@ -43,6 +43,9 @@ async def _validation(request: Request, exc: Exception) -> JSONResponse:
     location = [str(part) for part in first.get("loc", ())]
     if location[:1] == ["body"]:
         location = location[1:]
+    if first.get("type") == "extra_forbidden":
+        # The last part is the caller's own key, which may be the secret: name its parent.
+        location = location[:-1]
     is_json_error = first.get("type") == "json_invalid"
     field = "body" if is_json_error or not location else ".".join(location)
     message = "Body is not valid JSON" if is_json_error else str(first.get("msg", "Invalid"))

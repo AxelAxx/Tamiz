@@ -98,16 +98,17 @@ describe("US3 query_audit_log and get_cost_report", () => {
     expect(session.fake.requests[0]?.query).toEqual({ ...RANGE, groupBy: "day" });
   });
 
-  it("US2-7 passes the gateway's 400 message for a range that is not ordered", async () => {
-    session = await connect();
+  it("US2-7 refuses a range that is not ordered before calling the gateway (code audit L18)", async () => {
+    const fake = createFakeGateway();
+    session = await connect({ fake });
     const result = await session.client.callTool({
       name: "get_cost_report",
       arguments: { from: RANGE.to, to: RANGE.from },
     });
-    expect(McpToolErrorSchema.parse(textJson(result)).error).toEqual({
-      code: "gateway_rejected",
-      message: "from must be before to",
-    });
+    // The contract itself checks the order now, so the input is refused here.
+    expect(result.isError).toBe(true);
+    expect(JSON.stringify(result.content)).toContain("expected a time after from");
+    expect(fake.requests).toHaveLength(0);
   });
 
   it.each([
