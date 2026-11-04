@@ -5,21 +5,16 @@
  * never rewrites history.
  */
 import { computeCost, type Usage } from "./cost.js";
-import type { ModelTarget } from "./model-target.js";
+import { type ModelTarget, totalPricePerMillion } from "./model-target.js";
 import type { Usd } from "./units.js";
 
 export function baselineTarget(targets: ReadonlyArray<ModelTarget>): ModelTarget | undefined {
   let best: ModelTarget | undefined;
   for (const target of targets) {
-    const price = target.pricing.inputUsdPerMillion + target.pricing.outputUsdPerMillion;
-    const bestPrice =
-      best === undefined ? -1 : best.pricing.inputUsdPerMillion + best.pricing.outputUsdPerMillion;
-    if (price > bestPrice) best = target;
+    const bestPrice = best === undefined ? -1 : totalPricePerMillion(best);
+    if (totalPricePerMillion(target) > bestPrice) best = target;
   }
-  return best !== undefined &&
-    best.pricing.inputUsdPerMillion + best.pricing.outputUsdPerMillion > 0
-    ? best
-    : undefined;
+  return best !== undefined && totalPricePerMillion(best) > 0 ? best : undefined;
 }
 
 export function baselineCost(

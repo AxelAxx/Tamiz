@@ -9,7 +9,6 @@
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/server";
 import type { McpToolName } from "@tamiz/contracts";
-import type { Hono } from "hono";
 import { createGatewayClient } from "../gateway-client.js";
 import type { Logger } from "../logger.js";
 import { createMcpServer } from "../server.js";
@@ -30,17 +29,17 @@ export interface HttpAppOptions {
 
 const BEARER = /^Bearer ([^\s]+)$/;
 
-export type McpHttpApp = Hono<{ Variables: { parsedBody?: unknown } }>;
+export type McpHttpApp = ReturnType<typeof createMcpHonoApp>;
 
 export function createHttpApp(options: HttpAppOptions): McpHttpApp {
-  // The helper's JSON middleware sets `parsedBody`; its return type does not declare it.
-  const app = (options.allowedHosts === undefined
-    ? createMcpHonoApp({ host: options.host })
-    : createMcpHonoApp({
-        host: options.host,
-        allowedHosts: [...options.allowedHosts],
-        allowedOrigins: [...options.allowedHosts],
-      })) as unknown as McpHttpApp;
+  const app =
+    options.allowedHosts === undefined
+      ? createMcpHonoApp({ host: options.host })
+      : createMcpHonoApp({
+          host: options.host,
+          allowedHosts: [...options.allowedHosts],
+          allowedOrigins: [...options.allowedHosts],
+        });
   const tools = selectTools(options.tools);
 
   app.use(MCP_PATH, async (c, next) => {
@@ -73,7 +72,9 @@ export function createHttpApp(options: HttpAppOptions): McpHttpApp {
       sessionIdGenerator: undefined,
     });
     await server.connect(transport);
-    return transport.handleRequest(c.req.raw, { parsedBody: c.get("parsedBody") });
+    // The helper's JSON middleware sets `parsedBody`; its app type does not declare it.
+    const parsedBody: unknown = Reflect.get(c.var, "parsedBody");
+    return transport.handleRequest(c.req.raw, { parsedBody });
   });
 
   app.on(["GET", "DELETE"], MCP_PATH, (c) =>

@@ -3,18 +3,27 @@
  * adapters into the application (constitution I, spec FR-015, FR-020; spec 002 FR-018,
  * FR-020 … FR-022, FR-029).
  *
- * Boot order: validate the environment (including the API key hashes) → load and
- * validate the policy file → check that every provider the policy uses is configured
- * (each step exits 1 listing every issue, before any port is bound) → logger → database
- * migrations → policy repository (PostgreSQL boots from the newest stored version, spec
- * 008 R-10; the providers are checked again for it) → provider registry, circuit state and routing-events sink → `routeInference`
- * wrapped by tracing and audit → app → `serve()` → one startup line with address, version and policy.
+ * Boot order:
+ * 1. validate the environment (including the API key hashes), load and validate the policy
+ *    file, check that every provider the policy uses is configured; each step exits 1
+ *    listing every issue, before any port is bound;
+ * 2. logger, telemetry, circuit state, privacy inspection;
+ * 3. database migrations and the policy repository (PostgreSQL boots from the newest stored
+ *    version, spec 008 R-10; the providers are checked again for it);
+ * 4. the audit log, then the use cases wrapped by tracing and audit;
+ * 5. the app, `serve()`, one startup line with address, version and policy.
+ * Each step that chooses between adapters is a function below, so the top level reads as
+ * the wiring (code audit 2026-11-03, L2).
  */
 import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { withAudit, withAuditStream } from "./application/audit/with-audit.js";
 import { fileVersion } from "./application/policy/policy-document.js";
+import type { AuditLogPort } from "./application/ports/audit-log.port.js";
+import type { AuditReaderPort } from "./application/ports/audit-reader.port.js";
+import type { LoggerPort } from "./application/ports/logger.port.js";
 import type { PolicyRepositoryPort } from "./application/ports/policy-repository.port.js";
+import type { RoutingEventsPort } from "./application/ports/routing-events.port.js";
 import { withTracing, withTracingStream } from "./application/tracing/with-tracing.js";
 import { costReport } from "./application/use-cases/cost-report.js";
 import { getActivePolicy } from "./application/use-cases/get-active-policy.js";
@@ -29,13 +38,10 @@ import {
 import { simulatePolicy } from "./application/use-cases/simulate-policy.js";
 import { streamInference } from "./application/use-cases/stream-inference.js";
 import type { ConfigurationError } from "./domain/errors.js";
-import type { Milliseconds } from "./domain/model/units.js";
+import { millisecondsUnchecked } from "./domain/model/units.js";
 import type { Result } from "./domain/result.js";
 import { createAuthenticator } from "./infrastructure/auth/api-keys.js";
-import {
-  createInMemoryAuditLog,
-  type InMemoryAuditLog,
-} from "./infrastructure/cache/in-memory-audit-log.js";
+import { createInMemoryAuditLog } from "./infrastructure/cache/in-memory-audit-log.js";
 import { createInMemoryCircuitState } from "./infrastructure/cache/in-memory-circuit-state.js";
 import { createInMemoryDetectionCache } from "./infrastructure/cache/in-memory-detection-cache.js";
 import { createRedisCircuitState } from "./infrastructure/cache/redis-circuit-state.js";
@@ -55,7 +61,11 @@ import {
   createPostgresAuditReader,
   createPostgresAuditStore,
 } from "./infrastructure/persistence/audit-log-repository.js";
-import { connectDatabase, runMigrations } from "./infrastructure/persistence/db.js";
+import {
+  connectDatabase,
+  type DatabaseHandle,
+  runMigrations,
+} from "./infrastructure/persistence/db.js";
 import { loadPolicyDocument } from "./infrastructure/policy/file-policy-loader.js";
 import { createInMemoryPolicyRepository } from "./infrastructure/policy/in-memory-policy-repository.js";
 import { toDomainPolicyInput } from "./infrastructure/policy/policy-mapper.js";
@@ -81,7 +91,8 @@ function orExit<T>(result: Result<T, ConfigurationError>): T {
 
 /** Exits 1 naming only the driver's error code: the URL and messages carry credentials. */
 function databaseFailure(step: string, error: unknown): never {
-  const code = (error as { code?: unknown } | null)?.code;
+  const code =
+    typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
   process.stderr.write(`${step} failed (${typeof code === "string" ? code : "unknown"})\n`);
   process.exit(1);
 }
@@ -121,44 +132,11 @@ const inspect = inspectSensitivity({
   clock: systemClock,
   events,
   hash: sha256,
-  timeoutMs: config.privacy.timeoutMs as Milliseconds,
+  timeoutMs: millisecondsUnchecked(config.privacy.timeoutMs),
 });
 
-// Spec 006 FR-005: PostgreSQL when DATABASE_URL is set (migrations before listening), else a
-// bounded in-memory log. Never log the URL: errors are reported by their code.
-const database = config.databaseUrl === undefined ? undefined : connectDatabase(config.databaseUrl);
-if (database !== undefined) {
-  try {
-    await runMigrations(database);
-  } catch (error) {
-    databaseFailure("Database migration", error);
-  }
-}
-// Spec 008 R-10: the policy is replaceable through the admin API; with a database its
-// versions are kept and the newest one is used at boot unless the file's version is higher.
-const bootVersion = fileVersion(policyFile, sha256);
-let policies: PolicyRepositoryPort;
-if (database === undefined) {
-  policies = createInMemoryPolicyRepository(bootVersion);
-} else {
-  try {
-    policies = orExit(
-      await createPostgresPolicyRepository({
-        db: database.db,
-        clock: systemClock,
-        file: bootVersion,
-        // T-OPS-05: an edited file at a stored version number is not used; say so.
-        onFileIgnored: (notice) =>
-          logger.warn(
-            notice,
-            "routing policy file differs from the stored version with the same number and is ignored; raise its version to use it",
-          ),
-      }),
-    );
-  } catch (error) {
-    databaseFailure("Loading the stored policy", error);
-  }
-}
+const database = await connectPersistence(config.databaseUrl);
+const policies = await bootPolicies(database, fileVersion(policyFile, sha256), logger);
 const active = await policies.getActiveVersion();
 orExit(checkProviderSettings(active.policy, config));
 logger.info(
@@ -191,21 +169,7 @@ if (config.audit.hashKey === undefined) {
     "audit hash key is ephemeral: set TAMIZ_AUDIT_HASH_KEY to correlate across restarts",
   );
 }
-const auditWriter =
-  database === undefined
-    ? undefined
-    : createAsyncAuditWriter({
-        store: createPostgresAuditStore(database.db),
-        clock: systemClock,
-        events,
-        logger,
-      });
-const auditLog = auditWriter ?? createInMemoryAuditLog(config.audit.memoryEntries);
-if (auditWriter === undefined) {
-  logger.info({ entries: config.audit.memoryEntries }, "audit log in memory (bounded)");
-} else {
-  logger.info({}, "audit log in PostgreSQL");
-}
+const { auditLog, auditReader, auditWriter } = buildAudit(database, events, logger);
 const auditDeps = {
   audit: auditLog,
   clock: systemClock,
@@ -217,8 +181,6 @@ const auditDeps = {
 };
 const route = withAudit(withTracing(routeInference(routing), tracer), auditDeps);
 const stream = withAuditStream(withTracingStream(streamInference(routing), tracer), auditDeps);
-const auditReader =
-  database === undefined ? (auditLog as InMemoryAuditLog) : createPostgresAuditReader(database.db);
 const replace = replacePolicy({
   policies,
   checkProviders: (candidate) => {
@@ -278,31 +240,116 @@ const server = serve({ fetch: app.fetch, port: config.port, hostname: config.hos
   );
 });
 
+registerShutdown(server, [
+  () => auditWriter?.close(),
+  () => database?.close(),
+  () => redisState?.close(),
+  () => telemetry.shutdown(),
+]);
+
+/**
+ * Spec 006 FR-005: PostgreSQL when DATABASE_URL is set, migrated before listening; none
+ * otherwise. Never logs the URL: errors are reported by their code.
+ */
+async function connectPersistence(url: string | undefined): Promise<DatabaseHandle | undefined> {
+  if (url === undefined) return undefined;
+  const handle = connectDatabase(url);
+  try {
+    await runMigrations(handle);
+  } catch (error) {
+    databaseFailure("Database migration", error);
+  }
+  return handle;
+}
+
+/**
+ * Spec 008 R-10: the policy is replaceable through the admin API. With a database its
+ * versions are kept and the newest one is used at boot unless the file's version is higher.
+ */
+async function bootPolicies(
+  database: DatabaseHandle | undefined,
+  file: ReturnType<typeof fileVersion>,
+  log: LoggerPort,
+): Promise<PolicyRepositoryPort> {
+  if (database === undefined) return createInMemoryPolicyRepository(file);
+  try {
+    return orExit(
+      await createPostgresPolicyRepository({
+        db: database.db,
+        clock: systemClock,
+        file,
+        // T-OPS-05: an edited file at a stored version number is not used; say so.
+        onFileIgnored: (notice) =>
+          log.warn(
+            { ...notice },
+            "routing policy file differs from the stored version with the same number and is ignored; raise its version to use it",
+          ),
+      }),
+    );
+  } catch (error) {
+    databaseFailure("Loading the stored policy", error);
+  }
+}
+
+/**
+ * Where audit entries go and where they are read back, chosen together so the two always
+ * agree: the PostgreSQL writer and reader, or one bounded in-memory log for both.
+ */
+function buildAudit(
+  database: DatabaseHandle | undefined,
+  routingEvents: RoutingEventsPort,
+  log: LoggerPort,
+): {
+  readonly auditLog: AuditLogPort;
+  readonly auditReader: AuditReaderPort;
+  readonly auditWriter: ReturnType<typeof createAsyncAuditWriter> | undefined;
+} {
+  if (database === undefined) {
+    const memory = createInMemoryAuditLog(config.audit.memoryEntries);
+    log.info({ entries: config.audit.memoryEntries }, "audit log in memory (bounded)");
+    return { auditLog: memory, auditReader: memory, auditWriter: undefined };
+  }
+  const writer = createAsyncAuditWriter({
+    store: createPostgresAuditStore(database.db),
+    clock: systemClock,
+    events: routingEvents,
+    logger: log,
+  });
+  log.info({}, "audit log in PostgreSQL");
+  return {
+    auditLog: writer,
+    auditReader: createPostgresAuditReader(database.db),
+    auditWriter: writer,
+  };
+}
+
 /**
  * Stops accepting connections and waits for the open requests, at most `SHUTDOWN_GRACE_MS`
  * (under compose's 10 s before SIGKILL), so their audit entries are queued before the last
- * flush (code audit 2026-11-03, M10). Then flushes the audit writer, closes the
- * connections and exits. A request still running after the grace loses its entry, which
- * the writer reports as `audit.dropped`.
+ * flush (code audit 2026-11-03, M10). Then runs `closers` in order and exits. A request
+ * still running after the grace loses its entry, which the writer reports as
+ * `audit.dropped`.
  */
 const SHUTDOWN_GRACE_MS = 8_000;
-function shutdown(): void {
-  const drained = new Promise<void>((resolve) => server.close(() => resolve()));
-  if ("closeIdleConnections" in server) server.closeIdleConnections();
-  void (async () => {
-    let grace: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
-      drained,
-      new Promise<void>((resolve) => {
-        grace = setTimeout(resolve, SHUTDOWN_GRACE_MS);
-      }),
-    ]);
-    clearTimeout(grace);
-    await auditWriter?.close();
-    await database?.close();
-    await redisState?.close();
-    await telemetry.shutdown();
-  })().finally(() => process.exit(0));
+function registerShutdown(
+  server: ReturnType<typeof serve>,
+  closers: ReadonlyArray<() => Promise<void> | undefined>,
+): void {
+  const shutdown = () => {
+    const drained = new Promise<void>((resolve) => server.close(() => resolve()));
+    if ("closeIdleConnections" in server) server.closeIdleConnections();
+    void (async () => {
+      let grace: ReturnType<typeof setTimeout> | undefined;
+      await Promise.race([
+        drained,
+        new Promise<void>((resolve) => {
+          grace = setTimeout(resolve, SHUTDOWN_GRACE_MS);
+        }),
+      ]);
+      clearTimeout(grace);
+      for (const close of closers) await close();
+    })().finally(() => process.exit(0));
+  };
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
 }
-process.once("SIGINT", shutdown);
-process.once("SIGTERM", shutdown);

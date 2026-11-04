@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { CARD } from "@/features/shared/card";
 import { formatNumber, formatPercent, formatUsd, MISSING } from "@/features/shared/format";
 import { RegionEmpty, RegionError, RegionLoading } from "@/features/shared/region-states";
 import { api } from "@/lib/api-client";
@@ -41,7 +42,6 @@ import {
   rangeDays,
 } from "./cost-view";
 
-const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
 type GroupBy = CostReportDto["groupBy"];
 const KEY_LABEL: Readonly<Record<GroupBy, string>> = {
   day: "Day (UTC)",

@@ -2,6 +2,7 @@ import { GenericContainer, type StartedTestContainer, Wait } from "testcontainer
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { CostGroup, TargetWindow } from "../../src/application/audit/aggregates.js";
 import type { AuditEntry } from "../../src/domain/model/audit-entry.js";
+import { usdUnchecked } from "../../src/domain/model/units.js";
 import { createInMemoryAuditLog } from "../../src/infrastructure/cache/in-memory-audit-log.js";
 import {
   createPostgresAuditReader,
@@ -27,12 +28,12 @@ function entries(): AuditEntry[] {
     const entry = sampleEntry(n, { latencyMs: 100 + (n % 900) });
     if (n % 11 === 0) {
       const { target: _t, usage: _u, baselineCostUsd: _b, ...blocked } = entry;
-      out.push({ ...blocked, outcome: "blocked", costUsd: 0 });
+      out.push({ ...blocked, outcome: "blocked", costUsd: usdUnchecked(0) });
     } else if (n % 13 === 0) {
       out.push({
         ...entry,
         outcome: "failed",
-        costUsd: 0,
+        costUsd: usdUnchecked(0),
         abandoned: [{ targetId: "ollama-llama", reason: "timeout" }],
       });
     } else if (n % 19 === 0) {

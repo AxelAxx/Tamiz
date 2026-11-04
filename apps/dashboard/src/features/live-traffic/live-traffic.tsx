@@ -25,6 +25,7 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BADGE, TONE, type Tone } from "@/features/shared/badges";
+import { CARD } from "@/features/shared/card";
 import { EntryDetailSheet } from "@/features/shared/entry-detail";
 import { formatUtcTime } from "@/features/shared/format";
 import { CRITICAL_KINDS, sortedEntities } from "@/features/shared/privacy";
@@ -32,8 +33,6 @@ import { RegionEmpty, RegionError, RegionLoading } from "@/features/shared/regio
 import { TrafficList } from "@/features/shared/traffic-list";
 import { cn } from "@/lib/utils";
 import { type LiveStatus, useLiveTraffic } from "./use-live-traffic";
-
-const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
 
 const clock = (ms: number | undefined) =>
   ms === undefined ? "" : formatUtcTime(new Date(ms).toISOString());

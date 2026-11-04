@@ -8,7 +8,7 @@
  * request id. Nothing here can show content: an entry has none.
  */
 import type { AuditEntryDto } from "@tamiz/contracts";
-import { useEffect, useState } from "react";
+import { useNow } from "@/features/shared/use-now";
 import { cn } from "@/lib/utils";
 import { OutcomeBadge, PrivacyActionBadge, ResidencyBadge } from "./badges";
 import { BLOCK_REASONS } from "./entry-detail";
@@ -25,15 +25,6 @@ import { EntityChips, FallbackMarker, SensitivityIndicator, TargetLabel } from "
 export type TrafficVariant = "live" | "audit";
 
 /** Re-renders every second so "12 s ago" stays true (live only). */
-function useNow(enabled: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!enabled) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [enabled]);
-  return now;
-}
 
 /** Routed rows show where the request went; blocked and failed rows say so instead. */
 function routedTarget(entry: AuditEntryDto) {
@@ -137,7 +128,7 @@ export function TrafficList({
   readonly variant?: TrafficVariant;
 }) {
   const audit = variant === "audit";
-  const now = useNow(!audit);
+  const now = useNow(1_000, !audit);
   const isNew = (entry: AuditEntryDto) => highlighted?.has(entry.id) === true;
   return (
     <>

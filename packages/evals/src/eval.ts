@@ -48,7 +48,13 @@ export interface EvalContext {
 export interface Eval<C extends { id: string }, O, R> {
   readonly id: EvalId;
   /** Dataset file under `datasets/` and the name its header must carry. */
-  readonly dataset: { readonly file: string; readonly name: string; readonly schema: z.ZodType<C> };
+  readonly dataset: {
+    readonly file: string;
+    readonly name: string;
+    readonly schema: z.ZodType<C>;
+    /** Rules the schema cannot express, run on each parsed case. */
+    readonly check?: (c: C) => string | undefined;
+  };
   /** Config keys this eval needs; when one is missing the eval is skipped. */
   readonly requires: ReadonlyArray<keyof EvalConfig>;
   /** Prepares the per-run clients; called once, after the dataset loaded. */

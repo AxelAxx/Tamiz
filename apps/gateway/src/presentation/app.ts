@@ -136,6 +136,11 @@ export function createApp(deps: AppDeps): GatewayApp {
     await next();
     const clientId: string | undefined = c.get("clientId");
     const route = c.res.headers.get(ROUTE_HEADER);
+    const elapsedMs = Math.max(0, deps.clock.now().getTime() - started);
+    // An event stream returns here when its headers go out: the time is to the headers,
+    // and the status cannot tell a later failure. Its audit entry has the full latency
+    // and outcome (code audit 2026-11-03, L7).
+    const streamed = c.res.headers.get("content-type")?.startsWith("text/event-stream") === true;
     deps.logger.info(
       {
         requestId: c.get("requestId"),
@@ -145,7 +150,7 @@ export function createApp(deps: AppDeps): GatewayApp {
           headers: presentHeaders(c.req.header(), LOGGED_HEADERS),
         },
         status: c.res.status,
-        durationMs: Math.max(0, deps.clock.now().getTime() - started),
+        ...(streamed ? { streamed: true, timeToHeadersMs: elapsedMs } : { durationMs: elapsedMs }),
         ...(clientId !== undefined && { clientId }),
         ...(route !== null && { route }),
       },
