@@ -46,18 +46,18 @@ describe("passphrase hash", () => {
     expect(hashPassphrase("correct horse battery staple")).not.toBe(stored);
   });
 
-  it("US1-2: verifies the right passphrase and refuses a wrong one, in constant time", () => {
+  it("US1-2: verifies the right passphrase and refuses a wrong one, in constant time", async () => {
     const stored = hashPassphrase("correct horse battery staple");
     vi.mocked(crypto.timingSafeEqual).mockClear();
-    expect(verifyPassphrase("correct horse battery staple", stored)).toBe(true);
-    expect(verifyPassphrase("Correct horse battery staple", stored)).toBe(false);
-    expect(verifyPassphrase("", stored)).toBe(false);
+    expect(await verifyPassphrase("correct horse battery staple", stored)).toBe(true);
+    expect(await verifyPassphrase("Correct horse battery staple", stored)).toBe(false);
+    expect(await verifyPassphrase("", stored)).toBe(false);
     expect(crypto.timingSafeEqual).toHaveBeenCalledTimes(3);
   });
 
-  it("US1-2: a malformed stored hash never verifies", () => {
-    expect(verifyPassphrase("x", "scrypt$16384$8$1$c2FsdA==")).toBe(false);
-    expect(verifyPassphrase("x", "plain")).toBe(false);
+  it("US1-2: a malformed stored hash never verifies", async () => {
+    expect(await verifyPassphrase("x", "scrypt$16384$8$1$c2FsdA==")).toBe(false);
+    expect(await verifyPassphrase("x", "plain")).toBe(false);
   });
 });
 

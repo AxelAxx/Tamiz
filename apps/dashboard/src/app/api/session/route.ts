@@ -27,10 +27,12 @@ export const POST = publicWrite(async (request) => {
   if (!check.allowed) {
     return rateLimited(check.retryAfterSeconds, "Too many failed attempts; try again later");
   }
+  // Counted before the first `await`: concurrent attempts each see the ones before them,
+  // so a burst cannot pass the check together. A success clears it (second audit, D1).
+  signIn.recordFailure(address);
   const body = await readJson(request, SignInRequestSchema);
   if (!body.ok) return body.response;
-  if (!verifyPassphrase(body.value.passphrase, env.passphraseHash)) {
-    signIn.recordFailure(address);
+  if (!(await verifyPassphrase(body.value.passphrase, env.passphraseHash))) {
     return bffError(401, "unauthenticated", "Wrong passphrase");
   }
   signIn.recordSuccess(address);

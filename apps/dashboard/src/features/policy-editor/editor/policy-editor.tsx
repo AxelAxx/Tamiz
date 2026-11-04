@@ -36,6 +36,7 @@ import { YamlEditor } from "./yaml-editor";
 
 const CHECK_DELAY_MS = 300;
 
+/** Asks before leaving the page, or following a link inside it, with unsaved changes. */
 function useUnsavedGuard(dirty: boolean) {
   useEffect(() => {
     if (!dirty) return;
@@ -138,14 +139,19 @@ function Editor({
   }, []);
 
   const save = useMutation({
-    mutationFn: api.replacePolicy,
+    // The submitted text travels with the request: issues are mapped against what the
+    // gateway validated, not a newer draft (second code audit, 2026-11-04, D5).
+    mutationFn: (submitted: {
+      readonly request: Parameters<typeof api.replacePolicy>[0];
+      readonly text: string;
+    }) => api.replacePolicy(submitted.request),
     onSuccess: (saved) => {
       replaceWith(saved);
       queryClient.setQueryData(["policy"], saved);
       void queryClient.invalidateQueries({ queryKey: ["policy"] });
       toast.success(`Saved as version ${saved.policy.version}`);
     },
-    onError: (error) => {
+    onError: (error, submitted) => {
       const gatewayError =
         error instanceof BffRequestError ? error.body?.error.gatewayError : undefined;
       if (gatewayError?.type === "conflict") {
@@ -154,12 +160,12 @@ function Editor({
       }
       if (gatewayError?.issues !== undefined && gatewayError.issues.length > 0) {
         setRefused({
-          text,
+          text: submitted.text,
           issues: gatewayError.issues.map((issue) => {
             // The gateway's paths start at the request body (`policy.rules.0…`); the
             // editor holds the policy itself.
             const path = issue.path.replace(/^policy(\.|$)/, "");
-            const line = lineOfPath(text, path);
+            const line = lineOfPath(submitted.text, path);
             return {
               path,
               message: issue.message,
@@ -178,7 +184,7 @@ function Editor({
   const onSave = () => {
     if (!canSave || !check.ok) return;
     setSaveError(undefined);
-    save.mutate({ baseVersion: base.policy.version, policy: check.policy });
+    save.mutate({ request: { baseVersion: base.policy.version, policy: check.policy }, text });
   };
 
   const issues: Issues =
@@ -232,7 +238,9 @@ function Editor({
               describedBy="policy-issues-summary"
               onChange={setText}
               onSave={onSave}
-              readOnly={readOnly}
+              // Nothing typed while a save is in flight can be lost when the saved version
+              // replaces the draft.
+              readOnly={readOnly || save.isPending}
             />
           </div>
           {saveError === undefined ? null : (

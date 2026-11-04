@@ -72,6 +72,20 @@ test("US1-2 the sixth failure in a minute is refused with 429 and Retry-After", 
   expect((await refused.json()).error.type).toBe("rate_limited");
 });
 
+test("a burst of concurrent wrong passphrases gets at most five tries (second code audit, D1)", async ({
+  request,
+}) => {
+  const headers = { ...SAME_ORIGIN, "x-forwarded-for": "203.0.113.43" };
+  const answers = await Promise.all(
+    Array.from({ length: 12 }, (_, i) =>
+      request.post("/api/session", { headers, data: { passphrase: `wrong ${i}` } }),
+    ),
+  );
+  const statuses = answers.map((answer) => answer.status());
+  expect(statuses.filter((status) => status === 401).length).toBeLessThanOrEqual(5);
+  expect(statuses.filter((status) => status === 429).length).toBeGreaterThanOrEqual(7);
+});
+
 test("US1-4 sign-out ends the session and the old cookie stops working", async ({
   page,
   browser,

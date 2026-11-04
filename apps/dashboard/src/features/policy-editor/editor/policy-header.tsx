@@ -1,6 +1,6 @@
 "use client";
 
-/** The editor's header: the version, its source, and the save controls. */
+/** The editor's header: the version on screen, where it came from, who saved it and when. */
 import type { ActivePolicyDto } from "@tamiz/contracts";
 import { CircleDot, Database, FlaskConical, TriangleAlert } from "lucide-react";
 import Link from "next/link";

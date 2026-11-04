@@ -33,8 +33,6 @@ interface StatusLook {
   readonly spin?: boolean;
 }
 
-/** Re-renders every few seconds so "updated N s ago" stays true. */
-
 function credentialsRejected(error: unknown): boolean {
   return error instanceof BffRequestError && error.body?.error.type === "gateway_credentials";
 }

@@ -117,3 +117,12 @@ describe("handler wrappers", () => {
     expect(notJson.ok).toBe(false);
   });
 });
+
+describe("readCookie (second code audit, 2026-11-04, D9)", () => {
+  it("a malformed escape reads as no cookie, never a thrown URIError", () => {
+    const request = new Request(`${ORIGIN}/api/audit`, {
+      headers: { cookie: "tamiz_session=%E0" },
+    });
+    expect(readCookie(request, "tamiz_session")).toBeUndefined();
+  });
+});
