@@ -1,6 +1,6 @@
 import type { CostReportDto } from "@tamiz/contracts";
 import { describe, expect, it } from "vitest";
-import { costView, customRange, presetRange } from "@/features/cost-analytics/cost-view";
+import { costView, customRange, presetRange, rangeDays } from "@/features/cost-analytics/cost-view";
 
 // Spec 008 US7-1, US7-4, research R-08 (tasks.md T049). Synthetic figures from the brief.
 
@@ -82,5 +82,15 @@ describe("ranges in UTC", () => {
       error: "The end date must be after the start date.",
     });
     expect(customRange("", "2026-10-01")).toEqual({ error: "Enter a start and an end date." });
+  });
+});
+
+describe("rangeDays (code audit 2026-11-03, L13)", () => {
+  it("a custom range ends on its last day, a preset today", () => {
+    const custom = customRange("2026-10-01", "2026-10-07");
+    if ("error" in custom) throw new Error("a valid range");
+    expect(rangeDays(custom)).toEqual({ first: "2026-10-01", last: "2026-10-07" });
+    const preset = presetRange("7d", new Date("2026-11-03T15:00:00Z"));
+    expect(rangeDays(preset)).toEqual({ first: "2026-10-28", last: "2026-11-03" });
   });
 });

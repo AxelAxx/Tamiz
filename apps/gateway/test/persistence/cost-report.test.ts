@@ -35,6 +35,9 @@ function entries(): AuditEntry[] {
         costUsd: 0,
         abandoned: [{ targetId: "ollama-llama", reason: "timeout" }],
       });
+    } else if (n % 19 === 0) {
+      // Skipped for an open circuit: not an attempt in either reader (audit M5).
+      out.push({ ...entry, abandoned: [{ targetId: "openai-mini", reason: "circuit_open" }] });
     } else if (n % 17 === 0) {
       out.push({ ...entry, outcome: "cancelled", streamed: true });
     } else {

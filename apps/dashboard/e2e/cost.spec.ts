@@ -143,7 +143,8 @@ test("US7-5 a range with no requests says so", async ({ page }) => {
   await dialog.getByLabel("Start").fill("2026-01-01");
   await dialog.getByLabel("End").fill("2026-01-07");
   await dialog.getByRole("button", { name: "Apply range" }).click();
-  await expect(page.getByText("No requests between 2026-01-01 and 2026-01-08 UTC.")).toBeVisible();
+  // The last day chosen, not the exclusive end of the range (code audit 2026-11-03, L13).
+  await expect(page.getByText("No requests between 2026-01-01 and 2026-01-07 UTC.")).toBeVisible();
   await expect(page.getByText("Nothing to break down in this range.")).toBeVisible();
 });
 

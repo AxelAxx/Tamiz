@@ -36,12 +36,14 @@ export const DEFAULT_TOOL_PROTOCOL: ToolProtocol = "native";
 /** The prompt of each protocol: `text` renders the tool list, `native` declares the tools. */
 export const PROMPT_VERSIONS = { text: "system.v3", native: "system.v4" } as const;
 export type PromptVersion = (typeof PROMPT_VERSIONS)[ToolProtocol];
-export const PROMPT_VERSION = PROMPT_VERSIONS.text;
 const promptFile = (version: PromptVersion) =>
   new URL(`../../prompts/${version}.md`, import.meta.url);
 
 export const MAX_STEPS = 6;
 export const OBSERVATION_LIMIT = 8_000;
+/** A native reply with neither a tool call nor text. */
+const EMPTY_REPLY_OBSERVATION =
+  "Observation error: the reply was empty. Answer the question in text, or call a tool.";
 
 const FORMAT_ERROR =
   'Observation error: answer with exactly one JSON object, {"tool": …, "arguments": …} or {"answer": …}';
@@ -246,8 +248,18 @@ async function runNative(
     const requestId = reply.response.headers?.["x-request-id"] ?? "";
     run.requestIds.push(requestId);
     if (reply.toolCalls.length === 0) {
+      const answer = reply.text.trim();
+      if (answer === "") {
+        // No tool call and no text is not an answer, as in the text protocol (audit L16).
+        run.steps.push({ kind: "observation_error", reason: "format", requestId });
+        messages.push(...reply.response.messages, {
+          role: "user",
+          content: EMPTY_REPLY_OBSERVATION,
+        });
+        continue;
+      }
       run.steps.push({ kind: "answer", requestId });
-      return { ...run, stopReason: "answered", answer: reply.text.trim() };
+      return { ...run, stopReason: "answered", answer };
     }
     messages.push(...reply.response.messages);
 
@@ -352,8 +364,16 @@ function toolErrorCode(text: string): string {
   return "tool_error";
 }
 
+/**
+ * The gateway's error, or what kept the call from reaching it. An error that is neither
+ * an API answer nor a failed connection is the agent's own (an unexpected reply shape, a
+ * bug), and saying `gateway_unreachable` for it would send debugging the wrong way (code
+ * audit 2026-11-03, L16).
+ */
 function toGatewayError(error: unknown): { type: string; requestId?: string } {
-  if (!APICallError.isInstance(error)) return { type: "gateway_unreachable" };
+  if (!APICallError.isInstance(error)) {
+    return { type: isConnectionError(error) ? "gateway_unreachable" : "agent_error" };
+  }
   const header = error.responseHeaders?.["x-request-id"];
   let envelope: z.infer<typeof GatewayErrorShape> | undefined;
   try {
@@ -365,6 +385,20 @@ function toGatewayError(error: unknown): { type: string; requestId?: string } {
   const type = envelope?.error.type ?? `http_${error.statusCode ?? "unknown"}`;
   const requestId = header ?? envelope?.error.requestId;
   return requestId === undefined ? { type } : { type, requestId };
+}
+
+function isConnectionError(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  for (let current = error; current instanceof Error && !seen.has(current); ) {
+    seen.add(current);
+    const code = (current as { code?: unknown }).code;
+    if (typeof code === "string" && /^(ECONN|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|UND_ERR)/.test(code)) {
+      return true;
+    }
+    if (current.name === "AbortError" || current.message === "fetch failed") return true;
+    current = current.cause;
+  }
+  return false;
 }
 
 function truncate(text: string, limit: number): string {

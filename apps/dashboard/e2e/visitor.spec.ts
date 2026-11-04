@@ -73,6 +73,22 @@ test("US10-2 a visitor lands on live traffic, every screen loads and the menu sa
   expect(await (await page.request.get("/api/session")).json()).toEqual({ role: "visitor" });
 });
 
+test("an expired visitor session can be renewed as a visitor in place (code audit 2026-11-03, M16)", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": "198.51.100.106" });
+  await enterAsVisitor(page);
+
+  await page.context().clearCookies();
+  const dialog = page.getByRole("dialog", { name: "Your session ended" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Explore as a visitor" }).click();
+
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/live$/);
+  expect((await page.request.get("/api/audit")).status()).toBe(200);
+});
+
 test("US10-3 a visitor cannot save the policy: 403, nothing reaches the gateway, the editor is read-only", async ({
   page,
 }) => {

@@ -4,8 +4,11 @@
  * Polls the audit log for the live traffic screen (spec 008 US2, research R-05).
  *
  * Every 2 s it asks `/api/audit` for entries since the newest one seen minus a 5-minute
- * overlap, following `nextCursor` while pages are full, and folds them into the pure model.
- * Failed polls back off (2, 4, 8, 16, then 30 s) and keep the rows. TanStack Query does not
+ * overlap, and folds them into the pure model. Pages come newest first; it follows
+ * `nextCursor` only while a full page still ends with an entry that would enter the view
+ * (at most the first 100 on the first load), so a busy window is not re-read on every
+ * poll. Failed polls back off (2, 4, 8, 16, then 30 s) and keep the rows; the failure count
+ * is kept by the fetch itself, so the next interval always sees it. TanStack Query does not
  * poll a hidden tab. New rows stay highlighted for 2 s, and a polite announcement says how
  * many arrived, at most once every 10 s (US9-4).
  */
@@ -13,7 +16,17 @@ import type { AuditEntryDto } from "@tamiz/contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
-import { INITIAL, type LiveState, merge, pause, resume, rows, since } from "./model";
+import {
+  INITIAL,
+  LIVE_MAX,
+  type LiveState,
+  merge,
+  pause,
+  resume,
+  rows,
+  since,
+  wouldEnter,
+} from "./model";
 
 const POLL_MS = 2_000;
 const MAX_BACKOFF_MS = 30_000;
@@ -46,17 +59,20 @@ function reduce(state: LiveState, action: Action): LiveState {
   }
 }
 
-async function fetchSince(from: string): Promise<AuditEntryDto[]> {
+async function fetchSince(state: LiveState, now: number): Promise<AuditEntryDto[]> {
   const entries: AuditEntryDto[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await api.audit({
-      from,
+      from: since(state, now),
       limit: PAGE_LIMIT,
       ...(cursor !== undefined && { cursor }),
     });
     entries.push(...result.entries);
     if (result.entries.length < PAGE_LIMIT || result.nextCursor === null) break;
+    const last = result.entries.at(-1);
+    if (last === undefined || !wouldEnter(state, last)) break;
+    if (state.shown.size === 0 && entries.length >= LIVE_MAX) break;
     cursor = result.nextCursor;
   }
   return entries;
@@ -77,7 +93,16 @@ export function useLiveTraffic() {
   const failures = useRef(0);
   const poll = useQuery({
     queryKey: ["live-traffic"],
-    queryFn: () => fetchSince(since(stateRef.current, Date.now())),
+    queryFn: async () => {
+      try {
+        const entries = await fetchSince(stateRef.current, Date.now());
+        failures.current = 0;
+        return entries;
+      } catch (error) {
+        failures.current += 1;
+        throw error;
+      }
+    },
     refetchInterval: () => backoffMs(failures.current),
     retry: false,
     // Every poll is new data; never serve it from the cache of a previous visit.
@@ -90,28 +115,34 @@ export function useLiveTraffic() {
   useEffect(() => {
     if (poll.data === undefined || poll.dataUpdatedAt === lastMerged.current) return;
     lastMerged.current = poll.dataUpdatedAt;
-    failures.current = 0;
     dispatch({ type: "merge", entries: poll.data, initial: successAt === undefined });
     setSuccessAt(poll.dataUpdatedAt);
     setFailingSince(undefined);
   }, [poll.data, poll.dataUpdatedAt, successAt]);
   useEffect(() => {
     if (poll.errorUpdatedAt === 0 || poll.errorUpdatedAt < (successAt ?? 0)) return;
-    failures.current += 1;
     setFailingSince((current) => current ?? poll.errorUpdatedAt);
   }, [poll.errorUpdatedAt, successAt]);
 
-  // Highlight: each fresh id keeps its mark for 2 s, whatever the next polls bring.
+  // Highlight: each fresh id keeps its mark for 2 s, whatever the next polls bring. Each
+  // batch has its own timer, cleared only on unmount: a merge or a pause must not cancel it.
   const [highlighted, setHighlighted] = useState<ReadonlySet<string>>(new Set());
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const pendingTimers = timers.current;
+    return () => {
+      for (const timer of pendingTimers) clearTimeout(timer);
+    };
+  }, []);
   useEffect(() => {
     if (state.fresh.size === 0) return;
     const ids = [...state.fresh];
     setHighlighted((current) => new Set([...current, ...ids]));
-    const timer = setTimeout(
-      () => setHighlighted((current) => new Set([...current].filter((id) => !ids.includes(id)))),
-      HIGHLIGHT_MS,
-    );
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      setHighlighted((current) => new Set([...current].filter((id) => !ids.includes(id))));
+    }, HIGHLIGHT_MS);
+    timers.current.add(timer);
   }, [state.fresh]);
 
   // Announcements: count arrivals after the first load, say it at most every 10 s.

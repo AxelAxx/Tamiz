@@ -12,6 +12,10 @@
     "./agent/fixture-run": {
       "types": "./dist/agent/fixture-run.d.ts",
       "import": "./dist/agent/fixture-run.js"
+    },
+    "./agent/json-object": {
+      "types": "./dist/agent/json-object.d.ts",
+      "import": "./dist/agent/json-object.js"
     }
   },
   "scripts": {

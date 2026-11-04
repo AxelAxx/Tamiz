@@ -5,6 +5,7 @@
  */
 import { z } from "zod";
 import { err, ok, type Result } from "../result.js";
+import { firstJsonObject } from "./json-object.js";
 
 export const AgentActionSchema = z.union([
   z.strictObject({
@@ -24,7 +25,7 @@ export type AgentAction = z.infer<typeof AgentActionSchema>;
 export function extractAction(text: string): Result<AgentAction, "format"> {
   const unfenced = text.replace(/```(?:json)?/g, "").trim();
   if (unfenced.startsWith("[")) return err("format");
-  const candidate = firstObject(unfenced);
+  const candidate = firstJsonObject(unfenced);
   if (candidate === undefined) return err("format");
   let value: unknown;
   try {
@@ -34,27 +35,4 @@ export function extractAction(text: string): Result<AgentAction, "format"> {
   }
   const parsed = AgentActionSchema.safeParse(value);
   return parsed.success ? ok(parsed.data) : err("format");
-}
-
-/** The text of the first `{ … }` whose braces balance outside JSON strings. */
-function firstObject(text: string): string | undefined {
-  const start = text.indexOf("{");
-  if (start === -1) return undefined;
-  let depth = 0;
-  let inString = false;
-  for (let index = start; index < text.length; index += 1) {
-    const char = text[index];
-    if (inString) {
-      if (char === "\\") index += 1;
-      else if (char === '"') inString = false;
-      continue;
-    }
-    if (char === '"') inString = true;
-    else if (char === "{") depth += 1;
-    else if (char === "}") {
-      depth -= 1;
-      if (depth === 0) return text.slice(start, index + 1);
-    }
-  }
-  return undefined;
 }

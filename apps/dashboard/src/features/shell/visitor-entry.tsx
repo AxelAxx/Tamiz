@@ -5,14 +5,15 @@ import { Eye, LoaderCircle, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { SESSION_QUERY_KEY } from "@/features/shell/session-role";
 import { api, BffRequestError } from "@/lib/api-client";
+import { SESSION_QUERY_KEY } from "./session-role";
 
 /**
  * "Explore as a visitor" (spec 008 US10-2): a read-only session, then live traffic. Shown
- * only when the server has visitor access on.
+ * only when the server has visitor access on. In the session-expired dialog `onEntered`
+ * keeps the visitor on the current screen instead.
  */
-export function VisitorEntry() {
+export function VisitorEntry({ onEntered }: { readonly onEntered?: () => void } = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
@@ -24,7 +25,8 @@ export function VisitorEntry() {
     try {
       await api.enterAsVisitor();
       await queryClient.invalidateQueries({ queryKey: SESSION_QUERY_KEY });
-      router.replace("/live");
+      if (onEntered === undefined) router.replace("/live");
+      else onEntered();
     } catch (failure) {
       setError(
         failure instanceof BffRequestError && failure.status === 429

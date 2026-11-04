@@ -153,11 +153,13 @@ export function createWindowLimiter(deps: {
 /**
  * The address the rate limit counts by. Next.js route handlers do not expose the socket,
  * and Next.js keeps a client-sent `X-Forwarded-For`, so the header is used only behind a
- * trusted proxy (`TAMIZ_DASHBOARD_TRUST_PROXY=true`, first hop). Otherwise every attempt
- * shares one bucket: a forged header cannot escape the limit.
+ * trusted proxy (`TAMIZ_DASHBOARD_TRUST_PROXY=true`). Its last hop is the one that proxy
+ * wrote; earlier hops are whatever the client sent, so rotating them must not open new
+ * buckets (code audit 2026-11-03, L12). Without a trusted proxy every attempt shares one
+ * bucket: a forged header cannot escape the limit.
  */
 export function clientAddress(headers: Headers, trustProxy: boolean): string {
   if (!trustProxy) return "direct";
-  const first = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return first === undefined || first === "" ? "unknown" : first;
+  const last = headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+  return last === undefined || last === "" ? "unknown" : last;
 }

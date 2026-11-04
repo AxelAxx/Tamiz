@@ -8,6 +8,7 @@ import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { main } from "../src/cli.js";
 import { loadDataset, RoutingCaseSchema } from "../src/datasets.js";
+import { pool } from "../src/runner.js";
 
 // Spec 007 US1-1 … US1-3, US1-5, US4-1, US4-2, FR-001, FR-005 (tasks.md T003): the CLI
 // against an MSW fake of the gateway's simulation endpoint.
@@ -208,5 +209,36 @@ describe("runEvals", () => {
     expect(report.status).toBe("error");
     expect(report.evals[0]?.error).toEqual({ type: "metric_missing" });
     expect(diagnostics.join("\n")).toContain("route_accuracy");
+  });
+});
+
+describe("pool (code audit 2026-11-03, M18)", () => {
+  it("keeps the order and runs at most `limit` at once", async () => {
+    let inFlight = 0;
+    let most = 0;
+    const out = await pool([1, 2, 3, 4, 5], 2, async (n) => {
+      inFlight += 1;
+      most = Math.max(most, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      inFlight -= 1;
+      return n * 10;
+    });
+    expect(out).toEqual([10, 20, 30, 40, 50]);
+    expect(most).toBe(2);
+  });
+
+  it("after a failure no worker takes another item, and the calls in flight finish first", async () => {
+    const started: number[] = [];
+    let finished = 0;
+    const run = pool([1, 2, 3, 4, 5, 6], 2, async (n) => {
+      started.push(n);
+      await new Promise((resolve) => setTimeout(resolve, n === 1 ? 1 : 10));
+      finished += 1;
+      if (n === 1) throw new Error("judge timed out");
+      return n;
+    });
+    await expect(run).rejects.toThrow("judge timed out");
+    expect(started).toEqual([1, 2]);
+    expect(finished).toBe(2);
   });
 });
