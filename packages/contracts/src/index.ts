@@ -23,6 +23,7 @@ export {
 export {
   AUDIT_TOOL_CALLS_MAX,
   AuditAbandonedSchema,
+  AuditBlockReasonSchema,
   type AuditEntryDto,
   AuditEntrySchema,
   type AuditOutcomeDto,
@@ -50,6 +51,7 @@ export {
   usd,
 } from "./branded.js";
 export {
+  CHAT_MESSAGES_MAX,
   type ChatCompletionChoice,
   ChatCompletionChoiceSchema,
   type ChatCompletionChunk,
@@ -157,6 +159,7 @@ export {
   PrivacySensitivitySchema,
 } from "./privacy-service.js";
 export {
+  InspectedSensitivitySchema,
   type ModelTargetDto,
   ModelTargetSchema,
   PricingSchema,

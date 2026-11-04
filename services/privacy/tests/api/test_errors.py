@@ -16,7 +16,9 @@ SECRET = "Lucía-12345678Z"  # noqa: S105 - synthetic personal data, not a crede
         (f'{{"text": "{SECRET}"', "body"),  # not JSON
         ("{}", "text"),
         (f'{{"text": ["{SECRET}"]}}', "text"),
-        (f'{{"text": "hola", "note": "{SECRET}"}}', "note"),
+        # An unknown key names its parent: the key itself may be the secret (code audit L19).
+        (f'{{"text": "hola", "note": "{SECRET}"}}', "body"),
+        (f'{{"text": "hola", "{SECRET}": 1}}', "body"),
         (f'{{"text": "hola", "language": "{SECRET}"}}', "language"),
         ('{"text": "hola", "language": "en"}', "language"),
         ('{"text": "hola", "min_score": 2}', "min_score"),

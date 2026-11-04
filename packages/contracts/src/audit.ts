@@ -10,6 +10,7 @@ import { ToolNameSchema } from "./chat-completion.js";
 import { ErrorTypeSchema } from "./error.js";
 import { PrivacyEntityKindSchema } from "./privacy-service.js";
 import {
+  InspectedSensitivitySchema,
   PrivacyActionSchema,
   ProviderNameSchema,
   ResidencySchema,
@@ -52,6 +53,14 @@ export const AuditToolsSchema = z.strictObject({
   called: z.array(ToolNameSchema).max(AUDIT_TOOL_CALLS_MAX),
 });
 
+/** Why a request was blocked; `residency` only happens at execution, never in a simulation. */
+export const AuditBlockReasonSchema = z.enum([
+  "action",
+  "no_target",
+  "detector_unavailable",
+  "residency",
+]);
+
 export const AuditEntrySchema = z.strictObject({
   id: z.uuid(),
   requestId: z.string().min(1),
@@ -61,17 +70,17 @@ export const AuditEntrySchema = z.strictObject({
   latencyMs: z.int().min(0),
   /** HMAC-SHA-256 of the messages: correlates identical requests, never readable. */
   requestHash: z.string().regex(/^[0-9a-f]{64}$/),
-  policyId: z.string(),
+  policyId: z.string().min(1),
   policyVersion: z.int().min(1),
-  ruleId: z.string(),
+  ruleId: z.string().min(1),
   taskType: TaskTypeSchema,
   size: TaskSizeSchema,
-  sensitivity: z.enum(["unknown", "none", "low", "high", "critical"]),
+  sensitivity: InspectedSensitivitySchema,
   /** Counts per detected kind; never values or positions. */
   entities: z.partialRecord(PrivacyEntityKindSchema, z.int().min(1)),
   privacyAction: PrivacyActionSchema,
   noticeVersion: z.string().optional(),
-  blockReason: z.enum(["action", "no_target", "detector_unavailable", "residency"]).optional(),
+  blockReason: AuditBlockReasonSchema.optional(),
   outcome: AuditOutcomeSchema,
   errorType: ErrorTypeSchema.optional(),
   streamed: z.boolean(),

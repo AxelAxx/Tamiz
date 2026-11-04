@@ -25,6 +25,11 @@ export type HealthResponseOverrides = Partial<{
   [K in keyof HealthResponse]: K extends "uptimeMs" ? number : HealthResponse[K];
 }>;
 
+/**
+ * The required fields only: a test that needs `temperature` or `max_tokens` sets them, so
+ * a request without them (the provider's defaults) is the default case, never one an
+ * override cannot express under `exactOptionalPropertyTypes` (code audit 2026-11-03, L21).
+ */
 function defaultChatCompletionRequest(): ChatCompletionRequest {
   return {
     model: "llama3.2",
@@ -32,8 +37,6 @@ function defaultChatCompletionRequest(): ChatCompletionRequest {
       { role: "system", content: "You are a helpful assistant." },
       { role: "user", content: "Summarise this contract in three bullet points." },
     ],
-    temperature: 0.2,
-    max_tokens: 256,
   };
 }
 

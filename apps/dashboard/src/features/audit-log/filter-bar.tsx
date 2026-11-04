@@ -6,7 +6,12 @@
  * visible label, the active filters as removable chips, and "Clear all". On phone it
  * collapses into a "Filters (N)" button that opens a bottom sheet with the same controls.
  */
-import { AuditOutcomeSchema, PrivacyActionSchema, PrivacyEntityKindSchema } from "@tamiz/contracts";
+import {
+  AuditOutcomeSchema,
+  PrivacyActionSchema,
+  PrivacyEntityKindSchema,
+  SensitivityLevelSchema,
+} from "@tamiz/contracts";
 import { Calendar, CircleX, ListFilter, X } from "lucide-react";
 import { type FormEvent, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +30,8 @@ export interface FilterOptions {
 }
 
 const FIXED_OPTIONS: Readonly<Record<Exclude<SelectKey, "route" | "rule">, readonly string[]>> = {
-  sensitivity: ["none", "low", "high", "critical", "unknown"],
+  // From the contract, levels first and `unknown` last (code audit 2026-11-03, L13).
+  sensitivity: [...SensitivityLevelSchema.options, "unknown"],
   action: PrivacyActionSchema.options,
   entity: PrivacyEntityKindSchema.options,
   outcome: AuditOutcomeSchema.options,
