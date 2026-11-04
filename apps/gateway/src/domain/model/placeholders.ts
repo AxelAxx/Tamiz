@@ -24,12 +24,6 @@ export interface PlaceholderEntry {
   readonly value: string;
 }
 
-export interface AnonymizedMessages {
-  readonly messages: ReadonlyArray<string>;
-  /** In order of first appearance. */
-  readonly mapping: ReadonlyArray<PlaceholderEntry>;
-}
-
 function globalPattern(): RegExp {
   return new RegExp(PLACEHOLDER_PATTERN.source, "g");
 }
@@ -105,15 +99,6 @@ export function anonymizeTexts(
     return pieces.join("");
   });
   return { texts: result, mapping, unsafe };
-}
-
-/** `anonymizeTexts` over plain message contents (spec 005). */
-export function anonymizeMessages(
-  messages: ReadonlyArray<string>,
-  entities: ReadonlyArray<DetectedEntity>,
-): AnonymizedMessages {
-  const { texts, mapping } = anonymizeTexts(messages, entities);
-  return { messages: texts, mapping };
 }
 
 /** A value as it may appear inside a JSON string literal. */

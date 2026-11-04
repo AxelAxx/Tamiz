@@ -9,6 +9,7 @@
  * event without content.
  */
 import type { Inspection } from "../../domain/model/sensitivity.js";
+import { entityCounts } from "../../domain/model/sensitivity.js";
 import type { Milliseconds, RequestId } from "../../domain/model/units.js";
 import type { ClockPort } from "../ports/clock.port.js";
 import type { DetectionCachePort } from "../ports/detection-cache.port.js";
@@ -93,13 +94,11 @@ function emitInspected(
   inspection: Extract<Inspection, { status: "ok" }>,
   cached: boolean,
 ): void {
-  const counts: Record<string, number> = {};
-  for (const entity of inspection.entities) counts[entity.kind] = (counts[entity.kind] ?? 0) + 1;
   deps.events.emit({
     type: "privacy.inspected",
     requestId,
     level: inspection.level,
-    counts,
+    counts: entityCounts(inspection),
     cached,
     at: deps.clock.now().toISOString(),
   });

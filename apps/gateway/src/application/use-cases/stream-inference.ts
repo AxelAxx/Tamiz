@@ -257,7 +257,7 @@ export function streamInference(deps: RouteInferenceDeps): StreamInference {
       // A stream attempt ends at the first token; usage is on the request span.
       (started) => ({ "gen_ai.response.model": started.modelName }),
     );
-    if (!served.ok) return err({ decision, failure: served.error });
+    if (!served.ok) return err({ kind: "chain", decision, failure: served.error });
 
     const { target, value: started, abandoned, admission } = served.value;
     const restorer = sent.streamRestorer();

@@ -132,13 +132,13 @@ function setPrivacyHeaders(c: Context<ChatEnv>, decision: Decision, noticeVersio
 
 function failed(c: Context<ChatEnv>, requestId: string, routing: RoutingFailure) {
   setPrivacyHeaders(c, routing.decision);
-  if (routing.failure.kind === "blocked") {
+  if (routing.kind === "blocked") {
     c.header(RULE_HEADER, routing.decision.ruleId);
     const error = routing.failure.error;
     const status = httpStatusFor(domainErrorToErrorType(error)) as 451 | 503;
     return c.json(domainErrorToEnvelope(error, requestId), status);
   }
-  const { decision, failure } = routing as Extract<RoutingFailure, { decision: RoutingDecision }>;
+  const { decision, failure } = routing;
   setRoutingHeaders(c, decision, failure.target.id, failure.abandoned);
   if (failure.kind === "unavailable") {
     c.header("retry-after", String(Math.ceil(failure.error.retryAfterMs / 1000)));

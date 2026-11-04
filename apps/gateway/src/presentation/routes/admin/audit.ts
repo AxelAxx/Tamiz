@@ -6,6 +6,7 @@ import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { AuditEntrySchema } from "@tamiz/contracts";
 import type { Schema } from "hono";
 import type { AuditQuery, QueryAuditLog } from "../../../application/use-cases/query-audit-log.js";
+import { definedOnly } from "../../mappers/defined-only.js";
 import { httpStatusFor, toErrorEnvelope } from "../../mappers/error-envelope.js";
 import { AuditPageBody, AuditQueryParams, ErrorEnvelopeBody } from "../../openapi-schemas.js";
 import type { ChatEnv } from "../chat-completions.js";
@@ -37,12 +38,9 @@ export function registerAdminAudit<S extends Schema, B extends string>(
   query: QueryAuditLog,
 ) {
   return app.openapi(auditRoute, async (c) => {
-    const params = c.req.valid("query");
-    // `exactOptionalPropertyTypes`: pass only the filters that are present.
-    const filters = Object.fromEntries(
-      Object.entries(params).filter(([, value]) => value !== undefined),
-    ) as unknown as AuditQuery;
-    const result = await query(filters);
+    const { limit, ...filters } = c.req.valid("query");
+    const auditQuery: AuditQuery = { limit, ...definedOnly(filters) };
+    const result = await query(auditQuery);
     if (!result.ok) {
       return c.json(
         toErrorEnvelope(

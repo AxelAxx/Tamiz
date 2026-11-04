@@ -52,7 +52,7 @@ function providerErrorType(error: ProviderError): AuditErrorType {
 
 /** What a failed request looks like in the audit. */
 export function failureResult(routing: RoutingFailure): AuditResult {
-  if (routing.failure.kind === "blocked") {
+  if (routing.kind === "blocked") {
     const reason = routing.failure.error.reason;
     return {
       kind: "blocked",
