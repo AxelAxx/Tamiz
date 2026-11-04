@@ -124,7 +124,7 @@ export function YamlEditor({
   const callbacks = useRef({ onChange, onSave });
   callbacks.current = { onChange, onSave };
   // Read-only is reconfigured, not fixed at creation: a visitor who signs in as operator
-  // from the expired dialog gets an editable editor in place (second code audit, D4).
+  // from the expired dialog gets an editable editor in place.
   const access = useRef(new Compartment());
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: created once; text changes go through `revision`

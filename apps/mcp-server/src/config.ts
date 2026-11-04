@@ -47,7 +47,8 @@ const EnvSchema = z.object({
   TAMIZ_MCP_SIMULATE_MODEL: z.string().min(1).max(200).default("auto"),
   TAMIZ_MCP_TRANSPORT: z.enum(["stdio", "http"]).default("stdio"),
   TAMIZ_MCP_HTTP_HOST: z.string().min(1).default("127.0.0.1"),
-  TAMIZ_MCP_HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3100),
+  // 3101: the dashboard has 3100 in the compose stack.
+  TAMIZ_MCP_HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3101),
   TAMIZ_MCP_ALLOWED_HOSTS: list.pipe(z.array(z.string()).min(1)).optional(),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });

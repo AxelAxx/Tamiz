@@ -246,7 +246,7 @@ export function executeChain<T>(deps: ExecuteChainDeps) {
           );
           if (outcome.ok && request.deferSuccess === true) return outcome;
           const opened = await breaker.onResult(target, context, outcome, admission);
-          // A target this request has just opened gets no more attempts (audit H4).
+          // A target this request has just opened gets no more attempts.
           if (!outcome.ok && opened) return err({ ...outcome.error, retryable: false });
           return outcome;
         },
@@ -264,7 +264,7 @@ export function executeChain<T>(deps: ExecuteChainDeps) {
     }
 
     if (lastFailure !== undefined) {
-      // The last target tried is reported; every other visited one was abandoned (audit M4).
+      // The last target tried is reported; every other visited one was abandoned.
       // A chain never lists a target twice (policy validation), so the id is enough.
       const reported = lastFailure.target;
       const abandoned = visited.filter((v) => v.targetId !== reported.id);

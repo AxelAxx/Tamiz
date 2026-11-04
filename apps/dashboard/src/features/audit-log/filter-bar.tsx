@@ -30,7 +30,7 @@ export interface FilterOptions {
 }
 
 const FIXED_OPTIONS: Readonly<Record<Exclude<SelectKey, "route" | "rule">, readonly string[]>> = {
-  // From the contract, levels first and `unknown` last (code audit 2026-11-03, L13).
+  // From the contract, levels first and `unknown` last.
   sensitivity: [...SensitivityLevelSchema.options, "unknown"],
   action: PrivacyActionSchema.options,
   entity: PrivacyEntityKindSchema.options,

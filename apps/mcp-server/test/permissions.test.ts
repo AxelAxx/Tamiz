@@ -135,7 +135,7 @@ describe("loadConfig", () => {
         timeoutMs: 10_000,
         simulateModel: "auto",
         transport: "stdio",
-        http: { host: "127.0.0.1", port: 3100 },
+        http: { host: "127.0.0.1", port: 3101 },
         logLevel: "info",
       },
     });
@@ -166,7 +166,7 @@ describe("loadConfig", () => {
     );
     expect(config.ok && config.value.http).toEqual({
       host: "0.0.0.0",
-      port: 3100,
+      port: 3101,
       allowedHosts: ["mcp.internal", "tamiz.lan"],
     });
   });

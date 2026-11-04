@@ -166,7 +166,7 @@ export function detectionOffsets(c: DetectionCase): string | undefined {
 
 /**
  * `check` runs on each parsed case, for rules of that dataset alone (offsets); a case
- * never goes through another dataset's schema (code audit 2026-11-03, L17).
+ * never goes through another dataset's schema.
  */
 export async function loadDataset<C extends { id: string }>(
   path: string,

@@ -21,8 +21,8 @@ fixed.
   The first load stops at 100 entries.
 - **M14:** while paused, only entries newer than the oldest shown row wait as "new".
 - **L11:** each highlight batch keeps its own timer, so a merge or a pause no longer
-  cancels it. The failure count lives in the fetch, so the backoff really is 2, 4, 8, 16
-  and 30 s.
+  cancels it. The failure count lives in the fetch, so the interval always sees it. The first
+  backoff was still 4 s, not 2 s, as the second audit found; `T-AUD-14` fixed the formula.
 
 **Session:**
 

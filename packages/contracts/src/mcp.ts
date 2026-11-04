@@ -26,7 +26,7 @@ export const MCP_AUDIT_PAGE_MAX = 50;
 export const SimulateRoutingInputSchema = z
   .strictObject({
     text: z.string().min(1).max(32_000).optional(),
-    // The same budget as `text`, so an agent cannot go around it (code audit L18).
+    // The same budget as `text`, so an agent cannot go around it.
     messages: z
       .array(ChatMessageSchema)
       .min(1)

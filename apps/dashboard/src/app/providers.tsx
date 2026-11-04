@@ -57,7 +57,7 @@ export function Providers({ children }: { readonly children: ReactNode }) {
   const [expired, setExpired] = useState(false);
   const [client] = useState(() => createQueryClient(() => setExpired(true)));
   // A poll that ends in 401 just after sign-out must not greet the next sign-in with the
-  // "session ended" dialog: reaching the sign-in page clears it (second code audit, D6).
+  // "session ended" dialog: reaching the sign-in page clears it.
   const pathname = usePathname();
   useEffect(() => {
     if (pathname === "/sign-in") setExpired(false);

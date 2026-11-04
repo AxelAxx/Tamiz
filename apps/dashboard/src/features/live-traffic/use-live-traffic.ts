@@ -88,7 +88,7 @@ export type LiveStatus = "connecting" | "live" | "paused" | "retrying" | "error"
 export function useLiveTraffic() {
   const [state, dispatch] = useReducer(reduce, INITIAL);
   // Updated after commit, not during render: a discarded render must not move the next
-  // poll's window (second code audit, 2026-11-04, D10).
+  // poll's window.
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;

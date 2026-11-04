@@ -28,7 +28,7 @@ export type HealthResponseOverrides = Partial<{
 /**
  * The required fields only: a test that needs `temperature` or `max_tokens` sets them, so
  * a request without them (the provider's defaults) is the default case, never one an
- * override cannot express under `exactOptionalPropertyTypes` (code audit 2026-11-03, L21).
+ * override cannot express under `exactOptionalPropertyTypes`.
  */
 function defaultChatCompletionRequest(): ChatCompletionRequest {
   return {

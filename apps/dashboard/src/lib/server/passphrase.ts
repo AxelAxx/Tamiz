@@ -19,7 +19,7 @@ export function hashPassphrase(passphrase: string): string {
 /**
  * Whether `passphrase` matches `stored`. Asynchronous: scrypt runs in libuv's pool, so a
  * burst of sign-in attempts never blocks the event loop that serves every other screen
- * (second code audit, 2026-11-04, D1).
+ *.
  */
 export async function verifyPassphrase(passphrase: string, stored: string): Promise<boolean> {
   const [scheme, n, r, p, salt, hash] = stored.split("$");

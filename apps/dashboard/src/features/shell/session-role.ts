@@ -3,7 +3,7 @@
 /**
  * The session's role (spec 008 US10, FR-029): screens hide what a visitor would be refused.
  * `undefined` while it loads. When the query fails, the screens act as for a visitor, the
- * least privileged role, rather than wait forever (code audit 2026-11-03, L13). The server
+ * least privileged role, rather than wait forever. The server
  * still checks every write; this is presentation.
  */
 import { useQuery } from "@tanstack/react-query";

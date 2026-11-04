@@ -13,7 +13,7 @@
  *   the provider's health and change nothing;
  * - the outcome of a `call` admitted while the circuit was closed is dropped when the
  *   circuit is no longer closed: another request opened it meanwhile, and a late success
- *   must not close it silently, nor a late failure extend its cool-down (audit H4).
+ *   must not close it silently, nor a late failure extend its cool-down.
  * Every transition is a `circuit.changed` event. `onResult` answers whether this outcome
  * opened the circuit, so a caller stops retrying a target it has just opened.
  */
@@ -66,7 +66,7 @@ export interface CircuitBreaker {
  * time an outcome reaches the breaker, the request deadline has shown up as `timeout` (each
  * attempt is bounded by the time left), so `aborted` means the client went away. A trial
  * that ends that way leaves the circuit half-open; its lease expires and another request
- * tries (code audit 2026-11-04).
+ * tries.
  */
 function counts(error: ProviderError): boolean {
   return error.retryable && error.cause !== "aborted";

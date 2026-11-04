@@ -110,7 +110,7 @@ export function blocked(decision: BlockDecision): RoutingFailure {
   return { kind: "blocked", decision, failure: { kind: "blocked", error } };
 }
 
-/** `signal` is the client's: a client that goes away stops retries and fallbacks (audit M9). */
+/** `signal` is the client's: a client that goes away stops retries and fallbacks. */
 export type RouteInference = (
   request: InferenceRequest,
   signal?: AbortSignal,

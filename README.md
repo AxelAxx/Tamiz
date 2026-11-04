@@ -1,5 +1,7 @@
 # Tamiz
 
+[![ci](https://github.com/AxelAxx/tamiz/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AxelAxx/tamiz/actions/workflows/ci.yml)
+
 **Privacy-aware LLM gateway.** Use the best model for every request without sensitive
 data leaving where it belongs.
 
@@ -28,11 +30,13 @@ sits between the application and the providers and makes that decision on every 
    chains. A fallback that would break residency **blocks** instead of degrading.
 4. **Audits** every decision (entities found, rule, target, cost, latency) in PostgreSQL
    and OpenTelemetry, without ever storing prompt content.
-5. **Proves** it: privacy-leak, detection, routing, quality and cost evals run on every
-   pull request and block the merge below threshold. Results are [below](#evals).
+5. **Proves** it: privacy-leak, detection, routing, quality and agent evals run on every
+   pull request with local models, and a result below its threshold blocks the merge
+   (`evals` is a required check on `main`). A cost comparison is reported alongside.
+   Results are [below](#evals).
 
 Applications switch by changing the base URL and the API key of their OpenAI client.
-Responses tell them what happened: `x-tamiz-route`, `x-tamiz-sensitivity`,
+Responses tell them what happened: `x-tamiz-route`, `x-tamiz-rule`, `x-tamiz-sensitivity`,
 `x-tamiz-privacy`, `x-tamiz-fallback`.
 
 ## Quick start
@@ -44,7 +48,8 @@ Codespaces quota, and prints the dashboard's address and a generated passphrase
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/AxelAxx/tamiz?quickstart=1)
 
-**On your machine:** Docker with Compose v2.24 or later, about 8 GB of free disk for the local model, and
+**On your machine:** Docker with Compose v2.30 or later (for `env_file` with `format`),
+about 15 GB of free disk (three images, the service images and the 5 GB local model), and
 Node.js 22 with pnpm for the one-off secrets step:
 
 ```bash
@@ -56,15 +61,15 @@ docker compose logs -f ollama-pull   # first start only: downloads llama3.1:8b (
 ```
 
 The first `up` builds three images (about six minutes, mostly the privacy service's
-spaCy model). After that, the stack is healthy in under 30 seconds. The model download
-comes on top, once.
+spaCy model). After that, the stack is healthy in about a minute, most of it the privacy
+service loading its model. The model download comes on top, once.
 
 `pnpm compose:env` writes `apps/gateway/.env.docker` and `apps/dashboard/.env.docker`
-(git-ignored). The gateway starts on `policies/local-only.yaml`, which needs no cloud
-account. For the full routing policy:
+(git-ignored). The gateway starts on `apps/gateway/policies/local-only.yaml`, which needs
+no cloud account. For the full routing policy:
 
 1. set the Mistral, Anthropic and OpenAI keys in `apps/gateway/.env.docker`;
-2. change `TAMIZ_POLICY_FILE` to `policies/default.yaml`;
+2. change `TAMIZ_POLICY_FILE` to `policies/default.yaml` (relative to `apps/gateway/`);
 3. run `docker compose up -d gateway`.
 
 Send a request with personal data, using the client key `pnpm compose:env` printed:
@@ -134,13 +139,17 @@ All data is synthetic and versioned in `packages/evals/datasets/`.
 - **PII leak**: would a personal value reach a non-local provider verbatim, through any
   target of the decided chain, fallbacks included? 200 synthetic Spanish requests (health,
   legal, fintech, HR); 40 of them carry the values in tool-call arguments and tool results.
-- **Detection**: precision and recall of the privacy service on held-out sentences in
-  harder formats than its development corpus.
+- **Detection**: recall of the privacy service on held-out sentences in harder formats
+  than its development corpus, including text as pasted from forms, Word and PDFs (gated:
+  0.95 for structured identifiers, 0.80 for names); precision is reported.
 - **Routing**: the 44 routing cases through `POST /v1/simulate`, with the real inspection.
 - **Quality**: answers on the local route, graded by a blind local judge. CI compares them
   with an accepted baseline for the same models, so a regression fails. The frontier
   comparison needs keys and is run separately.
-- **Cost**: the routing cases priced on the decided target and on the most expensive one.
+- **Cost**: the routing cases priced on the decided target and on the most expensive one
+  (reported, not gated).
+- **Agent**: the MCP agent answers spend questions (which route changed, both daily totals)
+  on a local model; a fixed answer cannot reach the gate.
 
 <!-- evals:start -->
 Last run: 2026-11-03, commit `cf8decd`, policy `default` v3 — overall **pass**.
@@ -262,9 +271,12 @@ pnpm evals        # the eval suite against running services (packages/evals/READ
 Commits follow Conventional Commits and are checked by commitlint on `commit-msg`.
 
 To run the gateway on the host instead of in compose:
-1. copy `.env.example` (every variable is documented there);
-2. generate a key with `pnpm --filter @tamiz/gateway generate-api-key <client>`;
-3. start the services it uses with `docker compose up -d valkey privacy postgres jaeger`;
+1. copy `.env.example` to `apps/gateway/.env` (every variable is documented there; `dev`
+   loads it);
+2. generate a key with `pnpm --filter @tamiz/gateway generate-api-key <client>` and put
+   its entry in `TAMIZ_API_KEYS`;
+3. start the services it uses, published on 127.0.0.1 by the dev overlay:
+   `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d privacy ollama postgres valkey jaeger`;
 4. run `pnpm --filter @tamiz/gateway dev`.
 
 The privacy service has its own toolchain (uv, Ruff, mypy, pytest): see

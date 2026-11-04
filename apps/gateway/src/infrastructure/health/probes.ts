@@ -1,5 +1,5 @@
 /**
- * The dependency probes of `/health` (code audit 2026-11-03, M12). Each is bounded by
+ * The dependency probes of `/health`. Each is bounded by
  * `timeoutMs` and reports a fixed detail, never the address or the error message.
  */
 import { sql } from "drizzle-orm";

@@ -1,0 +1,15 @@
+# Overlay for running the gateway on the host (`pnpm --filter @tamiz/gateway dev`): publishes
+# the services the base file keeps on the compose network, on this machine only.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d privacy ollama postgres valkey jaeger
+#
+# Then copy .env.example (repository root) to apps/gateway/.env and set TAMIZ_API_KEYS; its
+# other values point at these ports.
+
+services:
+  privacy:
+    ports:
+      - "127.0.0.1:8001:8001"
+  ollama:
+    ports:
+      - "127.0.0.1:11434:11434"

@@ -46,7 +46,7 @@ export interface QualityBaseline {
   readonly entries: ReadonlyArray<QualityBaselineEntry>;
 }
 
-/** `baselines/quality.json` is a reviewed file: validated, never cast (code audit L15). */
+/** `baselines/quality.json` is a reviewed file: validated, never cast. */
 export const QualityBaselineSchema = z.strictObject({
   entries: z.array(
     z.strictObject({

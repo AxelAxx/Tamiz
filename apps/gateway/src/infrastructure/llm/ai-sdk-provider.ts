@@ -376,8 +376,7 @@ function malformedError(input: ProviderCompletionInput, provider: ProviderName):
 /**
  * A call to a tool the request did not declare, or one the SDK marks `invalid` (its name
  * or input did not parse), is the model's mistake: a malformed response the chain can fall
- * back on, never a tool call that would break the response contract later (code audit
- * 2026-11-03, M6).
+ * back on, never a tool call that would break the response contract later.
  */
 function declared(input: ProviderCompletionInput, toolName: string, part?: object): boolean {
   if (part !== undefined && "invalid" in part && part.invalid === true) return false;

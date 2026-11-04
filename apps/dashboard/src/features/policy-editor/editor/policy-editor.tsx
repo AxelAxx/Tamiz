@@ -140,7 +140,7 @@ function Editor({
 
   const save = useMutation({
     // The submitted text travels with the request: issues are mapped against what the
-    // gateway validated, not a newer draft (second code audit, 2026-11-04, D5).
+    // gateway validated, not a newer draft.
     mutationFn: (submitted: {
       readonly request: Parameters<typeof api.replacePolicy>[0];
       readonly text: string;
@@ -203,7 +203,7 @@ function Editor({
 
   const reload = async () => {
     const fresh = await onReload();
-    // A failed reload keeps the draft and the conflict open (code audit 2026-11-03, M17).
+    // A failed reload keeps the draft and the conflict open.
     if (fresh === undefined) return;
     replaceWith(fresh);
     setConflict(false);

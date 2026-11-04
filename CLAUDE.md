@@ -114,7 +114,7 @@ of section 1.
 | Resilience | **Own implementation** (circuit breaker, retry, timeout): it is the core of the project, never imported |
 | Privacy service | Python 3.12 · uv · FastAPI + Pydantic v2 · Presidio (Analyzer + Anonymizer) · spaCy `es_core_news_lg` · Ruff + strict mypy + pytest |
 | Models | Local: Ollama (Llama/Qwen/small Mistral) · EU: Mistral API · Frontier: Anthropic / OpenAI · Cheap: small model of any provider |
-| Dashboard | Next.js 16 (App Router) + React 19 · Tailwind CSS v4 · shadcn/ui · shadcn Charts (Recharts) · TanStack Table + Query · Hono RPC client (`hc`) · React Hook Form + Zod · Motion · lucide-react · next-themes · CodeMirror 6 + `yaml` (policy editor, spec 008 R-12) |
+| Dashboard | Next.js 16 (App Router) + React 19 · Tailwind CSS v4 · shadcn/ui · shadcn Charts (Recharts) · TanStack Query · Hono RPC client (`hc`) · React Hook Form + Zod · Motion · lucide-react · next-themes · CodeMirror 6 + `yaml` (policy editor, spec 008 R-12) |
 | MCP / agent | `@modelcontextprotocol/sdk` · AI SDK 6 agent that calls the LLM **through Tamiz** |
 | Testing | Vitest · Testcontainers (Postgres, Redis) · MSW · Playwright · contract tests against Zod · own eval runner in `packages/evals` |
 | Delivery | Docker Compose (gateway, privacy, dashboard, postgres, redis, ollama, jaeger) · GitHub Actions · multi-stage non-root images · demo on Vercel + EU VPS |
@@ -133,7 +133,8 @@ System view, request flow and layer diagram: `docs/architecture.md` (Mermaid) an
 tools included since `T-009-05`) → Zod validation → `ClassifyTask` → `InspectSensitivity`
 (privacy service, over every text the provider reads: contents, tool-call arguments, tool
 results, tool definitions) →
-`RoutingPolicy.decide()` (pure domain, returns a `RoutingDecision` with an ordered
+`decide()` in `domain/model/routing-decision.ts` (pure domain, over the validated
+`RoutingPolicy` of `routing-policy.ts`; returns a `RoutingDecision` with an ordered
 fallback chain and a privacy action: `allow` | `anonymize` | `restrict_to_local` |
 `block`) → resilient execution (timeout → retry → circuit breaker → next target; a
 fallback that violates residency **blocks**) → de-anonymize with the in-memory session
@@ -345,7 +346,7 @@ docker compose up jaeger     # traces: OTEL_EXPORTER_OTLP_ENDPOINT=http://localh
 pnpm --filter @tamiz/gateway db:generate   # new migration from the Drizzle schema (commit drizzle/)
 pnpm --filter @tamiz/gateway api-key:add <client> [--admin]   # key stored hashed in the database
 pnpm --filter @tamiz/gateway api-key:revoke <key | --hash <hex>>   # refuses a stored key from then on
-pnpm --filter @tamiz/mcp-server start:http   # MCP server on http://127.0.0.1:3100/mcp (bearer = Tamiz key); stdio: node apps/mcp-server/dist/main.js
+pnpm --filter @tamiz/mcp-server start:http   # MCP server on http://127.0.0.1:3101/mcp (bearer = Tamiz key); stdio: node apps/mcp-server/dist/main.js
 npx @modelcontextprotocol/inspector node apps/mcp-server/dist/main.js   # try the MCP tools by hand (TAMIZ_MCP_GATEWAY_URL/KEY in its env panel)
 pnpm --filter @tamiz/mcp-server agent:demo -- "why did spend rise yesterday?"   # agent: TAMIZ_AGENT_API_KEY (client) + TAMIZ_AGENT_MCP_KEY (admin), server on start:http; TAMIZ_AGENT_TOOL_PROTOCOL=native (default) | text
 pnpm --filter @tamiz/example-citara-client start -- "<prompt>"   # Citara example: TAMIZ_BASE_URL (with /v1) + TAMIZ_API_KEY, optional TAMIZ_ADMIN_KEY for the audit check (docs/integrations/citara.md)
@@ -355,7 +356,8 @@ pnpm --filter @tamiz/dashboard hash-passphrase   # reads the passphrase on stdin
 pnpm --filter @tamiz/dashboard build && pnpm --filter @tamiz/dashboard e2e   # Playwright vs the E2E gateway (CI job `e2e`)
 docker build -f apps/dashboard/Dockerfile -t tamiz-dashboard .   # non-root image; `docker compose up dashboard` reads apps/dashboard/.env.docker
 pnpm compose:env             # secrets for compose: apps/{gateway,dashboard}/.env.docker (prints the keys once)
-docker compose up -d         # full local stack; the first start pulls llama3.1:8b (service ollama-pull) (T-OPS-01)
+docker compose up -d         # full local stack, published on 127.0.0.1; the first start pulls llama3.1:8b (service ollama-pull) (T-OPS-01)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d privacy ollama postgres valkey jaeger   # for a gateway on the host: also publishes privacy and Ollama (T-AUD-15)
 docker build -f apps/gateway/Dockerfile -t tamiz-gateway .   # non-root gateway image
 COMPOSE_FILE=docker-compose.yml:docker-compose.demo.yml docker compose up -d   # public demo on a VPS: Caddy TLS, demo-eu policy (docs/deploy.md, T-OPS-02)
 # GitHub Codespaces: .devcontainer/ runs the stack with docker-compose.codespaces.yml and qwen2.5:1.5b (T-OPS-06)
@@ -392,7 +394,9 @@ Git: `git log --oneline`, branches `T-FFF-NN-slug`, commits via Conventional Com
 Decided on 2026-10-18: this file and the whole repository are in English (ADR-0002);
 licence Apache-2.0 (ADR-0003, `LICENSE` + `NOTICE` at the root); public repository
 https://github.com/AxelAxx/tamiz under Alex's personal account (section 2); `main` is
-protected since `T-001-05`: required check `ci`, pull requests only, admins included.
+protected since `T-001-05`: pull requests only, admins included. Required checks are `ci`
+and `evals` (since 2026-11-04); branches need not be up to date with `main` before merging,
+and repository auto-merge is on (decided by Alex on 2026-11-04).
 
 Decided on 2026-11-02: the public demo runs the gateway on a Hetzner Cloud server in
 Germany and the dashboard on Vercel (`fra1`); steps in `docs/deploy.md` (`T-OPS-02`).

@@ -8,7 +8,7 @@ here from random numbers (valid by construction, or deliberately invalid for the
 negatives), emails use the reserved `example.*` domains, and the sentences are templates.
 The output is deterministic for a given seed and the locked Faker version.
 
-Version 2 (code audit 2026-11-03) adds formats people write that version 1 never tried: a
+Version 2 adds formats people write that version 1 never tried: a
 DNI without its leading zero or with spaces, landlines grouped 2-3-2-2, a phone right after
 `Tel.`, and an IBAN followed by an amount.
 """

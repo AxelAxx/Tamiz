@@ -108,7 +108,7 @@ export function protectRequest(
     jsonTexts,
   );
   // `notAnonymizableReason` routes such requests away before this point; if a value was
-  // still left in place, nothing is sent rather than sending it in clear (audit M8).
+  // still left in place, nothing is sent rather than sending it in clear.
   if (anonymized.unsafe) {
     throw new Error("Anonymization left a detected value in place; the request is not sent");
   }

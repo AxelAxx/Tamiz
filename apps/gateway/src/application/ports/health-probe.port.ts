@@ -1,5 +1,5 @@
 /**
- * One dependency `/health` reports on (spec 001 FR-017, code audit 2026-11-03 M12).
+ * One dependency `/health` reports on (spec 001 FR-017).
  *
  * `down`: requests that need it fail (privacy service, database). `degraded`: the gateway
  * works without it, with less (shared circuit state answered from memory). A probe never

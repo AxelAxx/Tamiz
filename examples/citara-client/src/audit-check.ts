@@ -69,7 +69,7 @@ async function scanWindow(input: AuditCheckInput, deps: AuditCheckDeps): Promise
       });
     } catch {
       // The answer is already in hand: report `audit_error: unreachable`, never crash
-      // the run (code audit 2026-11-03, M20).
+      // the run.
       return { kind: "unreachable" };
     }
     if (response.status === 401) return { kind: "unauthorized" };

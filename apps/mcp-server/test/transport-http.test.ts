@@ -14,7 +14,7 @@ import { expectNoKey } from "./support/no-key.js";
 
 // Spec 009 US4-2 … US4-5 (tasks.md T006). The Hono app is called in process: no socket.
 
-const MCP_URL = "http://127.0.0.1:3100/mcp";
+const MCP_URL = "http://127.0.0.1:3101/mcp";
 
 function setup(): { app: McpHttpApp; fake: FakeGateway; logs: string[] } {
   const fake = createFakeGateway();
@@ -64,7 +64,7 @@ function rawPost(app: McpHttpApp, headers: Record<string, string>): Promise<Resp
       new Request(MCP_URL, {
         method: "POST",
         headers: {
-          host: "127.0.0.1:3100",
+          host: "127.0.0.1:3101",
           "content-type": "application/json",
           accept: "application/json, text/event-stream",
           ...headers,
@@ -148,7 +148,7 @@ describe("US4 streamable HTTP transport", () => {
     const response = await app.fetch(
       new Request(MCP_URL, {
         method,
-        headers: { host: "127.0.0.1:3100", authorization: `Bearer ${ADMIN_KEY}` },
+        headers: { host: "127.0.0.1:3101", authorization: `Bearer ${ADMIN_KEY}` },
       }),
     );
     expect(response.status).toBe(405);

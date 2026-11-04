@@ -68,7 +68,7 @@ describe("US4-6 README configuration snippets", () => {
     }
 
     const http = commands.find((line) => line.includes("--transport http"));
-    expect(http).toContain("http://127.0.0.1:3100/mcp");
+    expect(http).toContain("http://127.0.0.1:3101/mcp");
     expect(http).toContain(`Authorization: Bearer ${PLACEHOLDER}`);
   });
 

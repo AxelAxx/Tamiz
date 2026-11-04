@@ -221,7 +221,7 @@ export function createPostgresAuditReader(db: Database): AuditReaderPort {
           select a ->> 'targetId', 'abandoned', null
           from ${auditEntries}, jsonb_array_elements(${auditEntries.abandoned}) as a
           where ${auditEntries.createdAt} >= ${since}
-            -- skipped for an open circuit: never called (audit M5, as targetWindows)
+            -- skipped for an open circuit: never called (as targetWindows)
             and a ->> 'reason' <> 'circuit_open'
         )
         select target_id, count(*) as requests,

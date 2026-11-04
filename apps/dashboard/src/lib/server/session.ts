@@ -155,7 +155,7 @@ export function createWindowLimiter(deps: {
  * and Next.js keeps a client-sent `X-Forwarded-For`, so the header is used only behind a
  * trusted proxy (`TAMIZ_DASHBOARD_TRUST_PROXY=true`). Its last hop is the one that proxy
  * wrote; earlier hops are whatever the client sent, so rotating them must not open new
- * buckets (code audit 2026-11-03, L12). Without a trusted proxy every attempt shares one
+ * buckets. Without a trusted proxy every attempt shares one
  * bucket: a forged header cannot escape the limit.
  */
 export function clientAddress(headers: Headers, trustProxy: boolean): string {

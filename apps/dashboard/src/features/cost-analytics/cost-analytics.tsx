@@ -327,7 +327,7 @@ export function CostAnalytics() {
   const [groupBy, setGroupBy] = useState<GroupBy>("day");
   // The preset is resolved once per choice, so polling the same range does not move it.
   // Clicking the chosen preset again resolves it again: a screen left open overnight then
-  // includes today (second code audit, 2026-11-04, D7).
+  // includes today.
   const [resolvedAt, setResolvedAt] = useState(() => Date.now());
   const range = useMemo(
     () => (preset === undefined ? custom : presetRange(preset, new Date(resolvedAt))),

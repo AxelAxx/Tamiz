@@ -27,8 +27,9 @@ dataset is `agent-spend.v2.jsonl`: v1's 8 cases plus 7 new ones, five per cause
 (`anthropic-sonnet`, `mistral-small`, `openai-mini`). Naming one route every time now
 scores at most 1/3.
 
-The README evals table is regenerated from this PR's CI run. It also carries the
-`T-AUD-02` dataset changes.
+The README evals table was meant to be regenerated from this PR's CI run, but it was
+not: the second audit found it still on the old datasets. `T-AUD-17` regenerates it
+from the final code.
 
 ## Files touched
 

@@ -6,7 +6,7 @@
  * kept in a map by id; the view is the newest `LIVE_MAX` by `startedAt`, then `id`. While
  * paused, entries that would enter the view wait in a pending set and the rows stay still;
  * resuming merges them. An entry older than every row of a full view never enters it, so
- * it neither waits as "new" nor needs fetching (code audit 2026-11-03, M13, M14).
+ * it neither waits as "new" nor needs fetching.
  */
 import type { AuditEntryDto } from "@tamiz/contracts";
 
