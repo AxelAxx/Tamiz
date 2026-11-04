@@ -5,6 +5,7 @@ import { baselineCost, baselineTarget } from "../../src/domain/model/baseline.js
 import type { ModelTarget } from "../../src/domain/model/model-target.js";
 import { decide } from "../../src/domain/model/routing-decision.js";
 import type { Inspection } from "../../src/domain/model/sensitivity.js";
+import { usdUnchecked } from "../../src/domain/model/units.js";
 import { examplePolicyInput, validPolicy } from "./helpers/policies.js";
 
 // Spec 006 US1-1, US1-5, FR-002, FR-003, research R-08 (tasks.md T002, T003).
@@ -47,7 +48,7 @@ function input(overrides: Partial<AuditInput> = {}): AuditInput {
       target: target("mistral-small"),
       abandoned: [{ targetId: target("openai-mini").id, reason: "timeout" }],
       usage: { promptTokens: 40, completionTokens: 10, estimated: false },
-      cost: 0.000007,
+      cost: usdUnchecked(0.000007),
       noticeVersion: "v1",
     },
     baseline: target("anthropic-sonnet"),

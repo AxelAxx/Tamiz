@@ -23,6 +23,7 @@ import { baselineTarget } from "../../domain/model/baseline.js";
 import type { Usage } from "../../domain/model/cost.js";
 import type { InferenceRequest } from "../../domain/model/inference-request.js";
 import type { Decision } from "../../domain/model/routing-decision.js";
+import type { Usd } from "../../domain/model/units.js";
 import type { AuditLogPort } from "../ports/audit-log.port.js";
 import type { ClockPort } from "../ports/clock.port.js";
 import type { LoggerPort } from "../ports/logger.port.js";
@@ -175,7 +176,7 @@ export function withAuditStream(stream: StreamInference, deps: AuditDeps): Strea
         kind: "cancelled",
       };
       let usage: Usage | undefined;
-      let cost: number | undefined;
+      let cost: Usd | undefined;
       const called: string[] = [];
       try {
         for await (const part of routed.parts) {

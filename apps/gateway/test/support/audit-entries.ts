@@ -1,4 +1,5 @@
 import type { AuditEntry } from "../../src/domain/model/audit-entry.js";
+import { usdUnchecked } from "../../src/domain/model/units.js";
 
 /** A valid, content-free audit entry for query tests; `n` makes id and time unique. */
 export function sampleEntry(n: number, overrides: Partial<AuditEntry> = {}): AuditEntry {
@@ -32,8 +33,8 @@ export function sampleEntry(n: number, overrides: Partial<AuditEntry> = {}): Aud
           },
     abandoned: [],
     usage: { inputTokens: 40, outputTokens: 10, estimated: false },
-    costUsd: n % 3 === 0 ? 0 : 0.000007,
-    baselineCostUsd: 0.00027,
+    costUsd: usdUnchecked(n % 3 === 0 ? 0 : 0.000007),
+    baselineCostUsd: usdUnchecked(0.00027),
     baselineTargetId: "anthropic-sonnet",
     ...overrides,
   };

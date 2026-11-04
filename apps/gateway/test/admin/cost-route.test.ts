@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { CostReportSchema } from "@tamiz/contracts";
 import { describe, expect, it } from "vitest";
 import { aggregateCost } from "../../src/application/audit/aggregates.js";
+import { usdUnchecked } from "../../src/domain/model/units.js";
 import { createInMemoryAuditLog } from "../../src/infrastructure/cache/in-memory-audit-log.js";
 import { ADMIN_AUTH, AUTH, createTestApp } from "../helpers/app.js";
 import { sampleEntry } from "../support/audit-entries.js";
@@ -20,9 +21,12 @@ function threeDays() {
     usage: _usage,
     baselineCostUsd: _baseline,
     ...blocked
-  } = sampleEntry(10, { outcome: "blocked", costUsd: 0 });
+  } = sampleEntry(10, { outcome: "blocked", costUsd: usdUnchecked(0) });
   audit.append(blocked);
-  const { usage: _failedUsage, ...failed } = sampleEntry(11, { outcome: "failed", costUsd: 0 });
+  const { usage: _failedUsage, ...failed } = sampleEntry(11, {
+    outcome: "failed",
+    costUsd: usdUnchecked(0),
+  });
   audit.append(failed);
   return audit;
 }
@@ -48,8 +52,8 @@ describe("cost aggregates (in memory)", () => {
     expect(result.rows[0]).toMatchObject({
       inputTokens: 120,
       outputTokens: 30,
-      costUsd: 0.000014,
-      baselineCostUsd: 0.00081,
+      costUsd: usdUnchecked(0.000014),
+      baselineCostUsd: usdUnchecked(0.00081),
     });
     expect(result.blocked).toBe(1);
     expect(result.failed).toBe(1);
@@ -59,12 +63,16 @@ describe("cost aggregates (in memory)", () => {
     const local = sampleEntry(3);
     expect(local.target?.residency).toBe("local");
     const [row] = aggregateCost([local], "route").rows;
-    expect(row).toMatchObject({ key: "ollama-llama", costUsd: 0, baselineCostUsd: 0.00027 });
+    expect(row).toMatchObject({
+      key: "ollama-llama",
+      costUsd: usdUnchecked(0),
+      baselineCostUsd: usdUnchecked(0.00027),
+    });
   });
 
   it("US3-3: by route and by model; failed requests stay out of the rows", () => {
     const entries = [1, 2, 3, 4, 5, 6].map((n) => sampleEntry(n));
-    const failed = sampleEntry(7, { outcome: "failed", costUsd: 0 });
+    const failed = sampleEntry(7, { outcome: "failed", costUsd: usdUnchecked(0) });
     const byRoute = aggregateCost([...entries, failed], "route");
     expect(byRoute.rows.map((r) => [r.key, r.requests])).toEqual([
       ["mistral-small", 4],
@@ -102,8 +110,8 @@ describe("GET /v1/admin/cost", () => {
       requests: 6,
       inputTokens: 240,
       outputTokens: 60,
-      costUsd: 0.000028,
-      baselineCostUsd: 0.00162,
+      costUsd: usdUnchecked(0.000028),
+      baselineCostUsd: usdUnchecked(0.00162),
     });
     expect(report.notServed).toEqual({ requests: 2, blocked: 1, failed: 1 });
   });
