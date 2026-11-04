@@ -1,7 +1,9 @@
+import { createFakeClock } from "@tamiz/test-utils";
 import { asc, sql } from "drizzle-orm";
 import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { fileVersion } from "../../src/application/policy/policy-document.js";
+import type { ClockPort } from "../../src/application/ports/clock.port.js";
 import type {
   PolicyRepositoryPort,
   PolicyVersionDraft,
@@ -77,10 +79,13 @@ describe.skipIf(!docker)("PostgreSQL policy repository (Testcontainers)", () => 
     await database.db.execute(sql`truncate ${policyVersions}`);
   });
 
-  async function boot(file: PolicyVersionDraft): Promise<PolicyRepositoryPort> {
+  async function boot(
+    file: PolicyVersionDraft,
+    clock: ClockPort = systemClock,
+  ): Promise<PolicyRepositoryPort> {
     const repository = await createPostgresPolicyRepository({
       db: database.db,
-      clock: systemClock,
+      clock,
       file,
     });
     if (!repository.ok) throw new Error(repository.error.message);
@@ -201,6 +206,18 @@ describe.skipIf(!docker)("PostgreSQL policy repository (Testcontainers)", () => 
       error: expect.objectContaining({ kind: "conflict", activeVersion: 4 }),
     });
     expect((await rows()).map((row) => row.version)).toEqual([3, 4]);
+  });
+
+  it("a version saved on another gateway is in use here within the refresh interval (audit M11)", async () => {
+    const file = await filePolicy(3);
+    const clock = createFakeClock(new Date("2026-11-03T10:00:00Z"));
+    const gatewayA = await boot(file);
+    const gatewayB = await boot(file, clock);
+    expect((await gatewayA.replace(saved(file, "alice"), 3)).ok).toBe(true);
+
+    expect((await gatewayB.getActive()).version).toBe(3);
+    clock.advance(5_000);
+    expect((await gatewayB.getActive()).version).toBe(4);
   });
 
   it("a stale base is a conflict, and the loser picks up the winner's version", async () => {

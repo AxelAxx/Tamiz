@@ -13,6 +13,7 @@ import { MAX_BODY_BYTES } from "@tamiz/contracts";
 import { bodyLimit } from "hono/body-limit";
 import { HTTPException } from "hono/http-exception";
 import type { ClockPort } from "../application/ports/clock.port.js";
+import type { HealthProbe } from "../application/ports/health-probe.port.js";
 import type { LoggerPort } from "../application/ports/logger.port.js";
 import type { CostReportUseCase } from "../application/use-cases/cost-report.js";
 import type { GetActivePolicy } from "../application/use-cases/get-active-policy.js";
@@ -37,6 +38,8 @@ export interface AppDeps {
   readonly clock: ClockPort;
   readonly version: string;
   readonly startedAt: Date;
+  /** The dependencies `/health` reports on; none means plain liveness. */
+  readonly healthProbes?: ReadonlyArray<HealthProbe>;
   readonly logger: LoggerPort;
   readonly routeInference: RouteInference;
   readonly streamInference: StreamInference;
@@ -85,7 +88,12 @@ function presentHeaders(
  * order; the order is part of the behaviour.
  */
 function registerRoutes(app: GatewayApp, deps: AppDeps) {
-  const health = registerHealth(app, deps);
+  const health = registerHealth(app, {
+    clock: deps.clock,
+    version: deps.version,
+    startedAt: deps.startedAt,
+    ...(deps.healthProbes === undefined ? {} : { probes: deps.healthProbes }),
+  });
   const chat = registerChatCompletions(
     health,
     deps.routeInference,
@@ -128,6 +136,11 @@ export function createApp(deps: AppDeps): GatewayApp {
     await next();
     const clientId: string | undefined = c.get("clientId");
     const route = c.res.headers.get(ROUTE_HEADER);
+    const elapsedMs = Math.max(0, deps.clock.now().getTime() - started);
+    // An event stream returns here when its headers go out: the time is to the headers,
+    // and the status cannot tell a later failure. Its audit entry has the full latency
+    // and outcome (code audit 2026-11-03, L7).
+    const streamed = c.res.headers.get("content-type")?.startsWith("text/event-stream") === true;
     deps.logger.info(
       {
         requestId: c.get("requestId"),
@@ -137,7 +150,7 @@ export function createApp(deps: AppDeps): GatewayApp {
           headers: presentHeaders(c.req.header(), LOGGED_HEADERS),
         },
         status: c.res.status,
-        durationMs: Math.max(0, deps.clock.now().getTime() - started),
+        ...(streamed ? { streamed: true, timeToHeadersMs: elapsedMs } : { durationMs: elapsedMs }),
         ...(clientId !== undefined && { clientId }),
         ...(route !== null && { route }),
       },

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
-  anonymizeMessages,
+  anonymizeTexts,
   type PlaceholderEntry,
   restore,
 } from "../../src/domain/model/placeholders.js";
@@ -34,10 +34,10 @@ const entitiesOf = (findings: Vector["findings"], textIndex = 0): DetectedEntity
 
 describe("shared placeholder vectors (Python reference = TypeScript port)", () => {
   it.each(vectors.map((v) => [v.name, v] as const))("%s", (_name, vector) => {
-    const result = anonymizeMessages([vector.text], entitiesOf(vector.findings));
-    expect(result.messages).toEqual([vector.expected.text]);
+    const result = anonymizeTexts([vector.text], entitiesOf(vector.findings));
+    expect(result.texts).toEqual([vector.expected.text]);
     expect(result.mapping).toEqual(vector.expected.mapping);
-    expect(restore(result.messages[0] ?? "", result.mapping)).toBe(vector.text);
+    expect(restore(result.texts[0] ?? "", result.mapping)).toBe(vector.text);
   });
 
   it("spec 004's anonymize example", () => {
@@ -51,37 +51,37 @@ describe("shared placeholder vectors (Python reference = TypeScript port)", () =
         analysis: { findings: Vector["findings"] };
       };
     };
-    const result = anonymizeMessages(
+    const result = anonymizeTexts(
       [example.request.text],
       entitiesOf(example.response.analysis.findings),
     );
-    expect(result.messages[0]).toBe(example.response.text);
+    expect(result.texts[0]).toBe(example.response.text);
     expect(result.mapping).toEqual(example.response.mapping);
   });
 });
 
-describe("anonymizeMessages across messages", () => {
+describe("anonymizeTexts across messages", () => {
   it("US2-2: the same value in two messages gets one placeholder; numbering continues", () => {
     const messages = ["Soy Ana Ruiz.", "Ana Ruiz y Pedro Gil firman."];
-    const result = anonymizeMessages(messages, [
+    const result = anonymizeTexts(messages, [
       { textIndex: 0, kind: "PERSON", start: 4, end: 12, score: 0.85 },
       { textIndex: 1, kind: "PERSON", start: 0, end: 8, score: 0.85 },
       { textIndex: 1, kind: "PERSON", start: 11, end: 20, score: 0.85 },
     ]);
-    expect(result.messages).toEqual(["Soy <PERSON_1>.", "<PERSON_1> y <PERSON_2> firman."]);
+    expect(result.texts).toEqual(["Soy <PERSON_1>.", "<PERSON_1> y <PERSON_2> firman."]);
     expect(result.mapping.map((e) => e.placeholder)).toEqual(["<PERSON_1>", "<PERSON_2>"]);
   });
 
   it("numbering skips placeholders already present in any message", () => {
-    const result = anonymizeMessages(
+    const result = anonymizeTexts(
       ["Plantilla <DNI_2>.", "DNI 12345678Z"],
       [{ textIndex: 1, kind: "DNI", start: 4, end: 13, score: 1 }],
     );
-    expect(result.messages[1]).toBe("DNI <DNI_3>");
+    expect(result.texts[1]).toBe("DNI <DNI_3>");
   });
 
   it("ignores entities out of range or overlapping an earlier one", () => {
-    const result = anonymizeMessages(
+    const result = anonymizeTexts(
       ["Ana Ruiz"],
       [
         { textIndex: 0, kind: "PERSON", start: 0, end: 8, score: 0.85 },
@@ -89,7 +89,7 @@ describe("anonymizeMessages across messages", () => {
         { textIndex: 0, kind: "PERSON", start: 5, end: 99, score: 0.85 },
       ],
     );
-    expect(result.messages).toEqual(["<PERSON_1>"]);
+    expect(result.texts).toEqual(["<PERSON_1>"]);
   });
 });
 
@@ -130,8 +130,8 @@ describe("restore", () => {
             cursor += 4;
           }
         });
-        const result = anonymizeMessages(texts, entities);
-        expect(result.messages.map((m) => restore(m, result.mapping))).toEqual(texts);
+        const result = anonymizeTexts(texts, entities);
+        expect(result.texts.map((m) => restore(m, result.mapping))).toEqual(texts);
       }),
       { numRuns: 500 },
     );

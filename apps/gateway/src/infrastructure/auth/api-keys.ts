@@ -83,21 +83,10 @@ export function hashApiKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
 }
 
-/** The client id of the record whose hash matches, or `undefined`; scans every record. */
-export function verifyApiKey(
-  presented: string,
-  records: ReadonlyArray<ApiKeyRecord>,
-): string | undefined {
-  const presentedHash = Buffer.from(hashApiKey(presented), "hex");
-  let match: string | undefined;
-  for (const record of records) {
-    const equal = timingSafeEqual(presentedHash, Buffer.from(record.keyHash, "hex"));
-    if (equal && match === undefined) match = record.clientId;
-  }
-  return match;
-}
-
-/** Like {@link verifyApiKey}, with the role of the matching record. */
+/**
+ * The client id and role of the record whose hash matches, or `undefined`. Every record is
+ * compared, in constant time, whichever matches.
+ */
 export function verifyPrincipal(
   presented: string,
   records: ReadonlyArray<ApiKeyRecord>,

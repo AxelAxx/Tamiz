@@ -87,10 +87,16 @@ export interface RoutedCompletion {
 /**
  * Why no answer came back: the chain was executed and failed (feature 003), or the
  * privacy step blocked the request before any provider was called (spec 005 FR-011).
+ * `kind` at the top level lets callers narrow the decision and the failure together.
  */
 export type RoutingFailure =
-  | { readonly decision: RoutingDecision; readonly failure: ChainFailure }
   | {
+      readonly kind: "chain";
+      readonly decision: RoutingDecision;
+      readonly failure: ChainFailure;
+    }
+  | {
+      readonly kind: "blocked";
       readonly decision: BlockDecision;
       readonly failure: { readonly kind: "blocked"; readonly error: PrivacyBlockedError };
     };
@@ -101,7 +107,7 @@ export function blocked(decision: BlockDecision): RoutingFailure {
     sensitivity: decision.sensitivity,
     reason: decision.reason,
   });
-  return { decision, failure: { kind: "blocked", error } };
+  return { kind: "blocked", decision, failure: { kind: "blocked", error } };
 }
 
 /** `signal` is the client's: a client that goes away stops retries and fallbacks (audit M9). */
@@ -249,7 +255,7 @@ export function routeInference(deps: RouteInferenceDeps): RouteInference {
             }),
       }),
     );
-    if (!served.ok) return err({ decision, failure: served.error });
+    if (!served.ok) return err({ kind: "chain", decision, failure: served.error });
 
     const { target, value: completion, abandoned } = served.value;
     // Usage and cost of what the provider saw and billed (US2-6), before restoring.

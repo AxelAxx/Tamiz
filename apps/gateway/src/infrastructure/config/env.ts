@@ -5,7 +5,9 @@
  * Redis/Valkey URL for shared circuit state).
  *
  * Values are read once at boot through {@link loadConfig}; the resulting object is frozen
- * and injected. Nothing else reads `process.env`. An invalid environment yields a
+ * and injected. The one exception is OpenTelemetry: its SDK reads its own `OTEL_*`
+ * variables, so the two endpoints are validated here, at boot, and otherwise left to it
+ * (code audit 2026-11-03, L8). An invalid environment yields a
  * `ConfigurationError` listing each offending variable with the expected format and never
  * the value, so secrets cannot leak through the boot message.
  */
@@ -63,6 +65,9 @@ export const EnvSchema = z.object({
   TAMIZ_AUDIT_HASH_KEY: optionalSetting(z.string().min(32)),
   // Spec 006 T-006-03: PostgreSQL for the audit log and API keys; unset = in memory.
   DATABASE_URL: optionalSetting(PostgresUrlSchema),
+  // Read by the OpenTelemetry SDK; validated here so a typo fails at boot, not later.
+  OTEL_EXPORTER_OTLP_ENDPOINT: optionalSetting(HttpUrlSchema),
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: optionalSetting(HttpUrlSchema),
   TAMIZ_ADMIN_API_KEYS: optionalSetting(z.string()),
   TAMIZ_AUDIT_MEMORY_ENTRIES: z.coerce.number().int().min(100).max(1_000_000).default(10_000),
 });
@@ -93,6 +98,9 @@ const EXPECTED_FORMAT: Readonly<Record<EnvKey, string>> = {
   TAMIZ_AUDIT_HASH_KEY: "a secret of at least 32 characters",
   TAMIZ_AUDIT_MEMORY_ENTRIES: "an integer between 100 and 1000000",
   DATABASE_URL: "a postgres:// or postgresql:// URL",
+  OTEL_EXPORTER_OTLP_ENDPOINT:
+    "an http(s) URL of an OTLP collector, for example http://jaeger:4318",
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "an http(s) URL of an OTLP traces endpoint",
   TAMIZ_ADMIN_API_KEYS: "comma-separated clientId:sha256hex admin entries",
 };
 

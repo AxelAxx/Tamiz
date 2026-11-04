@@ -18,6 +18,9 @@ import type { BlockReason, PrivacyAction } from "./privacy-policy.js";
 import type { Decision } from "./routing-decision.js";
 import type { EntityKind, Sensitivity } from "./sensitivity.js";
 import type { TaskSize, TaskType } from "./task-classifier.js";
+import { type Usd, usdUnchecked } from "./units.js";
+
+const ZERO_USD = usdUnchecked(0);
 
 export const AUDIT_OUTCOMES = ["answered", "failed", "blocked", "cancelled"] as const;
 export type AuditOutcome = (typeof AUDIT_OUTCOMES)[number];
@@ -98,8 +101,8 @@ export interface AuditEntry {
     readonly outputTokens: number;
     readonly estimated: boolean;
   };
-  readonly costUsd: number;
-  readonly baselineCostUsd?: number;
+  readonly costUsd: Usd;
+  readonly baselineCostUsd?: Usd;
   readonly baselineTargetId?: string;
 }
 
@@ -110,7 +113,7 @@ export type AuditResult =
       readonly target: ModelTarget;
       readonly abandoned: ReadonlyArray<Abandoned>;
       readonly usage?: Usage;
-      readonly cost?: number;
+      readonly cost?: Usd;
       readonly noticeVersion?: string;
     }
   | {
@@ -119,7 +122,7 @@ export type AuditResult =
       readonly abandoned: ReadonlyArray<Abandoned>;
       readonly errorType: AuditErrorType;
       readonly usage?: Usage;
-      readonly cost?: number;
+      readonly cost?: Usd;
       readonly noticeVersion?: string;
     }
   | {
@@ -193,7 +196,7 @@ export function auditEntry(input: AuditInput): AuditEntry {
             estimated: usage.estimated,
           },
         }),
-    costUsd: blocked ? 0 : (result.cost ?? 0),
+    costUsd: blocked ? ZERO_USD : (result.cost ?? ZERO_USD),
     ...(usage === undefined || input.baseline === undefined
       ? {}
       : {

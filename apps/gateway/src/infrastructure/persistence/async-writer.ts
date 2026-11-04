@@ -2,10 +2,13 @@
  * Asynchronous audit writer (spec 006 FR-004, US1-6, research R-02).
  *
  * `append` only queues: a request never waits for the database. Every `intervalMs`
- * (through the clock port) the queue is written in batches of up to `batchSize`. A failed
- * batch is retried once, then dropped; a full queue drops its oldest entry. Every loss is
- * an `audit.dropped` routing event and a `warn` line with the error code, never silent.
- * `close` flushes what is left (called on shutdown).
+ * (through the clock port) the queue is written in batches of up to `batchSize`. A batch
+ * that fails twice goes back to the head of the queue and waits for the next interval, so
+ * a short database outage loses nothing while the queue has room (code audit 2026-11-03,
+ * L10); a full queue drops its oldest entry. `close` flushes what is left; what still
+ * cannot be written then is dropped, and so is anything appended after `close` (M10).
+ * Every loss is an `audit.dropped` routing event and a `warn` line with the error code,
+ * never silent.
  */
 import type { AuditLogPort } from "../../application/ports/audit-log.port.js";
 import type { ClockPort } from "../../application/ports/clock.port.js";
@@ -46,7 +49,13 @@ export function createAsyncAuditWriter(options: AsyncAuditWriterOptions): AsyncA
   const stop = new AbortController();
   let running: Promise<void> = Promise.resolve();
 
-  const dropped = (count: number, reason: "queue_full" | "store_error", code?: string) => {
+  let closed = false;
+
+  const dropped = (
+    count: number,
+    reason: "queue_full" | "store_error" | "shutdown",
+    code?: string,
+  ) => {
     options.events.emit({
       type: "audit.dropped",
       count,
@@ -59,26 +68,50 @@ export function createAsyncAuditWriter(options: AsyncAuditWriterOptions): AsyncA
     );
   };
 
-  async function writeAll(): Promise<void> {
-    while (queue.length > 0) {
-      const batch = queue.splice(0, batchSize);
+  async function insert(batch: AuditEntry[]): Promise<unknown> {
+    try {
+      await options.store.insertBatch(batch);
+      return undefined;
+    } catch {
       try {
         await options.store.insertBatch(batch);
-      } catch {
-        try {
-          await options.store.insertBatch(batch);
-        } catch (error) {
-          dropped(batch.length, "store_error", errorCode(error));
-        }
+        return undefined;
+      } catch (error) {
+        return error;
       }
     }
   }
 
+  /** Puts a failed batch back in front, within `maxQueue`: the oldest entries go first. */
+  function requeue(batch: AuditEntry[], error: unknown): void {
+    const room = Math.max(0, maxQueue - queue.length);
+    const kept = batch.slice(Math.max(0, batch.length - room));
+    if (kept.length < batch.length) dropped(batch.length - kept.length, "queue_full");
+    queue.unshift(...kept);
+    options.logger?.warn({ count: kept.length, code: errorCode(error) }, "audit write deferred");
+  }
+
+  async function writeAll(final: boolean): Promise<void> {
+    while (queue.length > 0) {
+      const batch = queue.splice(0, batchSize);
+      const error = await insert(batch);
+      if (error === undefined) continue;
+      if (final) {
+        dropped(batch.length, "store_error", errorCode(error));
+        continue;
+      }
+      requeue(batch, error);
+      return;
+    }
+  }
+
   // Flushes never overlap: each one runs after the previous.
-  const flush = (): Promise<void> => {
-    running = running.then(writeAll, writeAll);
+  const run = (final: boolean): Promise<void> => {
+    const write = () => writeAll(final);
+    running = running.then(write, write);
     return running;
   };
+  const flush = () => run(false);
 
   void (async () => {
     while (!stop.signal.aborted) {
@@ -93,6 +126,10 @@ export function createAsyncAuditWriter(options: AsyncAuditWriterOptions): AsyncA
 
   return {
     append(entry) {
+      if (closed) {
+        dropped(1, "shutdown");
+        return;
+      }
       if (queue.length >= maxQueue) {
         queue.shift();
         dropped(1, "queue_full");
@@ -101,8 +138,9 @@ export function createAsyncAuditWriter(options: AsyncAuditWriterOptions): AsyncA
     },
     flush,
     async close() {
+      closed = true;
       stop.abort();
-      await flush();
+      await run(true);
     },
     pending: () => queue.length,
   };

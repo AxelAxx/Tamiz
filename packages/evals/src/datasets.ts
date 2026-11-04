@@ -143,35 +143,36 @@ function issue(error: z.ZodError): string {
   return path === "" ? first.message : `${path}: ${first.message}`;
 }
 
-function checkOffsets(c: unknown): string | undefined {
-  const leak = LeakCaseSchema.safeParse(c);
-  if (leak.success) {
-    for (const v of leak.data.values) {
-      const message = leak.data.messages[v.messageIndex];
-      if (message === undefined) return "values: messageIndex outside the messages";
-      const text =
-        v.location?.kind === "arguments" && message.role === "assistant"
-          ? message.tool_calls?.[v.location.toolCallIndex]?.function.arguments
-          : message.content;
-      if (text === undefined || text === null) return "values: location outside the message";
-      if (v.end <= v.start || v.end > text.length) return "values: offsets outside the message";
-    }
-  }
-  const detection = DetectionCaseSchema.safeParse(c);
-  if (detection.success) {
-    for (const s of detection.data.spans) {
-      if (s.end <= s.start || s.end > detection.data.text.length) {
-        return "spans: offsets outside the text";
-      }
-    }
+/** A check a schema cannot express: annotated values fall inside their message. */
+export function leakOffsets(c: LeakCase): string | undefined {
+  for (const v of c.values) {
+    const message = c.messages[v.messageIndex];
+    if (message === undefined) return "values: messageIndex outside the messages";
+    const text =
+      v.location?.kind === "arguments" && message.role === "assistant"
+        ? message.tool_calls?.[v.location.toolCallIndex]?.function.arguments
+        : message.content;
+    if (text === undefined || text === null) return "values: location outside the message";
+    if (v.end <= v.start || v.end > text.length) return "values: offsets outside the message";
   }
   return undefined;
 }
 
+/** A check a schema cannot express: annotated spans fall inside the text. */
+export function detectionOffsets(c: DetectionCase): string | undefined {
+  const outside = c.spans.some((s) => s.end <= s.start || s.end > c.text.length);
+  return outside ? "spans: offsets outside the text" : undefined;
+}
+
+/**
+ * `check` runs on each parsed case, for rules of that dataset alone (offsets); a case
+ * never goes through another dataset's schema (code audit 2026-11-03, L17).
+ */
 export async function loadDataset<C extends { id: string }>(
   path: string,
   name: string,
   caseSchema: z.ZodType<C>,
+  check: (c: C) => string | undefined = () => undefined,
 ): Promise<Dataset<C>> {
   const file = basename(path);
   let raw: string;
@@ -204,8 +205,8 @@ export async function loadDataset<C extends { id: string }>(
     const parsed = caseSchema.safeParse(value);
     if (!parsed.success) throw new DatasetError(file, n, issue(parsed.error));
     if (ids.has(parsed.data.id)) throw new DatasetError(file, n, `duplicate id ${parsed.data.id}`);
-    const offsets = checkOffsets(value);
-    if (offsets !== undefined) throw new DatasetError(file, n, offsets);
+    const problem = check(parsed.data);
+    if (problem !== undefined) throw new DatasetError(file, n, problem);
     ids.add(parsed.data.id);
     cases.push(parsed.data);
   }

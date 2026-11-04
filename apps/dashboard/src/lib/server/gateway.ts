@@ -53,6 +53,8 @@ export async function callGateway<T>(options: {
   readonly call: () => Promise<GatewayAnswer>;
   readonly log: (line: GatewayCallLog) => void;
   readonly now?: () => number;
+  /** Non-2xx statuses whose body is the endpoint's own schema (`/health`'s 503). */
+  readonly bodyOnStatus?: ReadonlyArray<number>;
 }): Promise<Response> {
   const now = options.now ?? Date.now;
   const { endpoint } = options;
@@ -85,7 +87,7 @@ export async function callGateway<T>(options: {
     return bffError(502, "contract", "The gateway answer is not JSON", { endpoint });
   }
 
-  if (!answer.ok) {
+  if (!answer.ok && !(options.bodyOnStatus ?? []).includes(answer.status)) {
     const envelope = ErrorEnvelopeSchema.safeParse(body);
     if (!envelope.success) {
       return bffError(502, "contract", "The gateway error breaks the contract", {

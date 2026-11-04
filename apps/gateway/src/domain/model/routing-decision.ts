@@ -10,7 +10,12 @@
  * A request whose values cannot be anonymized safely goes local instead of anonymized
  * (009 tool-calling FR-011).
  */
-import { type ModelTarget, RESIDENCIES, type Residency } from "./model-target.js";
+import {
+  type ModelTarget,
+  RESIDENCIES,
+  type Residency,
+  totalPricePerMillion,
+} from "./model-target.js";
 import {
   applyPrivacy,
   type BlockReason,
@@ -97,15 +102,11 @@ export function matches(rule: RoutingRule, request: DecisionInput): boolean {
   );
 }
 
-function totalPrice(target: ModelTarget): number {
-  return target.pricing.inputUsdPerMillion + target.pricing.outputUsdPerMillion;
-}
-
 /** The rule's targets, sorted by input + output price when `orderBy: "cost"` (stable). */
 export function orderTargets(rule: RoutingRule, policy: RoutingPolicy): ReadonlyArray<ModelTarget> {
   const targets = rule.route.map((id) => targetById(policy, id));
   if (rule.orderBy !== "cost") return targets;
-  return targets.sort((a, b) => totalPrice(a) - totalPrice(b));
+  return targets.sort((a, b) => totalPricePerMillion(a) - totalPricePerMillion(b));
 }
 
 /** Decides the ordered chain of targets for a classified request, or blocks it. */

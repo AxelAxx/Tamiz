@@ -330,6 +330,7 @@ describe("resilience on the endpoint (spec 003)", () => {
       const target = decision.chain[1];
       if (target === undefined) throw new Error("the default chain has two targets");
       return err({
+        kind: "chain",
         decision,
         failure: {
           kind: "residency",
