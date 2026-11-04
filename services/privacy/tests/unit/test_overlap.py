@@ -19,6 +19,21 @@ def test_higher_score_wins() -> None:
     assert resolve_overlaps([phone, iban]) == (iban,)
 
 
+def test_the_more_sensitive_kind_wins_over_a_higher_score() -> None:
+    # Second code audit (2026-11-04, P8): a place must not hide a phone number.
+    place = Finding(K.LOCATION, 0, 20, 0.85)
+    phone = Finding(K.PHONE, 8, 19, 0.6)
+
+    assert resolve_overlaps([place, phone]) == (phone,)
+
+
+def test_a_checksum_validated_identifier_wins_over_a_more_sensitive_guess() -> None:
+    cif = Finding(K.CIF, 15, 24, 1.0)
+    person = Finding(K.PERSON, 15, 24, 0.85)
+
+    assert resolve_overlaps([person, cif]) == (cif,)
+
+
 def test_on_equal_score_the_more_specific_kind_wins() -> None:
     nss = Finding(K.NSS, 0, 12, 0.9)
     phone = Finding(K.PHONE, 3, 12, 0.9)

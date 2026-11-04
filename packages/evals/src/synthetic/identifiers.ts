@@ -86,6 +86,8 @@ export interface Identifiers {
   dniWithoutLeadingZero(): string;
   dniSpaced(): string;
   landline(): string;
+  /** A NIF of a minor, a Spaniard abroad or a foreigner without a NIE (K, L, M). */
+  nifKlm(): string;
 }
 
 export function identifiers(r: Random): Identifiers {
@@ -194,6 +196,10 @@ export function identifiers(r: Random): Identifiers {
       const n = r.int(100_000_000);
       const d = String(n).padStart(8, "0");
       return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5)} ${dniLetter(n)}`;
+    },
+    nifKlm() {
+      const n = r.int(10_000_000);
+      return `${r.pick(["K", "L", "M"])}${String(n).padStart(7, "0")}${dniLetter(n)}`;
     },
     landline() {
       const digits = `${r.pick(["91", "93", "95", "96", "98"])}${r.digits(7)}`;

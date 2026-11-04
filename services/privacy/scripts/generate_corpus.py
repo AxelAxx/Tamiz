@@ -1,6 +1,6 @@
 """Generate the synthetic Spanish PII corpus (spec 004 US4, FR-017; research R-14).
 
-    uv run python scripts/generate_corpus.py          # write tests/corpus/pii-es.v2.jsonl
+    uv run python scripts/generate_corpus.py          # write tests/corpus/pii-es.v3.jsonl
     uv run python scripts/generate_corpus.py --check  # exit 1 if the committed file differs
 
 Everything is synthetic: names come from Faker's `es_ES` lists, identifiers are computed
@@ -11,6 +11,11 @@ The output is deterministic for a given seed and the locked Faker version.
 Version 2 (code audit 2026-11-03) adds formats people write that version 1 never tried: a
 DNI without its leading zero or with spaces, landlines grouped 2-3-2-2, a phone right after
 `Tel.`, and an IBAN followed by an amount.
+
+Version 3 (second code audit 2026-11-04) adds text as it is pasted from forms, Word and
+PDFs: two DNIs joined by "y" or a slash, an IBAN in the old CCC grouping or with dashes,
+phones with no-break spaces or joined by a slash, `nº` before a DNI, K/L/M NIFs. Its hard
+negatives include nine-digit references that start like a phone.
 """
 
 import argparse
@@ -24,9 +29,9 @@ from pathlib import Path
 
 from faker import Faker
 
-VERSION = "2"
+VERSION = "3"
 SEED = 20261030
-CREATED = "2026-11-03"
+CREATED = "2026-11-04"
 TARGET = Path(__file__).resolve().parent.parent / "tests" / "corpus" / f"pii-es.v{VERSION}.jsonl"
 
 CITIES = [
@@ -339,10 +344,42 @@ def generic_identity(g: Gen) -> Case:
     )  # fmt: skip
 
 
+def pasted_identities(g: Gen) -> Case:
+    n = g.rng.randrange(10**7)
+    nif = f"{g.rng.choice('KLM')}{n:07d}{dni_letter(n)}"
+    return (
+        Case(["pasted"]).t("Titulares: ").e("DNI", g.dni()).t(" y ").e("DNI", g.dni())
+        .t("; menor con NIF ").e("DNI", nif).t(", DNI nº").e("DNI", g.dni()).t(".")
+    )  # fmt: skip
+
+
+def pasted_accounts(g: Gen) -> Case:
+    compact = g.iban().replace(" ", "")
+    ccc = f"{compact[:4]} {compact[4:8]} {compact[8:12]} {compact[12:14]} {compact[14:]}"
+    dashed = "-".join(compact[i : i + 4] for i in range(0, len(compact), 4))
+    return (
+        Case(["pasted"]).t("Cuenta antigua ").e("IBAN", ccc).t("; cuenta nueva ").e("IBAN", dashed)
+        .t(".")
+    )  # fmt: skip
+
+
+def pasted_phones(g: Gen) -> Case:
+    first, second = g.phone(), g.phone()
+    digits = "".join(c for c in g.phone() if c.isdigit())[-9:]
+    nbsp = "\u00a0".join([digits[:3], digits[3:6], digits[6:]])
+    one = "".join(c for c in first if c.isdigit())[-9:]
+    two = "".join(c for c in second if c.isdigit())[-9:]
+    return (
+        Case(["pasted"]).t("Teléfonos ").e("PHONE", one).t("/").e("PHONE", two)
+        .t(", móvil\u00a0").e("PHONE", nbsp).t(".")
+    )  # fmt: skip
+
+
 POSITIVE: list[Template] = [
     clinic_admission, clinic_contact, clinic_social_security, hr_payroll, hr_foreign_worker,
     legal_contract, legal_notification, fintech_transfer, fintech_card, fintech_invoice,
     generic_message, generic_identity, fintech_refund, generic_phone_note,
+    pasted_identities, pasted_accounts, pasted_phones,
 ]  # fmt: skip
 
 NEGATIVE: list[tuple[str, Callable[[Gen], str]]] = [
@@ -357,6 +394,10 @@ NEGATIVE: list[tuple[str, Callable[[Gen], str]]] = [
         f"referencia {g.rng.randrange(10**8):08d}."
     )),
     ("not-a-phone", lambda g: f"Expediente número {g.not_a_phone()} archivado."),
+    # Nine digits that start like a phone, with no phone word nearby (second audit, P6).
+    ("reference-like-a-phone", lambda g: (
+        f"Pedido {g.rng.choice('6789')}{g.rng.randrange(10**8):08d} enviado el {g.date()}."
+    )),
     ("amount", lambda g: (
         f"Importe total: {g.rng.randint(1, 999)}.{g.rng.randint(100, 999)},"
         f"{g.rng.randint(10, 99)} euros."
@@ -370,7 +411,7 @@ NEGATIVE: list[tuple[str, Callable[[Gen], str]]] = [
     ])),
 ]  # fmt: skip
 
-POSITIVE_CASES = 308
+POSITIVE_CASES = 340
 NEGATIVE_CASES = 60
 
 

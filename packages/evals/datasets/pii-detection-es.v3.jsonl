@@ -1,0 +1,161 @@
+{"dataset":"pii-detection-es","version":3,"synthetic":true,"language":["es"],"generator":"packages/evals/src/synthetic/generate.ts","seed":20261031,"note":"Synthetic cases only. Every name, number and text is invented by the generator; identifiers carry valid control characters so recognizers treat them as real-looking."}
+{"id":"pii-detection-0001","tags":["clinic","abbreviation"],"text":"Tel.0034 961820372, preguntar por Ainhoa Arrieta","spans":[{"kind":"PHONE","start":4,"end":18},{"kind":"PERSON","start":34,"end":48}]}
+{"id":"pii-detection-0002","tags":["fintech"],"text":"Pago con 5513-7046-9179-6565, confirmación enviada a glizarraga31@correo.example.es.","spans":[{"kind":"CREDIT_CARD","start":9,"end":28},{"kind":"EMAIL","start":53,"end":83}]}
+{"id":"pii-detection-0003","tags":["generic","adjacent"],"text":"DNI 46152628-t, NIE y5090816x.","spans":[{"kind":"DNI","start":4,"end":14},{"kind":"NIE","start":20,"end":29}]}
+{"id":"pii-detection-0004","tags":["fintech"],"text":"Pago con 5248-2335-3066-6617, confirmación enviada a maialen.arrizabalaga@example.com.","spans":[{"kind":"CREDIT_CARD","start":9,"end":28},{"kind":"EMAIL","start":53,"end":85}]}
+{"id":"pii-detection-0005","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 6255923S, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0006","tags":["clinic","sentence-start"],"text":"Eusebio Ballesteros, con DNI 68271566 e, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":19},{"kind":"DNI","start":29,"end":39}]}
+{"id":"pii-detection-0007","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 9684929C, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0008","tags":["negative"],"text":"Pedido 97310479 enviado al almacén 7.","spans":[]}
+{"id":"pii-detection-0009","tags":["fintech"],"text":"Factura emitida a B-5407067-7, domicilio fiscal en Segovia.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":58}]}
+{"id":"pii-detection-0010","tags":["fintech"],"text":"Tarjeta 5452 8072 3321 8627 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":27}]}
+{"id":"pii-detection-0011","tags":["clinic"],"text":"Paciente: Arantxa Rosales Zabaleta. Afiliación 12 15770521 69. Centro de salud de Cuenca.","spans":[{"kind":"PERSON","start":10,"end":34},{"kind":"NSS","start":47,"end":61},{"kind":"LOCATION","start":82,"end":88}]}
+{"id":"pii-detection-0012","tags":["hr","sentence-end"],"text":"El trabajador con número de afiliación 390448013146 solicita el cambio de cuenta a es0364251987172330526185","spans":[{"kind":"NSS","start":39,"end":51},{"kind":"IBAN","start":83,"end":107}]}
+{"id":"pii-detection-0013","tags":["clinic","sentence-end"],"text":"Remitir el informe a EDURNE.SOTOMAYOR@EXAMPLE.ORG y llamar al +34 667 698 144","spans":[{"kind":"EMAIL","start":21,"end":49},{"kind":"PHONE","start":62,"end":77}]}
+{"id":"pii-detection-0014","tags":["legal"],"text":"Escritura otorgada por Xabier del Valle Lizarraga ante notario en Segovia el 3 de marzo.","spans":[{"kind":"PERSON","start":23,"end":49},{"kind":"LOCATION","start":66,"end":73}]}
+{"id":"pii-detection-0015","tags":["hr","sentence-start"],"text":"Y 8632545 S es el documento de la nueva contratada, Nerea Aranguren.","spans":[{"kind":"NIE","start":0,"end":11},{"kind":"PERSON","start":52,"end":67}]}
+{"id":"pii-detection-0016","tags":["negative"],"text":"Documento 93636619Q pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0017","tags":["hr","sentence-end"],"text":"El trabajador con número de afiliación 47/11946975/91 solicita el cambio de cuenta a ES34 8041 4484 2876 7257 8635","spans":[{"kind":"NSS","start":39,"end":53},{"kind":"IBAN","start":85,"end":114}]}
+{"id":"pii-detection-0018","tags":["fintech","amount-after"],"text":"Abonar en ES53 6162 3685 4153 8959 1948 1500 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":39}]}
+{"id":"pii-detection-0019","tags":["fintech"],"text":"Pago con 5359-6222-7259-2376, confirmación enviada a milagros.salcedo+rrhh@example.org.","spans":[{"kind":"CREDIT_CARD","start":9,"end":28},{"kind":"EMAIL","start":53,"end":86}]}
+{"id":"pii-detection-0020","tags":["hr"],"text":"Le escribe Edurne Sagasta Valverde desde la oficina de Segovia; mi móvil es el 0034 693942416.","spans":[{"kind":"PERSON","start":11,"end":34},{"kind":"LOCATION","start":55,"end":62},{"kind":"PHONE","start":79,"end":93}]}
+{"id":"pii-detection-0021","tags":["pasted","dni-y"],"text":"Titulares: 91261088D y 45.632.087-H, NIF del menor K0457524P.","spans":[{"kind":"DNI","start":11,"end":20},{"kind":"DNI","start":23,"end":35},{"kind":"DNI","start":51,"end":60}]}
+{"id":"pii-detection-0022","tags":["clinic","sentence-end"],"text":"Remitir el informe a mmendizabal10@example.net y llamar al 681 513 828","spans":[{"kind":"EMAIL","start":21,"end":46},{"kind":"PHONE","start":59,"end":70}]}
+{"id":"pii-detection-0023","tags":["fintech"],"text":"Factura emitida a Q-9625900-G, domicilio fiscal en Lugo.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":55}]}
+{"id":"pii-detection-0024","tags":["negative"],"text":"Referencia interna 298073886 sin incidencias.","spans":[]}
+{"id":"pii-detection-0025","tags":["fintech","amount-after"],"text":"Abonar en es1701672623692629787409 45 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0026","tags":["fintech","amount-after"],"text":"Abonar en ES6890952641052642206322 1500 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0027","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 5169 6304 5664 2883 del titular Begoña de la Fuente Ballesteros.","spans":[{"kind":"CREDIT_CARD","start":30,"end":49},{"kind":"PERSON","start":62,"end":93}]}
+{"id":"pii-detection-0028","tags":["fintech","amount-after"],"text":"Abonar en ES3504437243940521708736 45 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0029","tags":["hr","sentence-start"],"text":"Y.9341267.S es el documento de la nueva contratada, Leire de la Fuente Valverde.","spans":[{"kind":"NIE","start":0,"end":11},{"kind":"PERSON","start":52,"end":79}]}
+{"id":"pii-detection-0030","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 4191-5262-2748-1921 del titular Covadonga del Río Rosales.","spans":[{"kind":"CREDIT_CARD","start":30,"end":49},{"kind":"PERSON","start":62,"end":87}]}
+{"id":"pii-detection-0031","tags":["fintech","amount-after"],"text":"Abonar en ES89 3605 9459 9134 3281 7946 1500 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":39}]}
+{"id":"pii-detection-0032","tags":["negative"],"text":"Referencia interna 399576183 sin incidencias.","spans":[]}
+{"id":"pii-detection-0033","tags":["fintech"],"text":"Factura emitida a s6390779d, domicilio fiscal en Segovia.","spans":[{"kind":"CIF","start":18,"end":27},{"kind":"LOCATION","start":49,"end":56}]}
+{"id":"pii-detection-0034","tags":["clinic"],"text":"Paciente: Milagros de la Fuente Gorostiza. Afiliación 21 37683444 63. Centro de salud de Ourense.","spans":[{"kind":"PERSON","start":10,"end":41},{"kind":"NSS","start":54,"end":68},{"kind":"LOCATION","start":89,"end":96}]}
+{"id":"pii-detection-0035","tags":["clinic","sentence-start"],"text":"Unai del Río Zubiri, con DNI 55.124.131-P, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":19},{"kind":"DNI","start":29,"end":41}]}
+{"id":"pii-detection-0036","tags":["legal"],"text":"Escritura otorgada por Leandro Agirre Aranguren ante notario en Monforte de Lemos el 3 de marzo.","spans":[{"kind":"PERSON","start":23,"end":47},{"kind":"LOCATION","start":64,"end":81}]}
+{"id":"pii-detection-0037","tags":["hr","sentence-start"],"text":"X4511307H es el documento de la nueva contratada, Maialen Arrizabalaga Valcárcel.","spans":[{"kind":"NIE","start":0,"end":9},{"kind":"PERSON","start":50,"end":80}]}
+{"id":"pii-detection-0038","tags":["clinic","landline"],"text":"Llamar a la consulta al 98 489 04 64 por la mañana.","spans":[{"kind":"PHONE","start":24,"end":36}]}
+{"id":"pii-detection-0039","tags":["generic","adjacent"],"text":"DNI 96.142.779-L, NIE Y 5342475 A.","spans":[{"kind":"DNI","start":4,"end":16},{"kind":"NIE","start":22,"end":33}]}
+{"id":"pii-detection-0040","tags":["negative"],"text":"Pedido 05217127 enviado al almacén 1.","spans":[]}
+{"id":"pii-detection-0041","tags":["fintech","amount-after"],"text":"Abonar en ES7084945595066801446099 300 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0042","tags":["pasted","iban-layouts"],"text":"Cuenta antigua ES48 9064 7533 04 4642527943, nueva ES48-9064-7533-0446-4252-7943.","spans":[{"kind":"IBAN","start":15,"end":43},{"kind":"IBAN","start":51,"end":80}]}
+{"id":"pii-detection-0043","tags":["pasted","phone-layouts"],"text":"Teléfonos 671270945/825641708, móvil 890 337 317.","spans":[{"kind":"PHONE","start":10,"end":19},{"kind":"PHONE","start":20,"end":29},{"kind":"PHONE","start":37,"end":48}]}
+{"id":"pii-detection-0044","tags":["hr"],"text":"Le escribe Gorka Zubiri desde la oficina de Palencia; mi móvil es el 645.398.936.","spans":[{"kind":"PERSON","start":11,"end":23},{"kind":"LOCATION","start":44,"end":52},{"kind":"PHONE","start":69,"end":80}]}
+{"id":"pii-detection-0045","tags":["clinic","sentence-start"],"text":"Gorka Goikoetxea Carballo, con DNI 06.056.442-J, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":25},{"kind":"DNI","start":35,"end":47}]}
+{"id":"pii-detection-0046","tags":["generic","sentence-start"],"text":"74720765 k es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":10}]}
+{"id":"pii-detection-0047","tags":["hr"],"text":"Le escribe Edurne de la Peña Larrañaga desde la oficina de Huelva; mi móvil es el 680 097 901.","spans":[{"kind":"PERSON","start":11,"end":38},{"kind":"LOCATION","start":59,"end":65},{"kind":"PHONE","start":82,"end":93}]}
+{"id":"pii-detection-0048","tags":["negative"],"text":"El expediente 2026/7067 sigue abierto y la sala 21 está libre.","spans":[]}
+{"id":"pii-detection-0049","tags":["legal"],"text":"Notifíquese a bsalcedo37@correo.example.es; teléfono de contacto +34 662 292 962.","spans":[{"kind":"EMAIL","start":14,"end":42},{"kind":"PHONE","start":65,"end":80}]}
+{"id":"pii-detection-0050","tags":["pasted","iban-layouts"],"text":"Cuenta antigua ES15 4598 6214 11 8848213595, nueva ES15-4598-6214-1188-4821-3595.","spans":[{"kind":"IBAN","start":15,"end":43},{"kind":"IBAN","start":51,"end":80}]}
+{"id":"pii-detection-0051","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 2518888C, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0052","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 5310519002944166 del titular Xabier Olaizola Zabaleta.","spans":[{"kind":"CREDIT_CARD","start":30,"end":46},{"kind":"PERSON","start":59,"end":83}]}
+{"id":"pii-detection-0053","tags":["hr"],"text":"Alta en nómina de Nerea Ballesteros Larrañaga (NIE Z9725326B); cuenta es3563407055035469225034.","spans":[{"kind":"PERSON","start":18,"end":45},{"kind":"NIE","start":51,"end":60},{"kind":"IBAN","start":70,"end":94}]}
+{"id":"pii-detection-0054","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 5186151951749155 del titular Arantxa Salcedo Zabaleta.","spans":[{"kind":"CREDIT_CARD","start":30,"end":46},{"kind":"PERSON","start":59,"end":83}]}
+{"id":"pii-detection-0055","tags":["legal"],"text":"La sociedad F64086895 y Remedios Sagasta, vecino de Albacete, firman el acuerdo.","spans":[{"kind":"CIF","start":12,"end":21},{"kind":"PERSON","start":24,"end":40},{"kind":"LOCATION","start":52,"end":60}]}
+{"id":"pii-detection-0056","tags":["negative"],"text":"El expediente 2026/3231 sigue abierto y la sala 20 está libre.","spans":[]}
+{"id":"pii-detection-0057","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 5515-1000-6939-5783 del titular Begoña de la Fuente Escudero.","spans":[{"kind":"CREDIT_CARD","start":30,"end":49},{"kind":"PERSON","start":62,"end":90}]}
+{"id":"pii-detection-0058","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 3643340W, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0059","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 6956448Y, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0060","tags":["generic","sentence-start"],"text":"88246922 q es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":10}]}
+{"id":"pii-detection-0061","tags":["clinic"],"text":"Paciente: Noelia Mendizábal Agirre. Afiliación 229070699806. Centro de salud de Guadalajara.","spans":[{"kind":"PERSON","start":10,"end":34},{"kind":"NSS","start":47,"end":59},{"kind":"LOCATION","start":80,"end":91}]}
+{"id":"pii-detection-0062","tags":["fintech"],"text":"Devolución a es2524110499164474623505 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0063","tags":["fintech"],"text":"Tarjeta 5207 9450 2339 0517 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":27}]}
+{"id":"pii-detection-0064","tags":["negative"],"text":"Documento 12199205E pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0065","tags":["fintech"],"text":"Factura emitida a P-4427812-E, domicilio fiscal en Lugo.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":55}]}
+{"id":"pii-detection-0066","tags":["legal"],"text":"Escritura otorgada por Brais del Valle Ibarra ante notario en Jaén el 3 de marzo.","spans":[{"kind":"PERSON","start":23,"end":45},{"kind":"LOCATION","start":62,"end":66}]}
+{"id":"pii-detection-0067","tags":["generic","sentence-start"],"text":"98439556-q es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":10}]}
+{"id":"pii-detection-0068","tags":["pasted","phone-layouts"],"text":"Teléfonos 848869633/720727688, móvil 673 214 891.","spans":[{"kind":"PHONE","start":10,"end":19},{"kind":"PHONE","start":20,"end":29},{"kind":"PHONE","start":37,"end":48}]}
+{"id":"pii-detection-0069","tags":["hr","sentence-start"],"text":"z8573430r es el documento de la nueva contratada, Xabier Cordero Seoane.","spans":[{"kind":"NIE","start":0,"end":9},{"kind":"PERSON","start":50,"end":71}]}
+{"id":"pii-detection-0070","tags":["fintech","adjacent"],"text":"IBAN:ES2709233440801228257518","spans":[{"kind":"IBAN","start":5,"end":29}]}
+{"id":"pii-detection-0071","tags":["fintech","amount-after"],"text":"Abonar en es4548196658798107632074 12 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0072","tags":["negative"],"text":"El expediente 2026/8044 sigue abierto y la sala 24 está libre.","spans":[]}
+{"id":"pii-detection-0073","tags":["clinic","abbreviation"],"text":"Tel.+34 874 898 413, preguntar por Gorka del Valle Seoane","spans":[{"kind":"PHONE","start":4,"end":19},{"kind":"PERSON","start":35,"end":57}]}
+{"id":"pii-detection-0074","tags":["legal"],"text":"La sociedad N-4726975-H y Valentín de la Fuente Goikoetxea, vecino de Cuenca, firman el acuerdo.","spans":[{"kind":"CIF","start":12,"end":23},{"kind":"PERSON","start":26,"end":58},{"kind":"LOCATION","start":70,"end":76}]}
+{"id":"pii-detection-0075","tags":["generic","sentence-start"],"text":"50117296 c es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":10}]}
+{"id":"pii-detection-0076","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 1654100D, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0077","tags":["fintech"],"text":"Pago con 5138-2169-6560-0006, confirmación enviada a anselmo.carballo+rrhh@example.net.","spans":[{"kind":"CREDIT_CARD","start":9,"end":28},{"kind":"EMAIL","start":53,"end":86}]}
+{"id":"pii-detection-0078","tags":["clinic","sentence-start"],"text":"Ainhoa de la Peña Bermúdez, con DNI 83820526 q, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":26},{"kind":"DNI","start":36,"end":46}]}
+{"id":"pii-detection-0079","tags":["generic","adjacent"],"text":"DNI 82.105.355-R, NIE x5806776n.","spans":[{"kind":"DNI","start":4,"end":16},{"kind":"NIE","start":22,"end":31}]}
+{"id":"pii-detection-0080","tags":["negative"],"text":"Documento 79033664B pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0081","tags":["clinic"],"text":"Paciente: Valentín Pacheco. Afiliación 01/78429890/39. Centro de salud de Jaén.","spans":[{"kind":"PERSON","start":10,"end":26},{"kind":"NSS","start":39,"end":53},{"kind":"LOCATION","start":74,"end":78}]}
+{"id":"pii-detection-0082","tags":["generic","sentence-start"],"text":"67512441 n es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":10}]}
+{"id":"pii-detection-0083","tags":["clinic","sentence-start"],"text":"Nicanor de la Fuente Zabaleta, con DNI 18159380Y, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":29},{"kind":"DNI","start":39,"end":48}]}
+{"id":"pii-detection-0084","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 3910086V, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0085","tags":["hr"],"text":"Le escribe Xabier del Valle Zubiri desde la oficina de Castellón; mi móvil es el 714786430.","spans":[{"kind":"PERSON","start":11,"end":34},{"kind":"LOCATION","start":55,"end":64},{"kind":"PHONE","start":81,"end":90}]}
+{"id":"pii-detection-0086","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 3261513K, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0087","tags":["fintech"],"text":"Devolución a ES3771392803912536771302 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0088","tags":["negative"],"text":"Pedido 11148379 enviado al almacén 1.","spans":[]}
+{"id":"pii-detection-0089","tags":["fintech"],"text":"Factura emitida a N5293845C, domicilio fiscal en Ciudad Real.","spans":[{"kind":"CIF","start":18,"end":27},{"kind":"LOCATION","start":49,"end":60}]}
+{"id":"pii-detection-0090","tags":["hr"],"text":"Le escribe Nicanor Zubiri Ibarra desde la oficina de Albacete; mi móvil es el 691916182.","spans":[{"kind":"PERSON","start":11,"end":32},{"kind":"LOCATION","start":53,"end":61},{"kind":"PHONE","start":78,"end":87}]}
+{"id":"pii-detection-0091","tags":["fintech"],"text":"Factura emitida a S-2693600-E, domicilio fiscal en Palencia.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":59}]}
+{"id":"pii-detection-0092","tags":["clinic","sentence-end"],"text":"Contactar con la familia en el 740 094 123 o en remedios.jurado+rrhh@example.net","spans":[{"kind":"PHONE","start":31,"end":42},{"kind":"EMAIL","start":48,"end":80}]}
+{"id":"pii-detection-0093","tags":["hr","adjacent","sentence-end"],"text":"Afiliado 18/31025793/55 (F-4113368-7)","spans":[{"kind":"NSS","start":9,"end":23},{"kind":"CIF","start":25,"end":36}]}
+{"id":"pii-detection-0094","tags":["pasted","iban-layouts"],"text":"Cuenta antigua ES21 3708 1724 68 2862548400, nueva ES21-3708-1724-6828-6254-8400.","spans":[{"kind":"IBAN","start":15,"end":43},{"kind":"IBAN","start":51,"end":80}]}
+{"id":"pii-detection-0095","tags":["legal"],"text":"La sociedad Q-8787803-I y Vanesa Ibarra, vecino de Ciudad Real, firman el acuerdo.","spans":[{"kind":"CIF","start":12,"end":23},{"kind":"PERSON","start":26,"end":39},{"kind":"LOCATION","start":51,"end":62}]}
+{"id":"pii-detection-0096","tags":["negative"],"text":"Documento 35145318X pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0097","tags":["pasted","iban-layouts"],"text":"Cuenta antigua ES67 2274 7410 59 5285499048, nueva ES67-2274-7410-5952-8549-9048.","spans":[{"kind":"IBAN","start":15,"end":43},{"kind":"IBAN","start":51,"end":80}]}
+{"id":"pii-detection-0098","tags":["hr","adjacent","sentence-end"],"text":"Afiliado 452346459055 (B-9378995-6)","spans":[{"kind":"NSS","start":9,"end":21},{"kind":"CIF","start":23,"end":34}]}
+{"id":"pii-detection-0099","tags":["hr"],"text":"Le escribe Gorka Olaizola desde la oficina de Tarragona; mi móvil es el 625.414.147.","spans":[{"kind":"PERSON","start":11,"end":25},{"kind":"LOCATION","start":46,"end":55},{"kind":"PHONE","start":72,"end":83}]}
+{"id":"pii-detection-0100","tags":["generic","sentence-start"],"text":"03.593.993-J es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":12}]}
+{"id":"pii-detection-0101","tags":["hr","sentence-start"],"text":"X 7724630 B es el documento de la nueva contratada, Isidro Zubiri Valcárcel.","spans":[{"kind":"NIE","start":0,"end":11},{"kind":"PERSON","start":52,"end":75}]}
+{"id":"pii-detection-0102","tags":["clinic","sentence-start"],"text":"Begoña Valcárcel Arrieta, con DNI 97409874K, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":24},{"kind":"DNI","start":34,"end":43}]}
+{"id":"pii-detection-0103","tags":["fintech"],"text":"Pago con 5595175191641273, confirmación enviada a inmaculada.valcarcel+rrhh@example.net.","spans":[{"kind":"CREDIT_CARD","start":9,"end":25},{"kind":"EMAIL","start":50,"end":87}]}
+{"id":"pii-detection-0104","tags":["negative"],"text":"Pedido 66908588 enviado al almacén 4.","spans":[]}
+{"id":"pii-detection-0105","tags":["clinic","sentence-end"],"text":"Contactar con la familia en el 654 65 78 90 o en BRAIS.MENDIZABAL@EXAMPLE.NET","spans":[{"kind":"PHONE","start":31,"end":43},{"kind":"EMAIL","start":49,"end":77}]}
+{"id":"pii-detection-0106","tags":["legal"],"text":"Escritura otorgada por Brais Ballesteros ante notario en Zamora el 3 de marzo.","spans":[{"kind":"PERSON","start":23,"end":40},{"kind":"LOCATION","start":57,"end":63}]}
+{"id":"pii-detection-0107","tags":["hr"],"text":"Alta en nómina de Nerea Sagasta Rosales (NIE Y.8461370.Y); cuenta ES1183170620862695451435.","spans":[{"kind":"PERSON","start":18,"end":39},{"kind":"NIE","start":45,"end":56},{"kind":"IBAN","start":66,"end":90}]}
+{"id":"pii-detection-0108","tags":["hr","sentence-start"],"text":"Y2807611S es el documento de la nueva contratada, Xabier del Río Sagasta.","spans":[{"kind":"NIE","start":0,"end":9},{"kind":"PERSON","start":50,"end":72}]}
+{"id":"pii-detection-0109","tags":["fintech"],"text":"Devolución a ES5955079259306389775332 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0110","tags":["clinic","landline"],"text":"Llamar a la consulta al +34 91 991 40 17 por la mañana.","spans":[{"kind":"PHONE","start":24,"end":40}]}
+{"id":"pii-detection-0111","tags":["fintech"],"text":"Tarjeta 4088-3049-5539-4427 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":27}]}
+{"id":"pii-detection-0112","tags":["negative"],"text":"El expediente 2026/1976 sigue abierto y la sala 13 está libre.","spans":[]}
+{"id":"pii-detection-0113","tags":["hr","sentence-start"],"text":"X3623709J es el documento de la nueva contratada, Iñaki del Valle Arrizabalaga.","spans":[{"kind":"NIE","start":0,"end":9},{"kind":"PERSON","start":50,"end":78}]}
+{"id":"pii-detection-0114","tags":["clinic","sentence-end"],"text":"Contactar con la familia en el +34 670 541 872 o en ajurado79@example.com","spans":[{"kind":"PHONE","start":31,"end":46},{"kind":"EMAIL","start":52,"end":73}]}
+{"id":"pii-detection-0115","tags":["pasted","iban-layouts"],"text":"Cuenta antigua ES76 4837 1088 78 9577122165, nueva ES76-4837-1088-7895-7712-2165.","spans":[{"kind":"IBAN","start":15,"end":43},{"kind":"IBAN","start":51,"end":80}]}
+{"id":"pii-detection-0116","tags":["legal"],"text":"Notifíquese a COVADONGA.CARBALLO@EXAMPLE.NET; teléfono de contacto 678 72 08 21.","spans":[{"kind":"EMAIL","start":14,"end":44},{"kind":"PHONE","start":67,"end":79}]}
+{"id":"pii-detection-0117","tags":["fintech","amount-after"],"text":"Abonar en es2244279922722035689016 45 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0118","tags":["clinic","abbreviation"],"text":"Tel.0034 665841814, preguntar por Leandro del Río Mendizábal","spans":[{"kind":"PHONE","start":4,"end":18},{"kind":"PERSON","start":34,"end":60}]}
+{"id":"pii-detection-0119","tags":["hr"],"text":"Le escribe Arantxa Rosales Cordero desde la oficina de Mérida; mi móvil es el 971 367 854.","spans":[{"kind":"PERSON","start":11,"end":34},{"kind":"LOCATION","start":55,"end":61},{"kind":"PHONE","start":78,"end":89}]}
+{"id":"pii-detection-0120","tags":["negative"],"text":"Documento 86307172T pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0121","tags":["fintech"],"text":"Factura emitida a S-6168531-I, domicilio fiscal en Albacete.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":59}]}
+{"id":"pii-detection-0122","tags":["generic","adjacent"],"text":"DNI 03187398n, NIE Z 0062293 Z.","spans":[{"kind":"DNI","start":4,"end":13},{"kind":"NIE","start":19,"end":30}]}
+{"id":"pii-detection-0123","tags":["fintech","amount-after"],"text":"Abonar en es4397822072674545639893 1500 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0124","tags":["fintech"],"text":"Tarjeta 5597-2600-9936-1030 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":27}]}
+{"id":"pii-detection-0125","tags":["clinic","sentence-end"],"text":"Contactar con la familia en el 963.126.992 o en maialen.toledano@example.net","spans":[{"kind":"PHONE","start":31,"end":42},{"kind":"EMAIL","start":48,"end":76}]}
+{"id":"pii-detection-0126","tags":["clinic"],"text":"Paciente: Anselmo Sagasta Arrieta. Afiliación 24 04246552 67. Centro de salud de Talavera de la Reina.","spans":[{"kind":"PERSON","start":10,"end":33},{"kind":"NSS","start":46,"end":60},{"kind":"LOCATION","start":81,"end":101}]}
+{"id":"pii-detection-0127","tags":["clinic","sentence-start"],"text":"Damián Pacheco Escudero, con DNI 54674546G, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":23},{"kind":"DNI","start":33,"end":42}]}
+{"id":"pii-detection-0128","tags":["negative"],"text":"El expediente 2026/3180 sigue abierto y la sala 3 está libre.","spans":[]}
+{"id":"pii-detection-0129","tags":["clinic","sentence-start"],"text":"Unai Olaizola Zabaleta, con DNI 86138021P, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":22},{"kind":"DNI","start":32,"end":41}]}
+{"id":"pii-detection-0130","tags":["fintech","amount-after"],"text":"Abonar en es2556372583599400764438 300 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0131","tags":["clinic","sentence-end"],"text":"Contactar con la familia en el 0034 611220932 o en VALENTIN.ETXEBERRIA@EXAMPLE.NET","spans":[{"kind":"PHONE","start":31,"end":45},{"kind":"EMAIL","start":51,"end":82}]}
+{"id":"pii-detection-0132","tags":["fintech"],"text":"Factura emitida a S-7766220-C, domicilio fiscal en Cuenca.","spans":[{"kind":"CIF","start":18,"end":29},{"kind":"LOCATION","start":51,"end":57}]}
+{"id":"pii-detection-0133","tags":["generic","adjacent"],"text":"DNI 98677112-m, NIE Z.5843629.R.","spans":[{"kind":"DNI","start":4,"end":14},{"kind":"NIE","start":20,"end":31}]}
+{"id":"pii-detection-0134","tags":["pasted","phone-layouts"],"text":"Teléfonos 988042368/723013175, móvil 977 086 446.","spans":[{"kind":"PHONE","start":10,"end":19},{"kind":"PHONE","start":20,"end":29},{"kind":"PHONE","start":37,"end":48}]}
+{"id":"pii-detection-0135","tags":["hr","adjacent","sentence-end"],"text":"Afiliado 41/50306499/91 (b10539070)","spans":[{"kind":"NSS","start":9,"end":23},{"kind":"CIF","start":25,"end":34}]}
+{"id":"pii-detection-0136","tags":["negative"],"text":"Pedido 85882209 enviado al almacén 2.","spans":[]}
+{"id":"pii-detection-0137","tags":["legal"],"text":"Notifíquese a ngoikoetxea28@example.com; teléfono de contacto 643589153.","spans":[{"kind":"EMAIL","start":14,"end":39},{"kind":"PHONE","start":62,"end":71}]}
+{"id":"pii-detection-0138","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 5959164W, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0139","tags":["generic","dni-seven-digits"],"text":"Titular con DNI 2804676X, sin cita.","spans":[{"kind":"DNI","start":16,"end":24}]}
+{"id":"pii-detection-0140","tags":["fintech"],"text":"Factura emitida a B55076160, domicilio fiscal en Palencia.","spans":[{"kind":"CIF","start":18,"end":27},{"kind":"LOCATION","start":49,"end":57}]}
+{"id":"pii-detection-0141","tags":["clinic"],"text":"Paciente: Anselmo Etxeberria. Afiliación 29-83529083-76. Centro de salud de Ávila.","spans":[{"kind":"PERSON","start":10,"end":28},{"kind":"NSS","start":41,"end":55},{"kind":"LOCATION","start":76,"end":81}]}
+{"id":"pii-detection-0142","tags":["generic","adjacent"],"text":"DNI 39.417.461-S, NIE Y.2293985.W.","spans":[{"kind":"DNI","start":4,"end":16},{"kind":"NIE","start":22,"end":33}]}
+{"id":"pii-detection-0143","tags":["fintech","adjacent"],"text":"IBAN:es4790684956143874952192","spans":[{"kind":"IBAN","start":5,"end":29}]}
+{"id":"pii-detection-0144","tags":["negative"],"text":"Pedido 24916367 enviado al almacén 8.","spans":[]}
+{"id":"pii-detection-0145","tags":["fintech"],"text":"Devolución a es4752486607116475547813 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0146","tags":["generic","adjacent"],"text":"DNI 18894102q, NIE Z5572107V.","spans":[{"kind":"DNI","start":4,"end":13},{"kind":"NIE","start":19,"end":28}]}
+{"id":"pii-detection-0147","tags":["clinic","landline"],"text":"Llamar a la consulta al +34 95 510 15 01 por la mañana.","spans":[{"kind":"PHONE","start":24,"end":40}]}
+{"id":"pii-detection-0148","tags":["generic","sentence-start"],"text":"61114722l es el documento aportado.","spans":[{"kind":"DNI","start":0,"end":9}]}
+{"id":"pii-detection-0149","tags":["generic","adjacent"],"text":"DNI 18055821 q, NIE z1360882t.","spans":[{"kind":"DNI","start":4,"end":14},{"kind":"NIE","start":20,"end":29}]}
+{"id":"pii-detection-0150","tags":["fintech","amount-after"],"text":"Abonar en es8394706308569587796510 12 euros el lunes.","spans":[{"kind":"IBAN","start":10,"end":34}]}
+{"id":"pii-detection-0151","tags":["fintech"],"text":"Devolución a es0288733066020979860925 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0152","tags":["negative"],"text":"Documento 54023135J pendiente de revisión.","spans":[]}
+{"id":"pii-detection-0153","tags":["fintech"],"text":"Tarjeta 5139398540150191 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":24}]}
+{"id":"pii-detection-0154","tags":["clinic","sentence-start"],"text":"Maialen Mendizábal Uriarte, con DNI 30898740-b, ingresa en planta el lunes.","spans":[{"kind":"PERSON","start":0,"end":26},{"kind":"DNI","start":36,"end":46}]}
+{"id":"pii-detection-0155","tags":["fintech"],"text":"Devolución a es7864985072588534695801 por importe de 120,50 euros.","spans":[{"kind":"IBAN","start":13,"end":37}]}
+{"id":"pii-detection-0156","tags":["clinic"],"text":"Paciente: Eusebio de la Peña Larrañaga. Afiliación 44-52652076-63. Centro de salud de Ciudad Real.","spans":[{"kind":"PERSON","start":10,"end":38},{"kind":"NSS","start":51,"end":65},{"kind":"LOCATION","start":86,"end":97}]}
+{"id":"pii-detection-0157","tags":["pasted","dni-y"],"text":"Titulares: 36197579-h y 31925627-v, NIF del menor M4334461L.","spans":[{"kind":"DNI","start":11,"end":21},{"kind":"DNI","start":24,"end":34},{"kind":"DNI","start":50,"end":59}]}
+{"id":"pii-detection-0158","tags":["fintech"],"text":"Cargo rechazado en la tarjeta 5493 9056 7802 4855 del titular Maialen Uriarte Ibarra.","spans":[{"kind":"CREDIT_CARD","start":30,"end":49},{"kind":"PERSON","start":62,"end":84}]}
+{"id":"pii-detection-0159","tags":["fintech"],"text":"Tarjeta 5501 1832 4990 6311 bloqueada por seguridad.","spans":[{"kind":"CREDIT_CARD","start":8,"end":27}]}
+{"id":"pii-detection-0160","tags":["negative"],"text":"Documento 05518133S pendiente de revisión.","spans":[]}

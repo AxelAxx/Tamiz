@@ -36,6 +36,11 @@ LEVEL_BY_KIND: Mapping[EntityKind, SensitivityLevel] = MappingProxyType(
 )
 
 
+def level_rank(level: SensitivityLevel) -> int:
+    """`none` 0 … `critical` 3: how levels compare."""
+    return _RANK[level]
+
+
 def level_of(findings: Iterable[Finding]) -> SensitivityLevel:
     return max(
         (LEVEL_BY_KIND[f.kind] for f in findings),
