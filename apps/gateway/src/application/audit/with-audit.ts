@@ -106,8 +106,11 @@ function recorder(deps: AuditDeps) {
     called: ReadonlyArray<string> = [],
   ): Promise<void> => {
     try {
+      // The baseline of the policy that decided: after a replace, the active one may be a
+      // newer version, whose prices this request never saw (code audit 2026-11-03, L6).
       const policy = await deps.policies.getActive();
-      const baseline = baselineTarget(policy.targets);
+      const baseline =
+        policy.version === decision.policyVersion ? baselineTarget(policy.targets) : undefined;
       const tools = auditTools(request, called);
       deps.audit.append(
         auditEntry({
