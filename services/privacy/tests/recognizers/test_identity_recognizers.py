@@ -78,6 +78,20 @@ def test_us2_5_wrong_cif_control_is_rejected(written: str) -> None:
     assert found(cif_recognizer(), f"CIF {written}") == []
 
 
+@pytest.mark.parametrize(
+    ("text", "dnis"),
+    [
+        ("los DNI 12345678Z y 87654321X", ["12345678Z", "87654321X"]),
+        ("Juan y 12345678Z", ["12345678Z"]),
+        ("titulares: 12345678Z y 1234567L", ["12345678Z", "1234567L"]),
+        ("Y 12345678Z firma", ["12345678Z"]),
+    ],
+)
+def test_a_dni_after_the_word_y_is_still_found(text: str, dnis: list[str]) -> None:
+    # Code audit 2026-11-04: the NIE guard must not swallow the Spanish "y" ("and").
+    assert [value for _, value, _ in found(dni_recognizer(), text)] == dnis
+
+
 @pytest.mark.parametrize("written", ["X1234567L", "X 1234567 L", "x-1234567-l", "X.1234567.L"])
 def test_a_nie_is_not_also_a_dni_or_cif(written: str) -> None:
     # An X NIE has the letter of the DNI 0 + its digits, so its seven digits alone would
