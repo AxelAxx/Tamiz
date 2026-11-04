@@ -78,6 +78,7 @@ export function register<C extends { id: string }, O, R>(e: Eval<C, O, R>): Regi
         join(datasetsDir, e.dataset.file),
         e.dataset.name,
         e.dataset.schema,
+        e.dataset.check,
       );
       const session = e.prepare(context);
       const results = await pool(dataset.cases, concurrency, async (c) => ({

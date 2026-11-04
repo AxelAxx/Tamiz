@@ -9,7 +9,7 @@
  */
 import type { EvalFailingCase, PrivacyEntityKindDto } from "@tamiz/contracts";
 import { createPrivacyClient } from "../clients/privacy.js";
-import { type DetectionCase, DetectionCaseSchema } from "../datasets.js";
+import { type DetectionCase, DetectionCaseSchema, detectionOffsets } from "../datasets.js";
 import type { Eval } from "../eval.js";
 
 export interface Finding {
@@ -57,6 +57,7 @@ export const detectionEval: Eval<DetectionCase, ReadonlyArray<Finding>, Detectio
     file: "pii-detection-es.v2.jsonl",
     name: "pii-detection-es",
     schema: DetectionCaseSchema,
+    check: detectionOffsets,
   },
   requires: ["TAMIZ_EVAL_PRIVACY_URL"],
 
