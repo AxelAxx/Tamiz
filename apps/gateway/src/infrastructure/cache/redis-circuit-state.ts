@@ -66,6 +66,8 @@ export function createRedisStore(redis: Redis, clock: ClockPort, prefix: string)
 export interface FallbackCircuitState extends CircuitStatePort {
   /** Called on store connection events; logs once per switch between modes. */
   setAvailable(available: boolean, reason?: string): void;
+  /** Whether operations go to the shared store right now (`/health`). */
+  isShared(): boolean;
 }
 
 /**
@@ -117,6 +119,7 @@ export function withLocalFallback(
 
   return {
     setAvailable,
+    isShared: () => shared,
     snapshot: either((port) => port.snapshot),
     recordFailure: either((port) => port.recordFailure),
     recordSuccess: either((port) => port.recordSuccess),
@@ -135,6 +138,7 @@ export interface RedisCircuitStateOptions {
 
 export interface RedisCircuitState extends CircuitStatePort {
   close(): Promise<void>;
+  isShared(): boolean;
 }
 
 /** A short, address-free reason for a connection error (`ECONNREFUSED`, …). */
@@ -174,6 +178,7 @@ export async function createRedisCircuitState(
     recordSuccess: state.recordSuccess,
     open: state.open,
     tryAcquireTrial: state.tryAcquireTrial,
+    isShared: state.isShared,
     close: async () => {
       redis.disconnect();
     },
