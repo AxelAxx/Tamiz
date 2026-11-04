@@ -5,11 +5,10 @@
 **Privacy-aware LLM gateway.** Use the best model for every request without sensitive
 data leaving where it belongs.
 
-![Tamiz in 16 seconds: a request with a name, a DNI and an email is detected in the simulator, rated critical and kept local; sent through the gateway, it is answered by the local model and appears in live traffic and the audit detail, without its text](docs/images/demo.gif)
+https://github.com/user-attachments/assets/05e5f904-6d7e-486f-9d10-80e5839650a5
 
-*A request with a patient's name, DNI and email. Tamiz finds all three, rates the request
-critical and keeps it on the local model. The same request, sent through the gateway, is
-answered by Ollama and audited: decision, entities and cost, never the text.*
+*Tamiz in 46 seconds: what it inspects, where each kind of data may go, and how it proves
+it. The figures are from the CI evals; the dashboard shots are from the running stack.*
 
 ## Why
 
@@ -133,6 +132,12 @@ the dashboard and the MCP server derive from it.
 
 The dashboard (feature 008) reads the gateway's admin API through its own server, so the
 admin key never reaches the browser.
+
+![Tamiz in 16 seconds: a request with a name, a DNI and an email is detected in the simulator, rated critical and kept local; sent through the gateway, it is answered by the local model and appears in live traffic and the audit detail, without its text](docs/images/demo.gif)
+
+*A request with a patient's name, DNI and email. Tamiz finds all three, rates the request
+critical and keeps it on the local model. The same request, sent through the gateway, is
+answered by Ollama and audited: decision, entities and cost, never the text.*
 
 ![The policy editor: under policy version 3 a request with a name and an email is anonymized and may go to the EU; the operator changes the high level to local only, a typo is flagged inline with its path, the fix is saved as version 4, and the same request is now routed local](docs/images/policy-editor.gif)
 
