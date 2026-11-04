@@ -15,10 +15,10 @@ import {
   RefreshCw,
   TriangleAlert,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatAgo, formatUtcTime } from "@/features/shared/format";
+import { useNow } from "@/features/shared/use-now";
 import { api, BffRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -34,14 +34,6 @@ interface StatusLook {
 }
 
 /** Re-renders every few seconds so "updated N s ago" stays true. */
-function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
 
 function credentialsRejected(error: unknown): boolean {
   return error instanceof BffRequestError && error.body?.error.type === "gateway_credentials";

@@ -14,6 +14,7 @@ import { CircuitBadge, ResidencyBadge } from "@/features/shared/badges";
 import { CARD } from "@/features/shared/card";
 import { formatAgo, formatLatency, formatNumber } from "@/features/shared/format";
 import { RegionEmpty, RegionError, StaleNote } from "@/features/shared/region-states";
+import { useNow } from "@/features/shared/use-now";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import {
@@ -27,15 +28,6 @@ import {
   WINDOWS,
   type WindowMinutes,
 } from "./model";
-
-function useNow(): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
-}
 
 function Figure({
   label,
