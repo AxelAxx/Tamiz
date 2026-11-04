@@ -7,9 +7,11 @@
  * the chain and, for `anonymize`, exactly the messages a provider would receive.
  */
 import { z } from "zod";
+import { AuditBlockReasonSchema } from "./audit.js";
 import { ChatMessageSchema } from "./chat-completion.js";
 import { PrivacyEntityKindSchema } from "./privacy-service.js";
 import {
+  InspectedSensitivitySchema,
   PrivacyActionSchema,
   ProviderNameSchema,
   ResidencySchema,
@@ -50,7 +52,7 @@ export const SimulatedTargetSchema = z.strictObject({
 
 export const SimulateResponseSchema = z
   .strictObject({
-    sensitivity: z.enum(["unknown", "none", "low", "high", "critical"]),
+    sensitivity: InspectedSensitivitySchema,
     detector: z.enum(["ok", "unavailable", "timeout", "contract"]),
     entities: z.array(SimulatedEntitySchema),
     ruleId: z.string(),
@@ -62,7 +64,7 @@ export const SimulateResponseSchema = z
     /** Empty when blocked. */
     chain: z.array(SimulatedTargetSchema),
     allowedResidencies: z.array(ResidencySchema),
-    blockReason: z.enum(["action", "no_target", "detector_unavailable"]).optional(),
+    blockReason: AuditBlockReasonSchema.exclude(["residency"]).optional(),
     /** Only for `anonymize`: what the provider would receive (placeholders, notice). */
     providerMessages: z.array(ChatMessageSchema).optional(),
     notice: z.string().optional(),

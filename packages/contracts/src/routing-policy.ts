@@ -80,6 +80,8 @@ export const ResilienceSettingsSchema = z.strictObject({
 });
 
 export const SensitivityLevelSchema = z.enum(["none", "low", "high", "critical"]);
+/** A request's sensitivity as inspected: a level, or `unknown` when detection failed. */
+export const InspectedSensitivitySchema = z.enum(["unknown", ...SensitivityLevelSchema.options]);
 export const PrivacyActionSchema = z.enum(["allow", "anonymize", "restrict_to_local", "block"]);
 
 /** What happens to requests of one sensitivity level (spec 005 FR-002, research R-11). */

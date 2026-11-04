@@ -26,7 +26,16 @@ export const MCP_AUDIT_PAGE_MAX = 50;
 export const SimulateRoutingInputSchema = z
   .strictObject({
     text: z.string().min(1).max(32_000).optional(),
-    messages: z.array(ChatMessageSchema).min(1).optional(),
+    // The same budget as `text`, so an agent cannot go around it (code audit L18).
+    messages: z
+      .array(ChatMessageSchema)
+      .min(1)
+      .max(64)
+      .refine(
+        (messages) => messages.reduce((total, m) => total + (m.content?.length ?? 0), 0) <= 32_000,
+        { message: "expected at most 32000 characters of content in all" },
+      )
+      .optional(),
     model: z.string().min(1).max(200).optional(),
   })
   .refine((input) => (input.text === undefined) !== (input.messages === undefined), {
