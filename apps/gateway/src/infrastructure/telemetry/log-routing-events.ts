@@ -53,10 +53,11 @@ function isNotable(event: RoutingEvent): boolean {
 export function createLogRoutingEvents(logger: LoggerPort): RoutingEventsPort {
   return {
     emit(event) {
-      const source = event as unknown as Readonly<Record<string, unknown>>;
+      const source = new Map<string, unknown>(Object.entries(event));
       const bindings: Record<string, unknown> = { event: event.type };
       for (const field of FIELDS) {
-        if (source[field] !== undefined) bindings[field] = source[field];
+        const value = source.get(field);
+        if (value !== undefined) bindings[field] = value;
       }
       // A sink must never throw into the request (routing-events port contract).
       try {

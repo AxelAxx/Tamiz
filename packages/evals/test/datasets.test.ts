@@ -7,6 +7,7 @@ import {
   DatasetError,
   DetectionCaseSchema,
   LeakCaseSchema,
+  leakOffsets,
   loadDataset,
   QualityCaseSchema,
   RoutingCaseSchema,
@@ -59,6 +60,7 @@ describe("datasets", () => {
       await file([header("pii-leak-es"), leakCase("pii-leak-0001", "DNI 12345678Z.", 4, 13)]),
       "pii-leak-es",
       LeakCaseSchema,
+      leakOffsets,
     );
     expect(leak.cases[0]?.values[0]?.kind).toBe("DNI");
     const detection = await loadDataset(
@@ -98,7 +100,7 @@ describe("datasets", () => {
     ["another dataset's header", [header("other")], 1, 'dataset must be "pii-leak-es"'],
   ])("US1-4: %s stops at line %i", async (_name, lines, line, problem) => {
     const error = await failure(
-      loadDataset(await file(lines.map((l) => l)), "pii-leak-es", LeakCaseSchema),
+      loadDataset(await file(lines.map((l) => l)), "pii-leak-es", LeakCaseSchema, leakOffsets),
     );
     expect(error.line).toBe(line);
     if (problem !== "header") expect(error.problem).toContain(problem);
@@ -115,7 +117,7 @@ describe("datasets", () => {
         messages: [{ role: "user", content: secret }],
       }),
     ]);
-    const error = await failure(loadDataset(path, "pii-leak-es", LeakCaseSchema));
+    const error = await failure(loadDataset(path, "pii-leak-es", LeakCaseSchema, leakOffsets));
     expect(error.file).toBe("toy.v1.jsonl");
     expect(error.line).toBe(3);
     expect(error.message).toContain("toy.v1.jsonl:3");
@@ -135,14 +137,19 @@ describe("datasets", () => {
     ["an empty span", [leakCase("pii-leak-0001", "DNI 12345678Z.", 4, 4)], "offsets"],
   ])("US1-4: %s is rejected", async (_name, cases, problem) => {
     const error = await failure(
-      loadDataset(await file([header("pii-leak-es"), ...cases]), "pii-leak-es", LeakCaseSchema),
+      loadDataset(
+        await file([header("pii-leak-es"), ...cases]),
+        "pii-leak-es",
+        LeakCaseSchema,
+        leakOffsets,
+      ),
     );
     expect(error.problem).toContain(problem);
   });
 
   it("a dataset with no cases is rejected", async () => {
     const error = await failure(
-      loadDataset(await file([header("pii-leak-es")]), "pii-leak-es", LeakCaseSchema),
+      loadDataset(await file([header("pii-leak-es")]), "pii-leak-es", LeakCaseSchema, leakOffsets),
     );
     expect(error.problem).toBe("no cases");
   });

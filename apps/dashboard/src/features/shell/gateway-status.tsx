@@ -7,11 +7,18 @@
  * button whose popover carries the same text, so the status is never colour only.
  */
 import { useQuery } from "@tanstack/react-query";
-import { CircleCheck, KeyRound, LoaderCircle, type LucideIcon, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  CircleCheck,
+  KeyRound,
+  LoaderCircle,
+  type LucideIcon,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatAgo, formatUtcTime } from "@/features/shared/format";
+import { useNow } from "@/features/shared/use-now";
 import { api, BffRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
@@ -27,14 +34,6 @@ interface StatusLook {
 }
 
 /** Re-renders every few seconds so "updated N s ago" stays true. */
-function useNow(intervalMs: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), intervalMs);
-    return () => clearInterval(timer);
-  }, [intervalMs]);
-  return now;
-}
 
 function credentialsRejected(error: unknown): boolean {
   return error instanceof BffRequestError && error.body?.error.type === "gateway_credentials";
@@ -78,13 +77,24 @@ export function GatewayStatus() {
             tone: "border-warning/30 bg-warning-soft text-warning",
             dot: "text-warning",
           }
-        : {
-            label: "Connected",
-            sub: `updated ${formatAgo((now - (updatedAt?.getTime() ?? now)) / 1000)}`,
-            icon: CircleCheck,
-            tone: "border-success/25 bg-success-soft text-success",
-            dot: "text-success",
-          };
+        : health.data?.status === "degraded"
+          ? {
+              label: "Degraded",
+              sub: (health.data.checks ?? [])
+                .filter((check) => check.status !== "ok")
+                .map((check) => `${check.name} ${check.status}`)
+                .join(", "),
+              icon: TriangleAlert,
+              tone: "border-warning/30 bg-warning-soft text-warning",
+              dot: "text-warning",
+            }
+          : {
+              label: "Connected",
+              sub: `updated ${formatAgo((now - (updatedAt?.getTime() ?? now)) / 1000)}`,
+              icon: CircleCheck,
+              tone: "border-success/25 bg-success-soft text-success",
+              dot: "text-success",
+            };
   const version = health.data?.version ?? "unknown";
   const detail = `Gateway ${version} · ${lastUpdate}${updatedAt === undefined ? "" : " UTC"}`;
   const Icon = look.icon;

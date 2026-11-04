@@ -5,7 +5,7 @@ import {
   generateApiKey,
   hashApiKey,
   parseApiKeys,
-  verifyApiKey,
+  verifyPrincipal,
 } from "../../src/infrastructure/auth/api-keys.js";
 
 vi.mock("node:crypto", { spy: true });
@@ -55,7 +55,7 @@ describe("parseApiKeys (FR-030)", () => {
   });
 });
 
-describe("hashApiKey, verifyApiKey, generateApiKey (FR-029)", () => {
+describe("hashApiKey, verifyPrincipal, generateApiKey (FR-029)", () => {
   afterEach(() => {
     vi.mocked(crypto.timingSafeEqual).mockClear();
   });
@@ -70,8 +70,8 @@ describe("hashApiKey, verifyApiKey, generateApiKey (FR-029)", () => {
       { clientId: "beta", keyHash: hashApiKey("tmz_beta") },
     ];
 
-    expect(verifyApiKey("tmz_beta", records)).toBe("beta");
-    expect(verifyApiKey("tmz_nope", records)).toBeUndefined();
+    expect(verifyPrincipal("tmz_beta", records)?.clientId).toBe("beta");
+    expect(verifyPrincipal("tmz_nope", records)).toBeUndefined();
   });
 
   it("compares against every record, whichever matches (constant time over the list)", () => {
@@ -81,7 +81,7 @@ describe("hashApiKey, verifyApiKey, generateApiKey (FR-029)", () => {
       { clientId: "gamma", keyHash: hashApiKey("tmz_gamma") },
     ];
 
-    verifyApiKey("tmz_acme", records);
+    verifyPrincipal("tmz_acme", records);
 
     expect(crypto.timingSafeEqual).toHaveBeenCalledTimes(3);
   });
@@ -92,8 +92,8 @@ describe("hashApiKey, verifyApiKey, generateApiKey (FR-029)", () => {
       { clientId: "acme", keyHash: hashApiKey("tmz_new") },
     ];
 
-    expect(verifyApiKey("tmz_old", records)).toBe("acme");
-    expect(verifyApiKey("tmz_new", records)).toBe("acme");
+    expect(verifyPrincipal("tmz_old", records)?.clientId).toBe("acme");
+    expect(verifyPrincipal("tmz_new", records)?.clientId).toBe("acme");
   });
 
   it("generates tmz_ plus 43 base64url characters and returns its hash", () => {

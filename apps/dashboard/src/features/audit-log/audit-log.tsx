@@ -12,6 +12,7 @@ import { ChevronsDown, CircleX, LoaderCircle, SearchX, TriangleAlert } from "luc
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { type ReactNode, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CARD } from "@/features/shared/card";
 import { EntryDetailSheet } from "@/features/shared/entry-detail";
 import { RegionEmpty, RegionError, RegionLoading } from "@/features/shared/region-states";
 import { TrafficList } from "@/features/shared/traffic-list";
@@ -25,7 +26,6 @@ import {
   paramsFromFilters,
 } from "./filters";
 
-const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
 const PAGE_SIZE = 50;
 
 /** Rules of the active policy, `default` included, for the rule picker. */

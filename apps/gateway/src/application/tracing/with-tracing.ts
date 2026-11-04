@@ -20,7 +20,7 @@ import type { ModelTarget } from "../../domain/model/model-target.js";
 import type { Decision } from "../../domain/model/routing-decision.js";
 import { failureResult } from "../audit/with-audit.js";
 import type { RequestSpan, SpanAttributes, TracerPort } from "../ports/tracer.port.js";
-import type { RouteInference } from "../use-cases/route-inference.js";
+import type { RouteInference, RoutingFailure } from "../use-cases/route-inference.js";
 import type { RoutedStreamPart, StreamInference } from "../use-cases/stream-inference.js";
 
 function decisionAttributes(decision: Decision): SpanAttributes {
@@ -77,6 +77,15 @@ function toolAttributes(
   };
 }
 
+/** A failed request on its span: the decision, the target reached, the error type. */
+function recordFailure(span: RequestSpan, request: InferenceRequest, routing: RoutingFailure) {
+  recordDecision(span, routing.decision);
+  span.set(toolAttributes(request, []));
+  const failed = failureResult(routing);
+  if (failed.target !== undefined) span.set(servedAttributes(failed.target, failed.abandoned));
+  span.fail("errorType" in failed ? failed.errorType : "internal_error");
+}
+
 export function withTracing(route: RouteInference, tracer: TracerPort): RouteInference {
   return async (request, signal) => {
     const span = tracer.startRequest();
@@ -97,12 +106,7 @@ export function withTracing(route: RouteInference, tracer: TracerPort): RouteInf
           "tamiz.cost_usd": cost,
         });
       } else {
-        recordDecision(span, result.error.decision);
-        span.set(toolAttributes(request, []));
-        const failed = failureResult(result.error);
-        if (failed.target !== undefined)
-          span.set(servedAttributes(failed.target, failed.abandoned));
-        span.fail("errorType" in failed ? failed.errorType : "internal_error");
+        recordFailure(span, request, result.error);
       }
       return result;
     } catch (error) {
@@ -127,11 +131,7 @@ export function withTracingStream(stream: StreamInference, tracer: TracerPort): 
       throw error;
     }
     if (!result.ok) {
-      recordDecision(span, result.error.decision);
-      span.set(toolAttributes(request, []));
-      const failed = failureResult(result.error);
-      if (failed.target !== undefined) span.set(servedAttributes(failed.target, failed.abandoned));
-      span.fail("errorType" in failed ? failed.errorType : "internal_error");
+      recordFailure(span, request, result.error);
       span.end();
       return result;
     }

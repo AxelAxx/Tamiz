@@ -27,14 +27,19 @@ import type { TaskSize, TaskType } from "./task-classifier.js";
 import {
   type Milliseconds,
   milliseconds,
+  millisecondsUnchecked,
   type PolicyId,
   policyId,
+  policyIdUnchecked,
   type RuleId,
   ruleId,
+  ruleIdUnchecked,
   type TargetId,
   targetId,
+  targetIdUnchecked,
   type Usd,
   usd,
+  usdUnchecked,
 } from "./units.js";
 
 /** Rule id reserved for "no rule matched, the default chain was used". */
@@ -56,10 +61,10 @@ export interface ResilienceSettings {
 
 /** Used for every field the policy file omits (spec 003 Assumptions, research R-14). */
 export const DEFAULT_RESILIENCE: ResilienceSettings = {
-  requestDeadlineMs: 60_000 as Milliseconds,
+  requestDeadlineMs: millisecondsUnchecked(60_000),
   maxAttempts: 2,
-  backoff: { baseDelayMs: 250 as Milliseconds, maxDelayMs: 2_000 as Milliseconds },
-  circuitBreaker: { failureThreshold: 5, cooldownMs: 30_000 as Milliseconds },
+  backoff: { baseDelayMs: millisecondsUnchecked(250), maxDelayMs: millisecondsUnchecked(2_000) },
+  circuitBreaker: { failureThreshold: 5, cooldownMs: millisecondsUnchecked(30_000) },
 };
 
 /** Each present field must contain the request's value; `{}` matches every request. */
@@ -182,12 +187,12 @@ function validateTarget(
   const { timeoutMs, pricing, ...rest } = input;
   return {
     ...rest,
-    id: input.id as TargetId,
+    id: targetIdUnchecked(input.id),
     pricing: {
-      inputUsdPerMillion: pricing.inputUsdPerMillion as Usd,
-      outputUsdPerMillion: pricing.outputUsdPerMillion as Usd,
+      inputUsdPerMillion: usdUnchecked(pricing.inputUsdPerMillion),
+      outputUsdPerMillion: usdUnchecked(pricing.outputUsdPerMillion),
     },
-    ...(timeoutMs === undefined ? {} : { timeoutMs: timeoutMs as Milliseconds }),
+    ...(timeoutMs === undefined ? {} : { timeoutMs: millisecondsUnchecked(timeoutMs) }),
   };
 }
 
@@ -219,7 +224,7 @@ function validateChain(
     }
     seen.add(id);
   });
-  return route.map((id) => id as TargetId);
+  return route.map((id) => targetIdUnchecked(id));
 }
 
 function validateResidencyList(
@@ -282,15 +287,20 @@ function validateResilience(
   const breaker = input?.circuitBreaker;
   // Branding is safe: the policy is only returned when no issue was recorded.
   return {
-    requestDeadlineMs: integerSetting(
-      input?.requestDeadlineMs,
-      d.requestDeadlineMs,
-      at("requestDeadlineMs"),
-      issues,
-      1_000,
-    ) as Milliseconds,
+    requestDeadlineMs: millisecondsUnchecked(
+      integerSetting(
+        input?.requestDeadlineMs,
+        d.requestDeadlineMs,
+        at("requestDeadlineMs"),
+        issues,
+        1_000,
+      ),
+    ),
     maxAttempts: integerSetting(input?.maxAttempts, d.maxAttempts, at("maxAttempts"), issues, 1, 5),
-    backoff: { baseDelayMs: baseDelayMs as Milliseconds, maxDelayMs: maxDelayMs as Milliseconds },
+    backoff: {
+      baseDelayMs: millisecondsUnchecked(baseDelayMs),
+      maxDelayMs: millisecondsUnchecked(maxDelayMs),
+    },
     circuitBreaker: {
       failureThreshold: integerSetting(
         breaker?.failureThreshold,
@@ -299,13 +309,15 @@ function validateResilience(
         issues,
         1,
       ),
-      cooldownMs: integerSetting(
-        breaker?.cooldownMs,
-        d.circuitBreaker.cooldownMs,
-        at("circuitBreaker.cooldownMs"),
-        issues,
-        1_000,
-      ) as Milliseconds,
+      cooldownMs: millisecondsUnchecked(
+        integerSetting(
+          breaker?.cooldownMs,
+          d.circuitBreaker.cooldownMs,
+          at("circuitBreaker.cooldownMs"),
+          issues,
+          1_000,
+        ),
+      ),
     },
   };
 }
@@ -357,7 +369,7 @@ function validateRule(
       ? undefined
       : positiveTimeout(input.timeoutMs, `${path}.timeoutMs`, issues);
   return {
-    id: input.id as RuleId,
+    id: ruleIdUnchecked(input.id),
     when,
     route,
     ...(input.orderBy === undefined ? {} : { orderBy: input.orderBy }),
@@ -413,7 +425,7 @@ export function validatePolicy(input: RoutingPolicyInput): Result<RoutingPolicy,
     return err(validationError("Invalid routing policy", issues));
   }
   return ok({
-    id: input.id as PolicyId,
+    id: policyIdUnchecked(input.id),
     version: input.version,
     defaultTimeoutMs,
     targets,

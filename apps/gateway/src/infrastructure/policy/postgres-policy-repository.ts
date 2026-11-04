@@ -13,8 +13,10 @@
  * `replace` is one `INSERT … SELECT … WHERE max(version) = baseVersion ON CONFLICT DO
  * NOTHING`: of two saves on the same base, even from two gateways sharing the database,
  * exactly one inserts a row and the other gets `conflict`. The active policy is cached in
- * memory for `getActive()` (read per request); `getActiveVersion()` and a conflict refresh
- * the cache from the database, so a version saved through another gateway is picked up.
+ * memory for `getActive()` (read per request). The cache is refreshed from the database at
+ * most every `refreshEveryMs` (5 s) by `getActive()`, and at once by `getActiveVersion()`
+ * and by a conflict, so a version saved through another gateway is in use within seconds
+ * (code audit 2026-11-03, M11). A failed refresh keeps the cached policy.
  */
 import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -91,9 +93,12 @@ export async function createPostgresPolicyRepository(deps: {
   /** The policy loaded from the file at boot. */
   readonly file: PolicyVersionDraft;
   readonly onFileIgnored?: (notice: IgnoredPolicyFile) => void;
+  /** How stale `getActive()` may be against the database; 5 s by default. */
+  readonly refreshEveryMs?: number;
 }): Promise<Result<PolicyRepositoryPort, ConfigurationError>> {
   const { db, clock, file } = deps;
   const policyId = file.policy.id;
+  const refreshEveryMs = deps.refreshEveryMs ?? 5_000;
 
   let active: PolicyVersion;
   const stored = await newest(db, policyId);
@@ -137,8 +142,22 @@ export async function createPostgresPolicyRepository(deps: {
     return active;
   }
 
+  let checkedAt = clock.now().getTime();
+  async function getActive() {
+    const now = clock.now().getTime();
+    if (now - checkedAt >= refreshEveryMs) {
+      checkedAt = now;
+      try {
+        await refresh();
+      } catch {
+        // The cached policy keeps serving; the next check tries again.
+      }
+    }
+    return active.policy;
+  }
+
   return ok({
-    getActive: async () => active.policy,
+    getActive,
     getActiveVersion: refresh,
     async replace(next, baseVersion) {
       // Casts: parameters in a SELECT list would otherwise be typed `text`.

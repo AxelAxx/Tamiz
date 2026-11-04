@@ -23,6 +23,7 @@ import type { ProviderName, Residency } from "../../domain/model/model-target.js
 import type { PrivacyAction } from "../../domain/model/privacy-policy.js";
 import type { EntityKind, Sensitivity } from "../../domain/model/sensitivity.js";
 import type { TaskSize, TaskType } from "../../domain/model/task-classifier.js";
+import { usdUnchecked } from "../../domain/model/units.js";
 import type { Database } from "./db.js";
 import { auditEntries } from "./schema.js";
 
@@ -117,8 +118,10 @@ export function fromRow(row: AuditRow): AuditEntry {
             estimated: row.usageEstimated ?? false,
           },
         }),
-    costUsd: Number(row.costUsd),
-    ...(row.baselineCostUsd === null ? {} : { baselineCostUsd: Number(row.baselineCostUsd) }),
+    costUsd: usdUnchecked(Number(row.costUsd)),
+    ...(row.baselineCostUsd === null
+      ? {}
+      : { baselineCostUsd: usdUnchecked(Number(row.baselineCostUsd)) }),
     ...(row.baselineTargetId === null ? {} : { baselineTargetId: row.baselineTargetId }),
   };
 }

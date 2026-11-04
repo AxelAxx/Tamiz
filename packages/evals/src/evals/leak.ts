@@ -16,7 +16,7 @@
  */
 import type { ChatMessage, EvalFailingCase, PrivacyEntityKindDto } from "@tamiz/contracts";
 import { createGatewayClient, type SimulateResponse } from "../clients/gateway.js";
-import { type LeakCase, LeakCaseSchema } from "../datasets.js";
+import { type LeakCase, LeakCaseSchema, leakOffsets } from "../datasets.js";
 import { type Eval, ServiceError } from "../eval.js";
 
 export interface LeakObservation {
@@ -83,7 +83,12 @@ export function scoreLeak(observation: LeakObservation): LeakOutcome {
 
 export const leakEval: Eval<LeakCase, LeakObservation, LeakOutcome> = {
   id: "leak",
-  dataset: { file: "pii-leak-es.v3.jsonl", name: "pii-leak-es", schema: LeakCaseSchema },
+  dataset: {
+    file: "pii-leak-es.v3.jsonl",
+    name: "pii-leak-es",
+    schema: LeakCaseSchema,
+    check: leakOffsets,
+  },
   requires: ["TAMIZ_EVAL_GATEWAY_URL", "TAMIZ_EVAL_API_KEY"],
 
   prepare({ config, fetch }) {

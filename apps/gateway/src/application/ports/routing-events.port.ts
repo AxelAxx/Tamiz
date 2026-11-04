@@ -76,7 +76,7 @@ export type PrivacyEvent = { readonly requestId: RequestId; readonly at: string 
 export interface AuditDroppedEvent {
   readonly type: "audit.dropped";
   readonly count: number;
-  readonly reason: "queue_full" | "store_error";
+  readonly reason: "queue_full" | "store_error" | "shutdown";
   readonly at: string;
 }
 

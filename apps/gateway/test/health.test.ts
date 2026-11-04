@@ -1,6 +1,8 @@
 import { HealthResponseSchema } from "@tamiz/contracts";
 import { createFakeClock } from "@tamiz/test-utils";
 import { describe, expect, it } from "vitest";
+import type { HealthProbe } from "../src/application/ports/health-probe.port.js";
+import { circuitStoreProbe, privacyServiceProbe } from "../src/infrastructure/health/probes.js";
 import { createApp } from "../src/presentation/app.js";
 import { NO_CHAT } from "./helpers/app.js";
 import { noopLogger } from "./helpers/noop-logger.js";
@@ -68,5 +70,76 @@ describe("GET /health", () => {
     const elapsed = performance.now() - before;
     expect(response.status).toBe(200);
     expect(elapsed).toBeLessThan(50);
+  });
+});
+
+describe("GET /health with dependency probes (code audit 2026-11-03, M12)", () => {
+  const startedAt = new Date("2026-01-01T00:00:00Z");
+  const probe = (name: string, status: "ok" | "degraded" | "down"): HealthProbe => ({
+    name,
+    check: async () => (status === "ok" ? { status } : { status, detail: "fixed detail" }),
+  });
+  const appWith = (healthProbes: HealthProbe[]) =>
+    createApp({
+      clock: createFakeClock(startedAt),
+      version: "0.1.0",
+      startedAt,
+      logger: noopLogger,
+      healthProbes,
+      ...NO_CHAT,
+    });
+
+  it("every probe ok: 200, status ok, each check listed", async () => {
+    const response = await appWith([probe("privacy", "ok"), probe("database", "ok")]).request(
+      "/health",
+    );
+    expect(response.status).toBe(200);
+    const body = HealthResponseSchema.parse(await response.json());
+    expect(body).toMatchObject({
+      status: "ok",
+      checks: [
+        { name: "privacy", status: "ok" },
+        { name: "database", status: "ok" },
+      ],
+    });
+  });
+
+  it("a degraded probe: 200 and status degraded; the gateway still works", async () => {
+    const response = await appWith([
+      probe("privacy", "ok"),
+      probe("circuit-state", "degraded"),
+    ]).request("/health");
+    expect(response.status).toBe(200);
+    expect(HealthResponseSchema.parse(await response.json()).status).toBe("degraded");
+  });
+
+  it("a probe down: 503 and the check named", async () => {
+    const response = await appWith([probe("privacy", "down")]).request("/health");
+    expect(response.status).toBe(503);
+    expect(HealthResponseSchema.parse(await response.json()).checks).toEqual([
+      { name: "privacy", status: "down", detail: "fixed detail" },
+    ]);
+  });
+
+  it("the privacy probe: ok on a 2xx, down on an error status or no answer, no address", async () => {
+    const answering = (status: number) =>
+      privacyServiceProbe(
+        "http://privacy.internal:8001",
+        async () => new Response("{}", { status }),
+      );
+    expect(await answering(200).check()).toEqual({ status: "ok" });
+    expect(await answering(503).check()).toEqual({ status: "down", detail: "unhealthy" });
+    const refused = privacyServiceProbe("http://privacy.internal:8001", async () => {
+      throw new TypeError("fetch failed: ECONNREFUSED privacy.internal:8001");
+    });
+    expect(await refused.check()).toEqual({ status: "down", detail: "unreachable" });
+  });
+
+  it("the circuit-state probe is degraded while the in-memory fallback answers", async () => {
+    expect(await circuitStoreProbe({ isShared: () => true }).check()).toEqual({ status: "ok" });
+    expect(await circuitStoreProbe({ isShared: () => false }).check()).toEqual({
+      status: "degraded",
+      detail: "in-memory fallback",
+    });
   });
 });

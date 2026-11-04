@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { AuditEntry } from "../../src/domain/model/audit-entry.js";
+import { usdUnchecked } from "../../src/domain/model/units.js";
 import { hashApiKey } from "../../src/infrastructure/auth/api-keys.js";
 import { createPostgresApiKeyRepository } from "../../src/infrastructure/persistence/api-key-repository.js";
 import {
@@ -49,8 +50,8 @@ const ENTRY: AuditEntry = {
   },
   abandoned: [{ targetId: "openai-mini", reason: "timeout" }],
   usage: { inputTokens: 40, outputTokens: 10, estimated: false },
-  costUsd: 0.000007,
-  baselineCostUsd: 0.00027,
+  costUsd: usdUnchecked(0.000007),
+  baselineCostUsd: usdUnchecked(0.00027),
   baselineTargetId: "anthropic-sonnet",
 };
 

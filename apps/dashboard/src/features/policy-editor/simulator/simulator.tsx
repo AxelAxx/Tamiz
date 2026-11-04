@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BADGE, TONE, type Tone } from "@/features/shared/badges";
+import { CARD } from "@/features/shared/card";
 import { RegionError } from "@/features/shared/region-states";
 import { api } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
@@ -39,7 +40,6 @@ import { DECIDING_STEP, DecisionFlow } from "./decision-flow";
 import { HighlightedMessages, ProviderMessages } from "./highlighted-text";
 import { EMPTY_FORM, SAMPLES, type SimulatorForm, SimulatorFormSchema, toRequest } from "./schema";
 
-const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
 /** Delay between two decision steps (`--duration-step`). */
 const STEP_MS = 380;
 

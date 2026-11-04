@@ -29,3 +29,8 @@ export interface ModelTarget {
   readonly pricing: Pricing;
   readonly timeoutMs?: Milliseconds;
 }
+
+/** Input plus output price per million tokens: how targets compare by price. */
+export function totalPricePerMillion(target: ModelTarget): number {
+  return target.pricing.inputUsdPerMillion + target.pricing.outputUsdPerMillion;
+}

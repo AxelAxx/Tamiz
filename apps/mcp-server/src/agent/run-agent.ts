@@ -141,24 +141,12 @@ async function runText(
   const messages: ModelMessage[] = [{ role: "user", content: options.question }];
 
   for (let step = 1; step <= maxSteps; step += 1) {
-    let text: string;
-    let requestId: string;
-    try {
-      const reply = await generateText({
-        model: options.model.model,
-        system,
-        messages,
-        temperature: 0,
-        maxRetries: 0,
-      });
-      text = reply.text;
-      requestId = reply.response.headers?.["x-request-id"] ?? "";
-    } catch (error) {
-      const gatewayError = toGatewayError(error);
-      if (gatewayError.requestId !== undefined) run.requestIds.push(gatewayError.requestId);
-      return { ...run, stopReason: "gateway_error", gatewayError };
-    }
-    run.requestIds.push(requestId);
+    const called = await callModel(run, () =>
+      generateText({ model: options.model.model, system, messages, temperature: 0, maxRetries: 0 }),
+    );
+    if (!called.ok) return called.run;
+    const { requestId } = called;
+    const text = called.reply.text;
     messages.push({ role: "assistant", content: text });
 
     const action = extractAction(text);
@@ -230,23 +218,18 @@ async function runNative(
   const messages: ModelMessage[] = [{ role: "user", content: options.question }];
 
   for (let step = 1; step <= maxSteps; step += 1) {
-    let reply: Awaited<ReturnType<typeof generateText>>;
-    try {
-      reply = await generateText({
+    const called = await callModel(run, () =>
+      generateText({
         model: options.model.model,
         system,
         messages,
         tools: declared,
         temperature: 0,
         maxRetries: 0,
-      });
-    } catch (error) {
-      const gatewayError = toGatewayError(error);
-      if (gatewayError.requestId !== undefined) run.requestIds.push(gatewayError.requestId);
-      return { ...run, stopReason: "gateway_error", gatewayError };
-    }
-    const requestId = reply.response.headers?.["x-request-id"] ?? "";
-    run.requestIds.push(requestId);
+      }),
+    );
+    if (!called.ok) return called.run;
+    const { reply, requestId } = called;
     if (reply.toolCalls.length === 0) {
       const answer = reply.text.trim();
       if (answer === "") {
@@ -362,6 +345,31 @@ function toolErrorCode(text: string): string {
     // Not JSON: an SDK error message.
   }
   return "tool_error";
+}
+
+/**
+ * One model call through the gateway, for both protocols (code audit 2026-11-03, L16): its
+ * request id joins the run, and a failure ends the run as `gateway_error`.
+ */
+async function callModel<
+  T extends { readonly response: { readonly headers?: Record<string, string> } },
+>(
+  run: AgentRun,
+  call: () => Promise<T>,
+): Promise<
+  | { readonly ok: true; readonly reply: T; readonly requestId: string }
+  | { readonly ok: false; readonly run: AgentRun }
+> {
+  try {
+    const reply = await call();
+    const requestId = reply.response.headers?.["x-request-id"] ?? "";
+    run.requestIds.push(requestId);
+    return { ok: true, reply, requestId };
+  } catch (error) {
+    const gatewayError = toGatewayError(error);
+    if (gatewayError.requestId !== undefined) run.requestIds.push(gatewayError.requestId);
+    return { ok: false, run: { ...run, stopReason: "gateway_error", gatewayError } };
+  }
 }
 
 /**
