@@ -5,7 +5,7 @@
 **Privacy-aware LLM gateway.** Use the best model for every request without sensitive
 data leaving where it belongs.
 
-![Tamiz in 17 seconds: a request with a name, a DNI and an email is detected in the simulator, rated critical and kept local; sent through the gateway, it is answered by the local model and appears in live traffic and the audit detail, without its text](docs/images/demo.gif)
+![Tamiz in 16 seconds: a request with a name, a DNI and an email is detected in the simulator, rated critical and kept local; sent through the gateway, it is answered by the local model and appears in live traffic and the audit detail, without its text](docs/images/demo.gif)
 
 *A request with a patient's name, DNI and email. Tamiz finds all three, rates the request
 critical and keeps it on the local model. The same request, sent through the gateway, is
@@ -128,6 +128,22 @@ the dashboard and the MCP server derive from it.
   - [ADR-0002](docs/adr/ADR-0002-english-single-repository-language.md) English as the single repository language;
   - [ADR-0003](docs/adr/ADR-0003-apache-2-licence.md) the Apache-2.0 licence.
 - The ten principles every change answers to: [`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+
+### The operator console
+
+The dashboard (feature 008) reads the gateway's admin API through its own server, so the
+admin key never reaches the browser.
+
+![The policy editor: under policy version 3 a request with a name and an email is anonymized and may go to the EU; the operator changes the high level to local only, a typo is flagged inline with its path, the fix is saved as version 4, and the same request is now routed local](docs/images/policy-editor.gif)
+
+*Changing where names may go. The edit is checked as it is typed, saved as a new version,
+and the simulator shows its effect before any real request uses it.*
+
+![The cost screen: actual cost of a synthetic week against sending every request to the frontier model, by day and by route](docs/images/cost.gif)
+
+*Every audited request is priced on the target that answered it and on the most expensive
+target of the policy. The week shown is synthetic data seeded into the E2E gateway; the
+real figures come from your own audit log.*
 
 ## Evals
 
