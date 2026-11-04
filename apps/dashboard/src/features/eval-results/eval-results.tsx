@@ -13,6 +13,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Fragment, type ReactNode } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PassFailMark } from "@/features/shared/badges";
+import { CARD } from "@/features/shared/card";
 import { MISSING } from "@/features/shared/format";
 import { RegionError } from "@/features/shared/region-states";
 import { api } from "@/lib/api-client";
@@ -35,7 +36,6 @@ import {
   splitMetrics,
 } from "./model";
 
-const CARD = "rounded-xl border bg-card text-card-foreground shadow-xs";
 const CODE = "font-mono text-foreground";
 const DOWNLOAD = "gh run download <run-id> --name evals-report --dir <reports folder>";
 
