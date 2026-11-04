@@ -152,7 +152,7 @@ All data is synthetic and versioned in `packages/evals/datasets/`.
   on a local model; a fixed answer cannot reach the gate.
 
 <!-- evals:start -->
-Last run: 2026-11-03, commit `cf8decd`, policy `default` v3 — overall **pass**.
+Last run: 2026-11-04, commit `99a9706`, policy `default` v3 — overall **pass**.
 
 | Eval | Metric | Result | Threshold | |
 |---|---|---|---|---|
@@ -172,17 +172,17 @@ Last run: 2026-11-03, commit `cf8decd`, policy `default` v3 — overall **pass**
 | Detection | `recall.IBAN` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Detection | `recall.NIE` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Detection | `recall.NSS` | 100.00 % | ≥ 95.00 % | ✓ pass |
-| Detection | `recall.PERSON` | 89.09 % | ≥ 80.00 % | ✓ pass |
+| Detection | `recall.PERSON` | 91.67 % | ≥ 80.00 % | ✓ pass |
 | Detection | `recall.PHONE` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Routing | `route_accuracy` | 100.00 % | ≥ 95.00 % | ✓ pass |
-| Quality | `mean_score.routed` | 0.9063 | reported | reported |
-| Quality | `relative_score` | 103.57 % | ≥ 95.00 % | ✓ pass |
+| Quality | `mean_score.routed` | 0.8750 | reported | reported |
+| Quality | `relative_score` | 100.00 % | ≥ 95.00 % | ✓ pass |
 | Cost | `cost.routed_estimate` | $0.03759 | reported | reported |
 | Cost | `cost.baseline_estimate` | $0.29130 | reported | reported |
 | Cost | `saving` | 87.09 % | reported | reported |
-| Agent | `answer_accuracy` | 62.50 % | ≥ 60.00 % | ✓ pass |
+| Agent | `answer_accuracy` | 80.00 % | ≥ 60.00 % | ✓ pass |
 
-Datasets: pii-leak-es v2 (200), pii-detection-es v1 (160), routing v1 (44), quality-es v1 (24), agent-spend v1 (8). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
+Datasets: pii-leak-es v3 (200), pii-detection-es v3 (160), routing v1 (44), quality-es v1 (24), agent-spend v2 (15). Models: answer `qwen2.5:1.5b`, judge `qwen2.5:3b`.
 <!-- evals:end -->
 
 Limitations: detection is statistical (spaCy for names), so the figures are a measured
@@ -215,9 +215,16 @@ compliance product.
 
 - **Detection is statistical for names and locations.** Structured identifiers have
   check digits and are matched almost perfectly. Names rely on spaCy and are missed
-  sometimes: about 1 in 10 in the detection eval, and 0.83 % of them reach a non-local
+  sometimes: about 1 in 12 in the detection eval, and 0.83 % of them reach a non-local
   provider in the leak eval. If a category must never leave the machine, use
   `restrict_to_local` for it rather than `anonymize`.
+- **Company IDs and places are allowed out by default.** The default policy rates a CIF
+  and a location `low`, and `low` is `allow`. A request whose only personal data is a
+  company and a city goes out unchanged: in the leak eval, 50 % of CIF values and 25 % of
+  locations reach a non-local provider (reported, not gated). A request that also carries
+  a name or an ID is rated by its highest kind, and they are anonymized or kept local
+  with the rest. Set `low` to `anonymize` in the policy's `privacy` section if they
+  matter to you.
 - **The figures come from synthetic Spanish data.** The datasets are generated in the
   formats the recognizers target, so they guard against regressions; they are not field
   accuracy. Other languages and identifier formats are not covered by the recognizers.

@@ -19,8 +19,10 @@ export async function updateReadme(
   out: (line: string) => void,
 ): Promise<number> {
   try {
+    // pnpm 10 forwards the `--` of `pnpm evals:readme -- --report …`; parseArgs would read
+    // everything after it as positionals.
     const { values } = parseArgs({
-      args: [...argv],
+      args: argv[0] === "--" ? argv.slice(1) : [...argv],
       options: { report: { type: "string" }, readme: { type: "string" } },
       strict: true,
     });

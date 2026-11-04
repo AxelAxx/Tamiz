@@ -77,6 +77,6 @@ Demo: [enlace cuando esté desplegada]
 | Critical stays local, high only anonymized to EU/local | `apps/gateway/policies/default.yaml`, `privacy` section |
 | Residency guard blocks instead of degrading | Feature 003 (`451`), README |
 | Audit without content | Feature 006, capture test |
-| 0 % critical, 0.83 % names | README evals table, `main` run 2026-11-02 (`10d17b3`) |
+| 0 % critical, 0.83 % names | README evals table, `main` run 2026-11-04 (`99a9706`) |
 | Base URL change only | `docs/integrations/citara.md` |
 | Two weeks, spec-driven | `docs/tasks/BACKLOG.md` (2026-10-18 → 2026-11-02), `specs/` |

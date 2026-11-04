@@ -120,7 +120,7 @@ wrong, which the next session reads first.
 ### Trade-offs, honestly
 
 - **Detection is statistical.** Identifiers with check digits are matched almost
-  perfectly; names are not. About 1 in 10 names is missed on the held-out set. Tamiz is a
+  perfectly; names are not. About 1 in 12 names is missed on the held-out set. Tamiz is a
   measured defence layer, not a guarantee. For data that must never leave,
   `restrict_to_local` is the right action, not `anonymize`.
 - **Two languages, two runtimes.** The Python service adds a container to run and a
@@ -137,17 +137,18 @@ wrong, which the next session reads first.
 
 ### Results
 
-Eval results from the CI run on `main` of 2026-11-02 (README "Evals"):
+Eval results from the CI run on `main` of 2026-11-04, commit `99a9706` (README "Evals"):
 
 | What | Result | Gate |
 |---|---|---|
 | Critical identifiers (DNI, NIE, IBAN, NSS, card) reaching a non-local provider | 0 % | 0 % |
 | Names reaching a non-local provider | 0.83 % | < 2 % |
 | Recall on structured identifiers | 100 % | ≥ 95 % |
-| Recall on names | 89 % | ≥ 80 % |
+| Recall on names | 92 % | ≥ 80 % |
 | Requests sent to the expected route | 100 % (44 cases) | ≥ 95 % |
 | Answer quality on the local route vs accepted baseline | 100 % | ≥ 95 % |
 | Estimated cost vs sending everything to the frontier model | −87 % | reported |
+| Spend questions the MCP agent answers right on a 3B local model | 80 % (15 cases) | ≥ 60 % |
 
 The work, from the repository (2026-10-18 → 2026-11-02):
 - 10 features;
