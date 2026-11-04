@@ -3,8 +3,10 @@
 /**
  * Shown over the current screen when the dashboard's session ends while it is open (spec
  * 008 US1, design `shell.html` "session-expired dialog"): signing in again here keeps
- * whatever the screen holds, such as an unsaved policy draft.
+ * whatever the screen holds, such as an unsaved policy draft. A visitor, who has no
+ * passphrase, is offered a new visitor session as well (code audit 2026-11-03, M16).
  */
+import { useQueryClient } from "@tanstack/react-query";
 import { Clock } from "lucide-react";
 import {
   Dialog,
@@ -13,7 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { SessionInfo } from "@/lib/schemas";
 import { PassphraseForm } from "./passphrase-form";
+import { SESSION_QUERY_KEY } from "./session-role";
+import { VisitorEntry } from "./visitor-entry";
 
 export function SessionExpiredDialog({
   open,
@@ -22,6 +27,7 @@ export function SessionExpiredDialog({
   readonly open: boolean;
   readonly onSignedIn: () => void;
 }) {
+  const role = useQueryClient().getQueryData<SessionInfo>(SESSION_QUERY_KEY)?.role;
   return (
     <Dialog open={open}>
       <DialogContent
@@ -40,6 +46,7 @@ export function SessionExpiredDialog({
           </DialogDescription>
         </DialogHeader>
         <PassphraseForm onSignedIn={onSignedIn} />
+        {role === "visitor" ? <VisitorEntry onEntered={onSignedIn} /> : null}
       </DialogContent>
     </Dialog>
   );

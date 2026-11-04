@@ -510,7 +510,9 @@ function Editor({
 
   const reload = async () => {
     const fresh = await onReload();
-    if (fresh !== undefined) replaceWith(fresh);
+    // A failed reload keeps the draft and the conflict open (code audit 2026-11-03, M17).
+    if (fresh === undefined) return;
+    replaceWith(fresh);
     setConflict(false);
   };
   const discard = () => replaceWith(base);
@@ -628,7 +630,13 @@ export function PolicyEditor() {
     if (loaded === undefined && query.data !== undefined) setLoaded(query.data);
   }, [loaded, query.data]);
 
-  const reload = async () => (await query.refetch()).data;
+  const reload = async () => {
+    const result = await query.refetch();
+    if (!result.isError) return result.data;
+    // `data` would be the cached base version: never put it in place of the draft.
+    toast.error("Could not reload the policy from the gateway. Your draft is kept.");
+    return undefined;
+  };
   const role = useSessionRole();
 
   return (

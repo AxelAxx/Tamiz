@@ -13,7 +13,11 @@ import { SESSION_COOKIE } from "@/lib/server/session-cookie";
 
 export const GET = read(async (request) => {
   const cookie = readCookie(request, SESSION_COOKIE) ?? "";
-  return Response.json({ role: serverContext().sessions.roleOf(cookie) ?? "operator" });
+  const role = serverContext().sessions.roleOf(cookie);
+  // `read` checked the session; it can still expire in between. Never assume the
+  // more privileged role (code audit 2026-11-03, L12).
+  if (role === undefined) return bffError(401, "unauthenticated", "Session expired");
+  return Response.json({ role });
 });
 
 export const POST = publicWrite(async (request) => {

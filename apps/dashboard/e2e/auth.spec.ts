@@ -93,6 +93,27 @@ test("US1-4 sign-out ends the session and the old cookie stops working", async (
   await replay.close();
 });
 
+test("a sign-out that fails keeps the session and says so (code audit 2026-11-03, M15)", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.route("**/api/session", (route) =>
+    route.request().method() === "DELETE"
+      ? route.fulfill({
+          status: 500,
+          json: { error: { type: "internal", message: "Something went wrong" } },
+        })
+      : route.continue(),
+  );
+
+  await page.getByRole("button", { name: "Operator menu" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
+
+  await expect(page.getByText("Sign-out failed: this browser is still signed in.")).toBeVisible();
+  await expect(page).not.toHaveURL(/\/sign-in$/);
+  expect((await page.request.get("/api/audit")).status()).toBe(200);
+});
+
 test("US1-5 cross-origin writes are refused and nothing reaches the gateway", async ({ page }) => {
   await signIn(page);
   await gateway.reset();

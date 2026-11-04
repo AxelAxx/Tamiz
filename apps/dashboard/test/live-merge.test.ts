@@ -9,6 +9,7 @@ import {
   resume,
   rows,
   since,
+  wouldEnter,
 } from "@/features/live-traffic/model";
 
 // Spec 008 US2-1, US2-4, US2-5, research R-05 (tasks.md T022).
@@ -94,6 +95,35 @@ describe("pause and resume (US2-4)", () => {
     expect(state.pending.size).toBe(0);
     expect(ids(rows(state))).toEqual(["req-5", "req-4", "req-3", "req-2", "req-1"]);
     expect([...state.fresh].sort()).toEqual([entry(3, 3).id, entry(4, 4).id, entry(5, 5).id]);
+  });
+});
+
+describe("a full view (audit 2026-11-03, M13, M14)", () => {
+  const full = () =>
+    merge(
+      INITIAL,
+      Array.from({ length: LIVE_MAX + 20 }, (_, i) => entry(i + 1, i)),
+    );
+
+  it("while paused, only entries newer than the oldest shown row wait as new", () => {
+    const paused = pause(full());
+    const older = entry(500, 5); // started before every shown row, never shown before
+    const newer = entry(501, 10_000);
+
+    const next = merge(paused, [older, newer]);
+
+    expect([...next.pending.keys()]).toEqual([newer.id]);
+  });
+
+  it("wouldEnter is false for a shown entry and for one older than a full view", () => {
+    const state = full();
+    const oldestShown = rows(state).at(-1);
+    if (oldestShown === undefined) throw new Error("a full view");
+
+    expect(wouldEnter(state, oldestShown)).toBe(false);
+    expect(wouldEnter(state, entry(600, 0))).toBe(false);
+    expect(wouldEnter(state, entry(601, 10_000))).toBe(true);
+    expect(wouldEnter(INITIAL, entry(602, 0))).toBe(true);
   });
 });
 

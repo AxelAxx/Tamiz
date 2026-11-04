@@ -9,7 +9,11 @@ import {
   createWindowLimiter,
   SESSION_TTL_MS,
 } from "../src/lib/server/session";
-import { signSession, verifySessionCookie } from "../src/lib/server/session-cookie";
+import {
+  sessionCookieHeader,
+  signSession,
+  verifySessionCookie,
+} from "../src/lib/server/session-cookie";
 
 // Spec 008 US1-2, US1-4, FR-001, research R-03, data-model §3.1-3.2 (tasks.md T002);
 // US10 (visitor role and limits, backlog T-OPS-03).
@@ -231,8 +235,23 @@ describe("visitor limits", () => {
   });
 });
 
+describe("session cookie flags (code audit 2026-11-03, L12)", () => {
+  it("is HttpOnly, SameSite=Strict, scoped to the site, and Secure on a public origin", () => {
+    expect(sessionCookieHeader("v", "https://tamiz.example.com", 28_800)).toBe(
+      "tamiz_session=v; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800; Secure",
+    );
+  });
+
+  it("drops Secure only on a local address, and clears with Max-Age=0", () => {
+    expect(sessionCookieHeader("v", "http://localhost:3100", 60)).not.toContain("Secure");
+    expect(sessionCookieHeader("v", "http://127.0.0.1:3100", 60)).not.toContain("Secure");
+    expect(sessionCookieHeader("", "https://tamiz.example.com", 0)).toContain("Max-Age=0;");
+  });
+});
+
 describe("client address", () => {
-  const headers = new Headers({ "x-forwarded-for": "198.51.100.7, 10.0.0.1" });
+  // The client sent the first hop; the trusted proxy appended the address it saw.
+  const headers = new Headers({ "x-forwarded-for": "203.0.113.66, 198.51.100.7" });
 
   it("US1-2: X-Forwarded-For is used only with TAMIZ_DASHBOARD_TRUST_PROXY=true", () => {
     expect(clientAddress(headers, true)).toBe("198.51.100.7");

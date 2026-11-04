@@ -28,6 +28,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { type ReactNode, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { api } from "@/lib/api-client";
+import { api, BffRequestError } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { GatewayStatus } from "./gateway-status";
 import { LogoMark } from "./logo";
@@ -97,7 +98,16 @@ function OperatorMenu() {
   const { dark, toggle } = useResolvedTheme();
   const visitor = useSessionRole() === "visitor";
   async function signOut() {
-    await api.signOut().catch(() => undefined);
+    try {
+      await api.signOut();
+    } catch (error) {
+      // 401: the session had already ended. Anything else left the cookie valid, so the
+      // browser must not look signed out (code audit 2026-11-03, M15).
+      if (!(error instanceof BffRequestError && error.status === 401)) {
+        toast.error("Sign-out failed: this browser is still signed in. Try again.");
+        return;
+      }
+    }
     queryClient.clear();
     router.replace("/sign-in");
   }
