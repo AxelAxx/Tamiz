@@ -21,7 +21,7 @@ import { seeded } from "../src/synthetic/random.js";
 
 const DATASETS = fileURLToPath(new URL("../datasets/", import.meta.url));
 const CORPUS = fileURLToPath(
-  new URL("../../../services/privacy/tests/corpus/pii-es.v2.jsonl", import.meta.url),
+  new URL("../../../services/privacy/tests/corpus/pii-es.v3.jsonl", import.meta.url),
 );
 const GATED = ["DNI", "NIE", "NSS", "IBAN", "CREDIT_CARD", "PERSON", "EMAIL", "PHONE"];
 
@@ -118,7 +118,7 @@ describe("generated datasets", () => {
       LeakCaseSchema,
     );
     const detection = await loadDataset(
-      join(DATASETS, "pii-detection-es.v2.jsonl"),
+      join(DATASETS, "pii-detection-es.v3.jsonl"),
       "pii-detection-es",
       DetectionCaseSchema,
     );
@@ -135,7 +135,7 @@ describe("generated datasets", () => {
       true,
     );
     expect(leak.header.synthetic).toBe(true);
-    expect(Object.keys(GENERATED)).toEqual(["pii-leak-es.v3.jsonl", "pii-detection-es.v2.jsonl"]);
+    expect(Object.keys(GENERATED)).toEqual(["pii-leak-es.v3.jsonl", "pii-detection-es.v3.jsonl"]);
   });
 
   it("009 tool-calling FR-021: tool cases cover results, arguments and both", async () => {

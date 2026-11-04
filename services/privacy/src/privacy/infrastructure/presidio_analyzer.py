@@ -10,6 +10,7 @@ import threading
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 
+import tldextract
 from presidio_analyzer import AnalyzerEngine, EntityRecognizer, RecognizerRegistry
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_analyzer.predefined_recognizers import (
@@ -30,6 +31,41 @@ from privacy.infrastructure.recognizers.phone import phone_recognizer
 from privacy.infrastructure.recognizers.social_security import nss_recognizer
 
 LANGUAGE = "es"
+
+# Text pasted from Word or PDFs carries no-break spaces and typographic dashes. Each maps to
+# one ASCII character, so every offset stays valid on the original text (second code audit,
+# 2026-11-04, P3).
+_SEPARATORS = str.maketrans(
+    {
+        "\u00a0": " ",  # no-break space
+        "\u2007": " ",  # figure space
+        "\u2009": " ",  # thin space
+        "\u202f": " ",  # narrow no-break space
+        "\u2010": "-",  # hyphen
+        "\u2011": "-",  # non-breaking hyphen
+        "\u2012": "-",  # figure dash
+        "\u2013": "-",  # en dash
+        "\u2014": "-",  # em dash
+        "\u2212": "-",  # minus sign
+    }
+)
+
+
+def normalised(text: str) -> str:
+    """`text` with Unicode spaces and dashes as ASCII, the same length."""
+    return text.translate(_SEPARATORS)
+
+
+# Presidio's email check resolves the domain's public suffix with `tldextract`, which by
+# default downloads the suffix list on first use. This service keeps data local and must not
+# call out: the extractor uses the snapshot the package ships (audit P5).
+_OFFLINE_TLD = tldextract.TLDExtract(suffix_list_urls=())
+
+
+class OfflineEmailRecognizer(EmailRecognizer):
+    def validate_result(self, pattern_text: str) -> bool:
+        return _OFFLINE_TLD(pattern_text).fqdn != ""
+
 
 PRESIDIO_TO_KIND: Mapping[str, EntityKind] = MappingProxyType(
     {
@@ -54,7 +90,7 @@ def default_recognizers() -> list[EntityRecognizer]:
     return [
         # spaCy `PER` → PERSON and `LOC`/`GPE` → LOCATION; ORG and MISC are not reported.
         SpacyRecognizer(supported_language=LANGUAGE, supported_entities=["PERSON", "LOCATION"]),
-        EmailRecognizer(supported_language=LANGUAGE),
+        OfflineEmailRecognizer(supported_language=LANGUAGE),
         CreditCardRecognizer(supported_language=LANGUAGE),
         dni_recognizer(),
         nie_recognizer(),
@@ -100,7 +136,9 @@ class PresidioAnalyzer:
         if not entities:
             return ()
         with self._lock:
-            results = self._engine.analyze(text=text, language=LANGUAGE, entities=entities)
+            results = self._engine.analyze(
+                text=normalised(text), language=LANGUAGE, entities=entities
+            )
         found: list[Finding] = []
         for result in results:
             kind = PRESIDIO_TO_KIND.get(result.entity_type)

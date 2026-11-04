@@ -241,6 +241,42 @@ const DETECTION: ReadonlyArray<DetectionTemplate> = [
       .e("PERSON", person(g.r)),
     tags: ["clinic", "abbreviation"],
   }),
+  // v3 (second code audit 2026-11-04): text as pasted from forms, Word and PDFs.
+  (g) => ({
+    text: new Text()
+      .t("Titulares: ")
+      .e("DNI", g.id.dni())
+      .t(" y ")
+      .e("DNI", g.id.dni())
+      .t(", NIF del menor ")
+      .e("DNI", g.id.nifKlm())
+      .t("."),
+    tags: ["pasted", "dni-y"],
+  }),
+  (g) => {
+    const compact = g.id.iban().replace(/\s/g, "").toUpperCase();
+    const ccc = `${compact.slice(0, 4)} ${compact.slice(4, 8)} ${compact.slice(8, 12)} ${compact.slice(12, 14)} ${compact.slice(14)}`;
+    const dashed = compact.match(/.{1,4}/g)?.join("-") ?? compact;
+    return {
+      text: new Text().t("Cuenta antigua ").e("IBAN", ccc).t(", nueva ").e("IBAN", dashed).t("."),
+      tags: ["pasted", "iban-layouts"],
+    };
+  },
+  (g) => {
+    const digits = (s: string) => s.replace(/\D/g, "").slice(-9);
+    const nbsp = digits(g.id.phone()).replace(/^(\d{3})(\d{3})(\d{3})$/, "$1\u00a0$2\u00a0$3");
+    return {
+      text: new Text()
+        .t("Teléfonos ")
+        .e("PHONE", digits(g.id.phone()))
+        .t("/")
+        .e("PHONE", digits(g.id.phone()))
+        .t(", móvil\u00a0")
+        .e("PHONE", nbsp)
+        .t("."),
+      tags: ["pasted", "phone-layouts"],
+    };
+  },
 ];
 
 /** Look-alikes with broken control characters or the wrong shape: nothing to find. */
@@ -745,7 +781,7 @@ export function generateLeak(seed = SEED): string {
 
 export function generateDetection(seed = SEED): string {
   const g = { r: seeded(seed + 2), id: identifiers(seeded(seed + 3)) };
-  const lines = [header("pii-detection-es", { version: 2 })];
+  const lines = [header("pii-detection-es", { version: 3 })];
   const total = DETECTION_CASES + DETECTION_NEGATIVES;
   for (let i = 0; i < total; i += 1) {
     // Every eighth case is a negative, so they spread over the file.
@@ -768,5 +804,5 @@ export function generateDetection(seed = SEED): string {
 
 export const GENERATED = {
   "pii-leak-es.v3.jsonl": generateLeak,
-  "pii-detection-es.v2.jsonl": generateDetection,
+  "pii-detection-es.v3.jsonl": generateDetection,
 } as const;

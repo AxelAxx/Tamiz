@@ -17,12 +17,17 @@ from presidio_analyzer import Pattern
 from privacy.domain.checksums import is_valid_iban
 from privacy.infrastructure.recognizers.validated import ValidatedPatternRecognizer
 
-_HEAD = r"(?<!\w)[A-Z]{2}\d{2} ?[A-Z0-9]{4}"
-_TAIL = r"(?: ?\d{1,3})"
+# Groups are separated by a space, two spaces or a dash (audit 2026-11-04, P2).
+_SEP = r"(?:[ \-]|  )?"
+_HEAD = r"(?<!\w)[A-Z]{2}\d{2}" + _SEP + r"[A-Z0-9]{4}"
+_TAIL = r"(?:" + _SEP + r"\d{1,3})"
 IBAN_REGEXES = [
-    _HEAD + r"(?: ?\d{4}){" + str(groups) + "}" + tail + r"(?!\w)"
+    _HEAD + r"(?:" + _SEP + r"\d{4}){" + str(groups) + "}" + tail + r"(?!\w)"
     for groups in range(1, 7)
     for tail in ("", _TAIL)
+] + [
+    # A Spanish IBAN in the old CCC grouping: bank, branch, control digits, account.
+    r"(?<!\w)ES\d{2}" + _SEP + r"\d{4}" + _SEP + r"\d{4}" + _SEP + r"\d{2}" + _SEP + r"\d{10}(?!\w)"
 ]
 
 
