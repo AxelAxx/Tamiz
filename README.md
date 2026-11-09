@@ -239,6 +239,13 @@ compliance product.
   sometimes: about 1 in 12 in the detection eval, and 0.83 % of them reach a non-local
   provider in the leak eval. If a category must never leave the machine, use
   `restrict_to_local` for it rather than `anonymize`.
+- **Only what goes out is inspected, not what comes back.** Tamiz inspects the request,
+  not the model's answer. A personal value the model writes in its answer reaches the
+  application unfiltered.
+- **Health data in free text is not recognized.** The recognizers cover identifiers and
+  contact data. "Type 2 diabetes", a heart rate or a clinical record number count as no
+  personal data and go out as written. For clinical text, request the model `tamiz-local`:
+  the default policy then keeps the request on the local model, whatever the text says.
 - **Company IDs and places are allowed out by default.** The default policy rates a CIF
   and a location `low`, and `low` is `allow`. A request whose only personal data is a
   company and a city goes out unchanged: in the leak eval, 50 % of CIF values and 25 % of
