@@ -161,6 +161,7 @@ Legend for the *Area* column: `G` gateway, `C` contracts, `P` privacy service, `
 | T-DOC-03 | 14 | — | X | LinkedIn post and web case study drafts | T-DOC-01 | `docs/marketing/linkedin-post.md`, `docs/marketing/case-study.md` (problem → decisions → trade-offs → metrics); the post itself may be in Spanish as *content*, the surrounding docs in English | Reviewed by Alex; links to repo and demo | done (drafts; `done/T-DOC-03-marketing-drafts.md`) |
 | T-DOC-04 | — | — | X | README GIFs from the final code | T-DOC-02, T-AUD-17 | `docs/images/demo.gif` re-recorded after the audits; `policy-editor.gif` and `cost.gif` added under "The operator console" in the README | Each GIF under 1 MB, recorded from the running services; the cost GIF says its data is synthetic | done (`done/T-DOC-04-readme-gifs.md`) |
 | T-DOC-05 | — | — | X | Trailer at the top of the README | T-DOC-04 | A 46-second trailer (1080p, GitHub attachment) opens the README; the simulator GIF moves to "The operator console" | The trailer plays inline on GitHub; its figures are the CI eval figures | done (`done/T-DOC-05-readme-trailer.md`) |
+| T-DOC-06 | — | — | X | README states two limits found in a functional check | T-DOC-05 | README Limitations says that answers are not inspected and that health data in free text is not recognized | Both limits were observed against the running gateway and privacy service | done (`done/T-DOC-06-readme-limits.md`) |
 
 ## Code audit (2026-11-03)
 
